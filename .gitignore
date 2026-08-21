@@ -63,3 +63,7 @@ desktop.ini
 # Docker / local runtime
 data/
 postgres-data/
+
+# WorkBuddy local workspace state
+.workbuddy-ai/
+.workbuddy-ai/
