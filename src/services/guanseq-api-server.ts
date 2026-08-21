@@ -1,0 +1,46 @@
+import "server-only";
+
+const backendBaseUrl = process.env.GUANSEQ_API_BASE_URL ?? "http://localhost:8080";
+const developmentUsername = process.env.GUANSEQ_DEV_USERNAME ?? "lin.hao";
+const developmentPassword = process.env.GUANSEQ_DEV_PASSWORD ?? "guanseq_dev";
+
+export async function requestGuanSeqApi(
+  path: string,
+  requestId: string,
+  init?: RequestInit,
+  timeoutMs = 3000,
+): Promise<Response | null> {
+  const credentials = Buffer.from(`${developmentUsername}:${developmentPassword}`).toString("base64");
+  try {
+    return await fetch(`${backendBaseUrl}${path}`, {
+      ...init,
+      cache: "no-store",
+      headers: {
+        Authorization: `Basic ${credentials}`,
+        "Content-Type": "application/json",
+        "X-Request-Id": requestId,
+        ...init?.headers,
+      },
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+  } catch {
+    return null;
+  }
+}
+
+export async function readApiError(response: Response, fallback: string): Promise<never> {
+  let message = fallback;
+  try {
+    const problem = await response.json() as { detail?: string; message?: string };
+    message = problem.detail ?? problem.message ?? fallback;
+  } catch {
+    // 保留业务友好的默认错误；状态码仍继续向调用方传递。
+  }
+  throw new GuanSeqApiError(message, response.status);
+}
+
+export class GuanSeqApiError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message);
+  }
+}

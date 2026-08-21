@@ -1,0 +1,65 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Next.js / frontend build
+.next/
+out/
+coverage/
+*.tsbuildinfo
+
+# Env
+.env*
+!.env.example
+
+# Playwright / audits
+.playwright-cli/
+output/
+
+# Logs
+*.log
+
+# Java / Maven / Spring Boot
+guanseq-server/target/
+**/target/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+replay_pid*
+
+# Maven wrapper downloads (kept under ~/.m2 normally, but just in case)
+guanseq-server/.mvn/wrapper/maven-wrapper.jar
+
+# IDE - IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# IDE - Eclipse
+.apt_generated/
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache/
+
+# IDE - VS Code (keep workspace settings shared, ignore local)
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Docker / local runtime
+data/
+postgres-data/

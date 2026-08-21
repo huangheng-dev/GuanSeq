@@ -1,0 +1,11 @@
+spring:
+  flyway:
+    locations:
+      - classpath:db/migration
+      - classpath:db/local
+
+guanseq:
+  security:
+    development-identity-enabled: ${GUANSEQ_DEV_IDENTITY_ENABLED:true}
+    development-username: ${GUANSEQ_DEV_USERNAME:lin.hao}
+    development-password: ${GUANSEQ_DEV_PASSWORD:guanseq_dev}

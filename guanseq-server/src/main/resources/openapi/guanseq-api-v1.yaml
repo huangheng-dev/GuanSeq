@@ -1,0 +1,4173 @@
+openapi: 3.1.0
+info:
+  title: GuanSeq API
+  version: 0.1.0
+  description: GuanSeq 制造业务核心 API 契约。
+paths:
+  /api/v1/platform/status:
+    get:
+      operationId: getPlatformStatus
+      summary: 获取业务核心运行状态
+      tags:
+        - Platform
+      responses:
+        "200":
+          description: 业务核心可以响应请求
+          headers:
+            X-Request-Id:
+              description: 用于日志和审计追踪的请求编号
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformStatus"
+  /api/v1/me/workspaces:
+    get:
+      operationId: getMyWorkspaces
+      summary: 获取当前用户可访问的工作区
+      tags:
+        - Identity
+      security:
+        - basicAuth: []
+      responses:
+        "200":
+          description: 当前用户、工作区选择版本和可访问工作区
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkspaceSession"
+        "401":
+          description: 未认证
+        "403":
+          description: 当前用户没有可访问工作区
+  /api/v1/me/current-workspace:
+    put:
+      operationId: switchMyWorkspace
+      summary: 切换当前用户工作区
+      tags:
+        - Identity
+      security:
+        - basicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SwitchWorkspaceRequest"
+      responses:
+        "200":
+          description: 切换后的工作区会话
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkspaceSession"
+        "400":
+          description: 请求数据无效
+        "401":
+          description: 未认证
+        "403":
+          description: 无权访问目标工作区
+        "409":
+          description: 工作区选择版本冲突
+  /api/v1/masterdata/customers:
+    get:
+      operationId: listCustomers
+      summary: 分页查询当前工作区可见的客户
+      tags: [MasterData]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/Query"
+        - $ref: "#/components/parameters/Status"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+      responses:
+        "200":
+          description: 客户分页
+          headers: { X-Request-Id: { $ref: "#/components/headers/RequestId" } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CustomerPage" }
+    post:
+      operationId: createCustomer
+      summary: 新建客户
+      tags: [MasterData]
+      security: [{ basicAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateCustomerRequest" }
+      responses:
+        "200":
+          description: 已创建客户
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Customer" }
+        "409": { description: 客户编码已存在 }
+  /api/v1/masterdata/customers/{id}:
+    put:
+      operationId: updateCustomer
+      summary: 更新客户
+      tags: [MasterData]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/EntityId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateCustomerRequest" }
+      responses:
+        "200":
+          description: 已更新客户
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Customer" }
+        "404": { description: 客户不存在或不可见 }
+        "409": { description: 版本冲突或客户编码已存在 }
+  /api/v1/masterdata/customers/batch:
+    patch:
+      operationId: batchUpdateCustomers
+      summary: 批量更新客户状态或负责人
+      tags: [MasterData]
+      security: [{ basicAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MasterDataBatchRequest" }
+      responses:
+        "200":
+          description: 已更新的客户
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Customer" }
+        "409": { description: 任一记录版本冲突 }
+  /api/v1/masterdata/materials:
+    get:
+      operationId: listMaterials
+      summary: 分页查询当前工作区可见的物料
+      tags: [MasterData]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/Query"
+        - $ref: "#/components/parameters/Status"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+      responses:
+        "200":
+          description: 物料分页
+          headers: { X-Request-Id: { $ref: "#/components/headers/RequestId" } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MaterialPage" }
+    post:
+      operationId: createMaterial
+      summary: 新建物料
+      tags: [MasterData]
+      security: [{ basicAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateMaterialRequest" }
+      responses:
+        "200":
+          description: 已创建物料
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Material" }
+        "409": { description: 物料编码已存在 }
+  /api/v1/masterdata/materials/{id}:
+    put:
+      operationId: updateMaterial
+      summary: 更新物料
+      tags: [MasterData]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/EntityId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateMaterialRequest" }
+      responses:
+        "200":
+          description: 已更新物料
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Material" }
+        "404": { description: 物料不存在或不可见 }
+        "409": { description: 版本冲突或物料编码已存在 }
+  /api/v1/masterdata/materials/batch:
+    patch:
+      operationId: batchUpdateMaterials
+      summary: 批量更新物料状态或负责人
+      tags: [MasterData]
+      security: [{ basicAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MasterDataBatchRequest" }
+      responses:
+        "200":
+          description: 已更新的物料
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Material" }
+        "409": { description: 任一记录版本冲突 }
+  /api/v1/sales/orders:
+    get:
+      operationId: listSalesOrders
+      summary: 分页查询当前租户销售订单
+      tags: [Sales]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/Query"
+        - $ref: "#/components/parameters/Status"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+      responses:
+        "200":
+          description: 销售订单分页
+          headers: { X-Request-Id: { $ref: "#/components/headers/RequestId" } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SalesOrderPage" }
+    post:
+      operationId: createSalesOrder
+      summary: 创建销售订单草稿
+      tags: [Sales]
+      security: [{ basicAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateSalesOrderRequest" }
+      responses:
+        "200":
+          description: 已创建销售订单草稿
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SalesOrder" }
+        "422": { description: 客户、物料或交期不满足业务约束 }
+  /api/v1/sales/orders/{id}:
+    get:
+      operationId: getSalesOrder
+      summary: 获取销售订单详情
+      tags: [Sales]
+      security: [{ basicAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/EntityId" }]
+      responses:
+        "200":
+          description: 销售订单详情
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SalesOrder" }
+        "404": { description: 订单不存在或不可见 }
+    put:
+      operationId: updateSalesOrder
+      summary: 编辑草稿或已驳回销售订单
+      tags: [Sales]
+      security: [{ basicAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/EntityId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateSalesOrderRequest" }
+      responses:
+        "200":
+          description: 已更新销售订单
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SalesOrder" }
+        "409": { description: 状态或版本冲突 }
+        "422": { description: 客户、物料或交期不满足业务约束 }
+  /api/v1/sales/orders/{id}/actions:
+    post:
+      operationId: actOnSalesOrder
+      summary: 提交、审核、驳回或下达销售订单
+      tags: [Sales]
+      security: [{ basicAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/EntityId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SalesOrderActionRequest" }
+      responses:
+        "200":
+          description: 状态流转后的销售订单
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SalesOrder" }
+        "400": { description: 驳回原因等动作参数无效 }
+        "403": { description: 当前角色无权执行动作 }
+        "409": { description: 状态或版本冲突 }
+  /api/v1/sales/order-reference-data:
+    get:
+      operationId: getSalesOrderReferenceData
+      summary: 获取当前租户可用于订单的客户和物料
+      tags: [Sales]
+      security: [{ basicAuth: [] }]
+      responses:
+        "200":
+          description: 启用中的客户和物料选项
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SalesOrderReferenceData" }
+  /api/v1/sales/shipments:
+    get:
+      operationId: listSalesShipments
+      summary: 分页查询销售发货单
+      tags: [Sales]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/Query"
+        - $ref: "#/components/parameters/Status"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+      responses:
+        "200":
+          description: 销售发货单分页
+          headers: { X-Request-Id: { $ref: "#/components/headers/RequestId" } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SalesShipmentPage" }
+    post:
+      operationId: createSalesShipment
+      summary: 登记销售发货并扣减合格成品库存
+      tags: [Sales]
+      security: [{ basicAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateSalesShipmentRequest" }
+      responses:
+        "200":
+          description: 已发货
+          headers: { X-Request-Id: { $ref: "#/components/headers/RequestId" } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SalesShipment" }
+        "403": { description: 当前角色无权发货 }
+        "409": { description: 订单版本、请求编号或并发冲突 }
+        "422": { description: 订单状态、库存或未发数量不满足约束 }
+  /api/v1/sales/shipments/{id}:
+    get:
+      operationId: getSalesShipment
+      summary: 获取销售发货单详情
+      tags: [Sales]
+      security: [{ basicAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/EntityId" }]
+      responses:
+        "200":
+          description: 销售发货单详情
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SalesShipment" }
+        "404": { description: 发货单不存在或不可见 }
+  /api/v1/sales/shipment-reference-data:
+    get:
+      operationId: getSalesShipmentReferenceData
+      summary: 获取可发货订单和发货仓库
+      tags: [Sales]
+      security: [{ basicAuth: [] }]
+      responses:
+        "200":
+          description: 可发货订单与仓库
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SalesShipmentReferenceData" }
+  /api/v1/finance/order-profits:
+    get:
+      operationId: listOrderProfits
+      summary: 分页查询订单利润结算
+      tags: [Finance]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/Query"
+        - name: costStatus
+          in: query
+          schema: { type: string, enum: [ALL, COMPLETE, MISSING_COST], default: ALL }
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+      responses:
+        "200":
+          description: 订单利润结算分页
+          headers: { X-Request-Id: { $ref: "#/components/headers/RequestId" } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OrderProfitPage" }
+  /api/v1/finance/work-center-cost-rates:
+    get:
+      operationId: listWorkCenterCostRates
+      summary: 分页查询当前经营组织的工作中心成本费率
+      tags: [Finance]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/Query"
+        - name: status
+          in: query
+          schema: { type: string, enum: [ALL, ACTIVE, INACTIVE], default: ALL }
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+      responses:
+        "200":
+          description: 工作中心成本费率分页
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WorkCenterCostRatePage" }
+    post:
+      operationId: createWorkCenterCostRate
+      summary: 发布工作中心人工与制造费用小时费率
+      tags: [Finance]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - name: X-Request-Id
+          in: header
+          required: false
+          schema: { type: string, maxLength: 120 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateWorkCenterCostRateRequest" }
+      responses:
+        "200":
+          description: 已发布或幂等返回工作中心成本费率
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WorkCenterCostRate" }
+        "403": { description: 当前角色无权发布成本费率 }
+        "409": { description: 生效日期、请求编号或并发冲突 }
+        "422": { description: 费率不满足业务约束 }
+  /api/v1/finance/work-center-cost-rates/{id}/status:
+    post:
+      operationId: changeWorkCenterCostRateStatus
+      summary: 启用或停用工作中心成本费率
+      tags: [Finance]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/EntityId"
+        - name: X-Request-Id
+          in: header
+          required: false
+          schema: { type: string, maxLength: 120 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ChangeWorkCenterCostRateStatusRequest" }
+      responses:
+        "200":
+          description: 已变更或幂等返回成本费率
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WorkCenterCostRate" }
+        "403": { description: 当前角色无权变更成本费率 }
+        "404": { description: 成本费率不存在或不可见 }
+        "409": { description: 版本、请求编号或并发冲突 }
+        "422": { description: 目标状态与当前状态相同 }
+  /api/v1/finance/receivable-invoices:
+    get:
+      operationId: listReceivableInvoices
+      summary: 分页查询销售应收发票
+      tags: [Finance]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/Query"
+        - name: status
+          in: query
+          schema: { type: string, enum: [ALL, OPEN, PARTIALLY_PAID, PAID], default: ALL }
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+      responses:
+        "200":
+          description: 应收发票分页
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReceivableInvoicePage" }
+    post:
+      operationId: createReceivableInvoice
+      summary: 按已发货销售订单开具应收发票
+      tags: [Finance]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - name: X-Request-Id
+          in: header
+          required: false
+          schema: { type: string, maxLength: 120 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateReceivableInvoiceRequest" }
+      responses:
+        "200":
+          description: 已创建或幂等返回应收发票
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReceivableInvoice" }
+        "403": { description: 当前角色无权开票 }
+        "409": { description: 请求编号或并发冲突 }
+        "422": { description: 日期、订单状态或可开票数量不满足约束 }
+  /api/v1/finance/receivable-invoices/{id}:
+    get:
+      operationId: getReceivableInvoice
+      summary: 获取应收发票详情及收款记录
+      tags: [Finance]
+      security: [{ basicAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/EntityId" }]
+      responses:
+        "200":
+          description: 应收发票详情
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReceivableInvoice" }
+        "404": { description: 应收发票不存在或不可见 }
+  /api/v1/finance/receivable-invoices/{id}/receipts:
+    post:
+      operationId: postReceivableReceipt
+      summary: 登记收款并核销指定应收发票
+      tags: [Finance]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/EntityId"
+        - name: X-Request-Id
+          in: header
+          required: false
+          schema: { type: string, maxLength: 120 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PostReceivableReceiptRequest" }
+      responses:
+        "200":
+          description: 已登记收款并返回更新后的发票
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReceivableInvoice" }
+        "403": { description: 当前角色无权登记收款 }
+        "409": { description: 发票版本、请求编号或并发冲突 }
+        "422": { description: 收款日期或金额不满足约束 }
+  /api/v1/finance/receivable-reference-data:
+    get:
+      operationId: getReceivableReferenceData
+      summary: 获取已发货订单及其剩余可开票数量
+      tags: [Finance]
+      security: [{ basicAuth: [] }]
+      responses:
+        "200":
+          description: 可开票销售订单
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReceivableReferenceData" }
+  /api/v1/finance/payable-invoices:
+    get:
+      operationId: listPayableInvoices
+      summary: 分页查询采购应付发票
+      tags: [Finance]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/Query"
+        - name: status
+          in: query
+          schema: { type: string, enum: [ALL, OPEN, PARTIALLY_PAID, PAID], default: ALL }
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+      responses:
+        "200":
+          description: 应付发票分页
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PayableInvoicePage" }
+    post:
+      operationId: createPayableInvoice
+      summary: 按采购订单合格收货数量登记应付发票
+      tags: [Finance]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - name: X-Request-Id
+          in: header
+          required: false
+          schema: { type: string, maxLength: 120 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreatePayableInvoiceRequest" }
+      responses:
+        "200":
+          description: 已创建或幂等返回应付发票
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PayableInvoice" }
+        "403": { description: 当前角色无权登记应付发票 }
+        "409": { description: 请求编号、供应商发票号或并发冲突 }
+        "422": { description: 日期、合格收货数量或订单归属不满足约束 }
+  /api/v1/finance/payable-invoices/{id}:
+    get:
+      operationId: getPayableInvoice
+      summary: 获取应付发票详情及付款记录
+      tags: [Finance]
+      security: [{ basicAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/EntityId" }]
+      responses:
+        "200":
+          description: 应付发票详情
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PayableInvoice" }
+        "404": { description: 应付发票不存在或不可见 }
+  /api/v1/finance/payable-invoices/{id}/payments:
+    post:
+      operationId: postPayablePayment
+      summary: 登记付款并核销指定应付发票
+      tags: [Finance]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/EntityId"
+        - name: X-Request-Id
+          in: header
+          required: false
+          schema: { type: string, maxLength: 120 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PostPayablePaymentRequest" }
+      responses:
+        "200":
+          description: 已登记付款并返回更新后的发票
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PayableInvoice" }
+        "403": { description: 当前角色无权登记付款 }
+        "409": { description: 发票版本、请求编号或并发冲突 }
+        "422": { description: 付款日期或金额不满足约束 }
+  /api/v1/finance/payable-reference-data:
+    get:
+      operationId: getPayableReferenceData
+      summary: 获取采购订单合格收货及其剩余可开票数量
+      tags: [Finance]
+      security: [{ basicAuth: [] }]
+      responses:
+        "200":
+          description: 可登记应付发票的采购订单
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PayableReferenceData" }
+  /api/v1/finance/order-profit-reference-data:
+    get:
+      operationId: getOrderProfitReferenceData
+      summary: 获取可结算订单利润的销售订单
+      tags: [Finance]
+      security: [{ basicAuth: [] }]
+      responses:
+        "200":
+          description: 可结算订单列表
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OrderProfitReferenceData" }
+  /api/v1/finance/order-profits/{id}:
+    get:
+      operationId: getOrderProfit
+      summary: 获取订单利润结算详情
+      tags: [Finance]
+      security: [{ basicAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/EntityId" }]
+      responses:
+        "200":
+          description: 订单利润结算详情
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OrderProfit" }
+        "404": { description: 结算不存在或不可见 }
+  /api/v1/finance/order-profits/{salesOrderId}/settle:
+    post:
+      operationId: settleOrderProfit
+      summary: 按销售订单生成订单利润结算快照
+      tags: [Finance]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - name: salesOrderId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: X-Request-Id
+          in: header
+          required: false
+          schema: { type: string, maxLength: 120 }
+      responses:
+        "200":
+          description: 已生成或幂等返回订单利润结算
+          headers: { X-Request-Id: { $ref: "#/components/headers/RequestId" } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OrderProfit" }
+        "403": { description: 当前角色无权结算订单利润 }
+        "409": { description: 请求编号或结算并发冲突 }
+        "422": { description: 订单未发货或暂不能结算 }
+  /api/v1/planning/independent-demands:
+    get:
+      operationId: listIndependentDemands
+      summary: 分页查询当前租户独立需求
+      tags: [Planning]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/Query"
+        - $ref: "#/components/parameters/Status"
+        - name: sourceType
+          in: query
+          schema: { type: string, enum: [ALL, SALES_ORDER, MANUAL], default: ALL }
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+      responses:
+        "200":
+          description: 独立需求分页
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/IndependentDemandPage" }
+    post:
+      operationId: createIndependentDemand
+      summary: 创建人工独立需求草稿
+      tags: [Planning]
+      security: [{ basicAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateIndependentDemandRequest" }
+      responses:
+        "200":
+          description: 已创建人工需求草稿
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/IndependentDemand" }
+        "403": { description: 当前角色无权维护计划需求 }
+        "422": { description: 物料或需求日期不满足业务约束 }
+  /api/v1/planning/independent-demands/{id}:
+    get:
+      operationId: getIndependentDemand
+      summary: 获取独立需求详情
+      tags: [Planning]
+      security: [{ basicAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/EntityId" }]
+      responses:
+        "200":
+          description: 独立需求详情
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/IndependentDemand" }
+        "404": { description: 需求不存在或不可见 }
+    put:
+      operationId: updateIndependentDemand
+      summary: 编辑人工独立需求草稿
+      tags: [Planning]
+      security: [{ basicAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/EntityId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateIndependentDemandRequest" }
+      responses:
+        "200":
+          description: 已更新人工需求
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/IndependentDemand" }
+        "409": { description: 来源、状态或版本冲突 }
+  /api/v1/planning/independent-demands/{id}/actions:
+    post:
+      operationId: actOnIndependentDemand
+      summary: 激活或取消人工独立需求
+      tags: [Planning]
+      security: [{ basicAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/EntityId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/IndependentDemandActionRequest" }
+      responses:
+        "200":
+          description: 状态流转后的独立需求
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/IndependentDemand" }
+        "400": { description: 取消原因等动作参数无效 }
+        "409": { description: 来源、状态或版本冲突 }
+  /api/v1/product/boms:
+    get:
+      operationId: listBoms
+      summary: 分页查询当前租户的受控 BOM 版本
+      tags: [Product]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/Query"
+        - name: status
+          in: query
+          schema: { type: string, enum: [ALL, DRAFT, PUBLISHED, INACTIVE], default: ALL }
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+      responses:
+        "200":
+          description: BOM 版本分页
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BomPage" }
+    post:
+      operationId: createBom
+      summary: 新建草稿 BOM 版本
+      tags: [Product]
+      security: [{ basicAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateBomRequest" }
+      responses:
+        "200":
+          description: 已创建的草稿 BOM
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Bom" }
+        "403": { description: 当前角色无权维护 BOM }
+        "409": { description: 父项、用途与版本编码重复 }
+        "422": { description: 父项或组件不符合业务规则 }
+  /api/v1/product/boms/{id}:
+    get:
+      operationId: getBom
+      summary: 获取 BOM 表头、组件与审计证据
+      tags: [Product]
+      security: [{ basicAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/EntityId" }]
+      responses:
+        "200":
+          description: BOM 详情
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Bom" }
+        "404": { description: BOM 不存在或不可见 }
+    put:
+      operationId: updateBom
+      summary: 更新草稿 BOM 版本
+      tags: [Product]
+      security: [{ basicAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/EntityId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateBomRequest" }
+      responses:
+        "200":
+          description: 已更新的草稿 BOM
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Bom" }
+        "403": { description: 当前角色无权维护 BOM }
+        "409": { description: 非草稿状态、版本冲突或版本编码重复 }
+        "422": { description: 父项或组件不符合业务规则 }
+  /api/v1/product/boms/{id}/actions:
+    post:
+      operationId: actOnBom
+      summary: 发布或停用 BOM 版本
+      tags: [Product]
+      security: [{ basicAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/EntityId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BomActionRequest" }
+      responses:
+        "200":
+          description: 状态流转后的 BOM
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Bom" }
+        "403": { description: 当前角色无权维护 BOM }
+        "409": { description: 状态、版本或已发布结构冲突 }
+        "422": { description: 组件结构或生效日期不符合发布规则 }
+  /api/v1/product/bom-reference-data:
+    get:
+      operationId: getBomReferenceData
+      summary: 获取当前租户可用于 BOM 的启用物料
+      tags: [Product]
+      security: [{ basicAuth: [] }]
+      responses:
+        "200":
+          description: BOM 父项和组件物料选项
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BomReferenceData" }
+  /api/v1/product/routings:
+    get:
+      operationId: listRoutings
+      summary: 分页查询当前租户的受控工艺路线版本
+      tags: [Product]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/Query"
+        - name: status
+          in: query
+          schema: { type: string, enum: [ALL, DRAFT, PUBLISHED, INACTIVE], default: ALL }
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+      responses:
+        "200":
+          description: 工艺路线版本分页
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RoutingPage" }
+    post:
+      operationId: createRouting
+      summary: 新建草稿工艺路线版本
+      tags: [Product]
+      security: [{ basicAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateRoutingRequest" }
+      responses:
+        "200":
+          description: 已创建的草稿工艺路线
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Routing" }
+        "403": { description: 当前角色无权维护工艺路线 }
+        "409": { description: 物料、用途与版本编码重复 }
+        "422": { description: 物料或工序不符合业务规则 }
+  /api/v1/product/routings/{id}:
+    get:
+      operationId: getRouting
+      summary: 获取工艺路线表头、工序与审计证据
+      tags: [Product]
+      security: [{ basicAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/EntityId" }]
+      responses:
+        "200":
+          description: 工艺路线详情
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Routing" }
+        "404": { description: 工艺路线不存在或不可见 }
+    put:
+      operationId: updateRouting
+      summary: 更新草稿工艺路线版本
+      tags: [Product]
+      security: [{ basicAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/EntityId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateRoutingRequest" }
+      responses:
+        "200":
+          description: 已更新的草稿工艺路线
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Routing" }
+        "403": { description: 当前角色无权维护工艺路线 }
+        "409": { description: 非草稿状态、版本冲突或版本编码重复 }
+        "422": { description: 物料或工序不符合业务规则 }
+  /api/v1/product/routings/{id}/actions:
+    post:
+      operationId: actOnRouting
+      summary: 发布或停用工艺路线版本
+      tags: [Product]
+      security: [{ basicAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/EntityId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RoutingActionRequest" }
+      responses:
+        "200":
+          description: 状态流转后的工艺路线
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Routing" }
+        "403": { description: 当前角色无权维护工艺路线 }
+        "409": { description: 状态、版本或已发布路线冲突 }
+        "422": { description: 工序或生效日期不符合发布规则 }
+  /api/v1/product/routing-reference-data:
+    get:
+      operationId: getRoutingReferenceData
+      summary: 获取当前租户可用于工艺路线的自制物料
+      tags: [Product]
+      security: [{ basicAuth: [] }]
+      responses:
+        "200":
+          description: 工艺路线物料选项
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RoutingReferenceData" }
+  /api/v1/planning/demand-reference-data:
+    get:
+      operationId: getPlanningDemandReferenceData
+      summary: 获取当前租户可用于计划需求的物料
+      tags: [Planning]
+      security: [{ basicAuth: [] }]
+      responses:
+        "200":
+          description: 启用中的物料选项
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PlanningDemandReferenceData" }
+  /api/v1/planning/mrp-inputs:
+    get:
+      operationId: listMrpInputs
+      summary: 查询当前租户可供 MRP 使用的有效独立需求
+      tags: [Planning]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+      responses:
+        "200":
+          description: MRP 有效需求输入
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/IndependentDemandPage" }
+  /api/v1/planning/mrp-runs:
+    get:
+      operationId: listMrpRuns
+      summary: 分页查询当前租户的 MRP 运算记录
+      tags: [Planning]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/Query"
+        - name: status
+          in: query
+          schema: { type: string, enum: [ALL, PREPARING, BLOCKED, COMPLETED], default: ALL }
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+      responses:
+        "200":
+          description: MRP 运算记录分页
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MrpRunPage" }
+    post:
+      operationId: createMrpRun
+      summary: 冻结供需事实并执行 MRP 净需求运算
+      description: 按需求日期消费可用库存和计划接收，生成采购、生产或委外建议；关键事实缺失时返回可追溯的 BLOCKED 记录。
+      tags: [Planning]
+      security: [{ basicAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateMrpRunRequest" }
+      responses:
+        "200":
+          description: 已形成不可变供需快照、净需求结果和异常证据
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MrpRun" }
+        "403": { description: 当前角色无权发起 MRP 运算 }
+        "422": { description: 计划期间无效或没有有效需求 }
+  /api/v1/planning/mrp-runs/{id}:
+    get:
+      operationId: getMrpRun
+      summary: 获取 MRP 运算记录、供需快照、净需求结果与阻断项
+      tags: [Planning]
+      security: [{ basicAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/EntityId" }]
+      responses:
+        "200":
+          description: MRP 运算准备记录详情
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MrpRun" }
+        "404": { description: 记录不存在或不可见 }
+  /api/v1/planning/mrp-suggestions:
+    get:
+      operationId: listMrpSuggestions
+      summary: 分页查询可审核的 MRP 采购、委外和生产建议
+      tags: [Planning]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/Query"
+        - name: status
+          in: query
+          schema: { type: string, enum: [ALL, PROPOSED, APPROVED, REJECTED, CONVERTED], default: ALL }
+        - name: type
+          in: query
+          schema: { type: string, enum: [ALL, PRODUCTION, PURCHASE, OUTSOURCE], default: ALL }
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+      responses:
+        "200":
+          description: MRP 计划建议分页
+          content: { application/json: { schema: { $ref: "#/components/schemas/MrpSuggestionPage" } } }
+  /api/v1/planning/mrp-suggestions/{id}:
+    get:
+      operationId: getMrpSuggestion
+      summary: 查询 MRP 建议、审核和转单证据
+      tags: [Planning]
+      security: [{ basicAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/EntityId" }]
+      responses:
+        "200":
+          description: MRP 计划建议详情
+          content: { application/json: { schema: { $ref: "#/components/schemas/MrpSuggestion" } } }
+        "404": { description: 建议不存在、不可转单或不在租户范围 }
+  /api/v1/planning/mrp-suggestions/{id}/actions:
+    post:
+      operationId: actOnMrpSuggestion
+      summary: 审核通过或驳回 MRP 建议
+      tags: [Planning]
+      security: [{ basicAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/EntityId" }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/MrpSuggestionActionRequest" } } }
+      responses:
+        "200":
+          description: 审核后的 MRP 建议
+          content: { application/json: { schema: { $ref: "#/components/schemas/MrpSuggestion" } } }
+        "403": { description: 当前角色无权审核计划建议 }
+        "409": { description: 状态、版本或请求编号冲突 }
+  /api/v1/planning/mrp-suggestions/{id}/convert:
+    post:
+      operationId: convertMrpSuggestion
+      summary: 将已审核建议转为采购或生产草稿
+      tags: [Planning]
+      security: [{ basicAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/EntityId" }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/MrpSuggestionConvertRequest" } } }
+      responses:
+        "200":
+          description: 已转单并包含下游单号的 MRP 建议
+          content: { application/json: { schema: { $ref: "#/components/schemas/MrpSuggestion" } } }
+        "403": { description: 当前角色无权转换计划建议 }
+        "409": { description: 状态、版本或重复转单冲突 }
+        "422": { description: 供应商、价格、车间或计划日期不符合下游订单规则 }
+  /api/v1/warehouse/inventory-balances:
+    get:
+      operationId: listInventoryBalances
+      summary: 分页查询当前工作区库存余额
+      tags: [Warehouse]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/Query"
+        - name: qualityStatus
+          in: query
+          schema: { type: string, enum: [ALL, AVAILABLE, INSPECTION, BLOCKED], default: ALL }
+        - name: warehouseCode
+          in: query
+          schema: { type: string, default: ALL }
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+      responses:
+        "200":
+          description: 库存余额分页
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InventoryPage" }
+  /api/v1/warehouse/inventory-balances/{id}:
+    get:
+      operationId: getInventoryBalance
+      summary: 获取库存余额及不可变流水
+      tags: [Warehouse]
+      security: [{ basicAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/EntityId" }]
+      responses:
+        "200":
+          description: 库存余额详情
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InventoryBalance" }
+        "404": { description: 库存余额不存在或不可见 }
+  /api/v1/warehouse/inventory-balances/{id}/movements:
+    post:
+      operationId: postInventoryMovement
+      summary: 通过不可变库存流水调整余额
+      description: 请求编号用于幂等控制；库存余额不提供直接覆盖接口。
+      tags: [Warehouse]
+      security: [{ basicAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/EntityId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/InventoryMovementRequest" }
+      responses:
+        "200":
+          description: 流水入账后的库存余额
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InventoryBalance" }
+        "403": { description: 当前角色无权执行库存动作 }
+        "409": { description: 请求编号或库存版本冲突 }
+        "422": { description: 质量状态或数量边界不符合库存规则 }
+  /api/v1/warehouse/inventory-reference-data:
+    get:
+      operationId: getInventoryReferenceData
+      summary: 获取当前租户可见的仓库与库位
+      tags: [Warehouse]
+      security: [{ basicAuth: [] }]
+      responses:
+        "200":
+          description: 库存筛选参考数据
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InventoryReferenceData" }
+  /api/v1/procurement/orders:
+    get:
+      operationId: listPurchaseOrders
+      summary: 分页查询采购订单
+      tags: [Procurement]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/Query"
+        - $ref: "#/components/parameters/Status"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+      responses:
+        "200":
+          description: 采购订单分页
+          content: { application/json: { schema: { $ref: "#/components/schemas/PurchaseOrderPage" } } }
+    post:
+      operationId: createPurchaseOrder
+      summary: 新建采购订单草稿
+      tags: [Procurement]
+      security: [{ basicAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/PurchaseOrderWriteRequest" } } }
+      responses:
+        "200":
+          description: 已创建采购订单
+          content: { application/json: { schema: { $ref: "#/components/schemas/PurchaseOrder" } } }
+        "422": { description: 供应商、物料或到货日期不满足规则 }
+  /api/v1/procurement/orders/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      operationId: getPurchaseOrder
+      summary: 查询采购订单详情
+      tags: [Procurement]
+      security: [{ basicAuth: [] }]
+      responses:
+        "200":
+          description: 采购订单详情
+          content: { application/json: { schema: { $ref: "#/components/schemas/PurchaseOrder" } } }
+        "404": { description: 采购订单不存在或不在租户范围 }
+    put:
+      operationId: updatePurchaseOrder
+      summary: 更新草稿或已驳回采购订单
+      tags: [Procurement]
+      security: [{ basicAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/PurchaseOrderUpdateRequest" } } }
+      responses:
+        "200":
+          description: 已更新采购订单
+          content: { application/json: { schema: { $ref: "#/components/schemas/PurchaseOrder" } } }
+        "409": { description: 状态或乐观锁冲突 }
+  /api/v1/procurement/orders/{id}/actions:
+    post:
+      operationId: actOnPurchaseOrder
+      summary: 提交、审核、驳回或下达采购订单
+      tags: [Procurement]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/PurchaseOrderActionRequest" } } }
+      responses:
+        "200":
+          description: 操作后的采购订单
+          content: { application/json: { schema: { $ref: "#/components/schemas/PurchaseOrder" } } }
+        "409": { description: 状态或乐观锁冲突 }
+        "422": { description: 下达前缺少承诺到货日期 }
+  /api/v1/procurement/order-reference-data:
+    get:
+      operationId: getPurchaseOrderReferenceData
+      summary: 获取启用供应商和可采购物料
+      tags: [Procurement]
+      security: [{ basicAuth: [] }]
+      responses:
+        "200":
+          description: 采购订单引用数据
+          content: { application/json: { schema: { $ref: "#/components/schemas/PurchaseOrderReferenceData" } } }
+  /api/v1/procurement/receipts:
+    get:
+      operationId: listPurchaseReceipts
+      summary: 分页查询采购收货单
+      tags: [Procurement]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/Query"
+        - $ref: "#/components/parameters/Status"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+      responses:
+        "200":
+          description: 采购收货单分页
+          content: { application/json: { schema: { $ref: "#/components/schemas/PurchaseReceiptPage" } } }
+    post:
+      operationId: createPurchaseReceipt
+      summary: 登记采购到货并触发免检入库或来料检验
+      tags: [Procurement]
+      security: [{ basicAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/CreatePurchaseReceiptRequest" } } }
+      responses:
+        "200":
+          description: 已登记的采购收货单
+          content: { application/json: { schema: { $ref: "#/components/schemas/PurchaseReceipt" } } }
+        "403": { description: 无权登记采购到货 }
+        "409": { description: 请求编号重复或订单状态冲突 }
+        "422": { description: 订单、仓库、库位或数量不合法 }
+  /api/v1/procurement/receipts/{id}:
+    get:
+      operationId: getPurchaseReceipt
+      summary: 获取采购收货单详情
+      tags: [Procurement]
+      security: [{ basicAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/EntityId" }]
+      responses:
+        "200":
+          description: 采购收货单详情
+          content: { application/json: { schema: { $ref: "#/components/schemas/PurchaseReceipt" } } }
+        "404": { description: 收货单不存在或不可见 }
+  /api/v1/procurement/receipt-reference-data:
+    get:
+      operationId: getPurchaseReceiptReferenceData
+      summary: 获取已下达采购订单、仓库和库位引用
+      tags: [Procurement]
+      security: [{ basicAuth: [] }]
+      responses:
+        "200":
+          description: 采购收货引用数据
+          content: { application/json: { schema: { $ref: "#/components/schemas/PurchaseReceiptReferenceData" } } }
+  /api/v1/production/orders:
+    get:
+      operationId: listProductionOrders
+      summary: 分页查询生产订单
+      tags: [Production]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/Query"
+        - $ref: "#/components/parameters/Status"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+      responses:
+        "200":
+          description: 生产订单分页
+          content: { application/json: { schema: { $ref: "#/components/schemas/ProductionOrderPage" } } }
+    post:
+      operationId: createProductionOrder
+      summary: 新建生产订单草稿
+      tags: [Production]
+      security: [{ basicAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/ProductionOrderWriteRequest" } } }
+      responses:
+        "200":
+          description: 已创建生产订单草稿
+          content: { application/json: { schema: { $ref: "#/components/schemas/ProductionOrder" } } }
+        "422": { description: 物料或计划日期不满足规则 }
+  /api/v1/production/orders/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      operationId: getProductionOrder
+      summary: 查询生产订单详情
+      tags: [Production]
+      security: [{ basicAuth: [] }]
+      responses:
+        "200":
+          description: 生产订单详情
+          content: { application/json: { schema: { $ref: "#/components/schemas/ProductionOrder" } } }
+        "404": { description: 生产订单不存在或不在租户范围 }
+    put:
+      operationId: updateProductionOrder
+      summary: 更新草稿生产订单
+      tags: [Production]
+      security: [{ basicAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/ProductionOrderUpdateRequest" } } }
+      responses:
+        "200":
+          description: 已更新生产订单
+          content: { application/json: { schema: { $ref: "#/components/schemas/ProductionOrder" } } }
+        "409": { description: 状态或乐观锁冲突 }
+  /api/v1/production/orders/{id}/actions:
+    post:
+      operationId: actOnProductionOrder
+      summary: 下达、开工或取消生产订单
+      tags: [Production]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/ProductionOrderActionRequest" } } }
+      responses:
+        "200":
+          description: 操作后的生产订单
+          content: { application/json: { schema: { $ref: "#/components/schemas/ProductionOrder" } } }
+        "409": { description: 状态或乐观锁冲突 }
+        "422": { description: 下达前缺少有效 BOM 或工艺路线 }
+  /api/v1/production/operation-tasks:
+    get:
+      operationId: listOperationTasks
+      summary: 分页查询车间工序任务
+      tags: [Production]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/Query"
+        - name: status
+          in: query
+          schema: { type: string, enum: [ALL, PENDING, IN_PROGRESS, COMPLETED], default: ALL }
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+      responses:
+        "200":
+          description: 工序任务分页
+          content: { application/json: { schema: { $ref: "#/components/schemas/OperationTaskPage" } } }
+        "403": { description: 当前角色无权查看车间工序任务 }
+  /api/v1/production/operation-tasks/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      operationId: getOperationTask
+      summary: 查询工序任务详情与审计事件
+      tags: [Production]
+      security: [{ basicAuth: [] }]
+      responses:
+        "200":
+          description: 工序任务详情
+          content: { application/json: { schema: { $ref: "#/components/schemas/OperationTask" } } }
+        "404": { description: 工序任务不存在或不可见 }
+  /api/v1/production/orders/{orderId}/operation-tasks:
+    get:
+      operationId: listProductionOrderOperationTasks
+      summary: 按生产订单查询工序任务快照
+      tags: [Production]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: 订单工序任务列表
+          content:
+            application/json:
+              type: array
+              items: { $ref: "#/components/schemas/OperationTask" }
+        "404": { description: 生产订单不存在或不可见 }
+  /api/v1/production/operation-tasks/{id}/actions:
+    post:
+      operationId: actOnOperationTask
+      summary: 开工或完工登记工序任务
+      tags: [Production]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/OperationTaskActionRequest" } } }
+      responses:
+        "200":
+          description: 动作后的工序任务
+          content: { application/json: { schema: { $ref: "#/components/schemas/OperationTask" } } }
+        "400": { description: 动作、班次、操作人或数量参数无效 }
+        "403": { description: 当前角色无权执行车间工序任务 }
+        "404": { description: 工序任务不存在或不可见 }
+        "409": { description: 状态、并发版本或请求号冲突 }
+        "422": { description: 工序状态或完工数量不满足规则 }
+  /api/v1/production/operation-labor-entries:
+    get:
+      operationId: listOperationLaborEntries
+      summary: 分页查询实际人工工时
+      tags: [Production]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/Query"
+        - name: status
+          in: query
+          schema: { type: string, enum: [ALL, RECORDED, APPROVED, VOIDED], default: ALL }
+        - name: taskId
+          in: query
+          schema: { type: string, format: uuid }
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+      responses:
+        "200":
+          description: 实际人工工时分页
+          content: { application/json: { schema: { $ref: "#/components/schemas/OperationLaborEntryPage" } } }
+        "403": { description: 当前角色无权查看实际人工工时 }
+    post:
+      operationId: createOperationLaborEntry
+      summary: 为工序登记实际人工工时
+      tags: [Production]
+      security: [{ basicAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/CreateOperationLaborEntryRequest" } } }
+      responses:
+        "200":
+          description: 已登记工时
+          content: { application/json: { schema: { $ref: "#/components/schemas/OperationLaborEntry" } } }
+        "403": { description: 当前角色无权登记工时 }
+        "404": { description: 工序任务不存在或不可见 }
+        "409": { description: 请求号冲突 }
+        "422": { description: 工序状态、日期或实际分钟不满足规则 }
+  /api/v1/production/operation-labor-entries/{id}:
+    get:
+      operationId: getOperationLaborEntry
+      summary: 查询实际人工工时详情与审计事件
+      tags: [Production]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: 实际人工工时详情
+          content: { application/json: { schema: { $ref: "#/components/schemas/OperationLaborEntry" } } }
+        "404": { description: 工时记录不存在或不可见 }
+  /api/v1/production/operation-labor-entries/{id}/actions:
+    post:
+      operationId: actOnOperationLaborEntry
+      summary: 审核或冲销实际人工工时
+      tags: [Production]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/OperationLaborEntryActionRequest" } } }
+      responses:
+        "200":
+          description: 动作后的工时记录
+          content: { application/json: { schema: { $ref: "#/components/schemas/OperationLaborEntry" } } }
+        "403": { description: 当前角色无权审核或冲销工时 }
+        "404": { description: 工时记录不存在或不可见 }
+        "409": { description: 状态、版本或请求号冲突 }
+        "422": { description: 工序或工时状态不满足规则 }
+  /api/v1/production/order-reference-data:
+    get:
+      operationId: getProductionOrderReferenceData
+      summary: 获取可用于生产订单的自制物料
+      tags: [Production]
+      security: [{ basicAuth: [] }]
+      responses:
+        "200":
+          description: 生产订单引用数据
+          content: { application/json: { schema: { $ref: "#/components/schemas/ProductionOrderReferenceData" } } }
+  /api/v1/production/work-reports:
+    get:
+      operationId: listProductionWorkReports
+      summary: 分页查询生产报工及检验、入库状态
+      tags: [Production]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/Query"
+        - name: status
+          in: query
+          schema: { type: string, enum: [ALL, PENDING_INSPECTION, RECEIVED, REJECTED_CLOSED], default: ALL }
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+      responses:
+        "200":
+          description: 生产报工分页
+          content: { application/json: { schema: { $ref: "#/components/schemas/ProductionWorkReportPage" } } }
+    post:
+      operationId: createProductionWorkReport
+      summary: 为执行中生产订单提交完工报工并自动建立完工检验任务
+      tags: [Production]
+      security: [{ basicAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/CreateProductionWorkReportRequest" } } }
+      responses:
+        "200":
+          description: 已冻结报工数量并创建待检任务
+          content: { application/json: { schema: { $ref: "#/components/schemas/ProductionWorkReport" } } }
+        "409": { description: 订单状态、版本冲突，或仍有工序未完成 }
+        "422": { description: 报工数量超过当前可报数量 }
+  /api/v1/production/work-reports/{id}:
+    get:
+      operationId: getProductionWorkReport
+      summary: 查询生产报工、质量判定和入库证据
+      tags: [Production]
+      security: [{ basicAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/EntityId" }]
+      responses:
+        "200":
+          description: 生产报工详情
+          content: { application/json: { schema: { $ref: "#/components/schemas/ProductionWorkReport" } } }
+        "404": { description: 报工不存在或不可见 }
+  /api/v1/production/work-reports/{id}/settle:
+    post:
+      operationId: settleProductionWorkReport
+      summary: 按完工检验判定结算报工并将合格数量入库
+      tags: [Production]
+      security: [{ basicAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/EntityId" }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/SettleProductionWorkReportRequest" } } }
+      responses:
+        "200":
+          description: 已结算的生产报工与库存入账证据
+          content: { application/json: { schema: { $ref: "#/components/schemas/ProductionWorkReport" } } }
+        "409": { description: 检验未完成、重复结算或版本冲突 }
+        "422": { description: 合格数量缺少成品仓库、库位或批次 }
+  /api/v1/quality/final-inspections:
+    get:
+      operationId: listFinalInspections
+      summary: 分页查询生产完工检验任务
+      tags: [Quality]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/Query"
+        - name: status
+          in: query
+          schema: { type: string, enum: [ALL, PENDING, COMPLETED], default: ALL }
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+      responses:
+        "200":
+          description: 完工检验任务分页
+          content: { application/json: { schema: { $ref: "#/components/schemas/FinalInspectionPage" } } }
+  /api/v1/quality/final-inspections/{id}:
+    get:
+      operationId: getFinalInspection
+      summary: 查询完工检验任务和判定证据
+      tags: [Quality]
+      security: [{ basicAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/EntityId" }]
+      responses:
+        "200":
+          description: 完工检验详情
+          content: { application/json: { schema: { $ref: "#/components/schemas/FinalInspection" } } }
+        "404": { description: 检验任务不存在或不可见 }
+  /api/v1/quality/final-inspections/{id}/complete:
+    post:
+      operationId: completeFinalInspection
+      summary: 提交一次性完工检验判定
+      tags: [Quality]
+      security: [{ basicAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/EntityId" }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/CompleteFinalInspectionRequest" } } }
+      responses:
+        "200":
+          description: 已完成的完工检验
+          content: { application/json: { schema: { $ref: "#/components/schemas/FinalInspection" } } }
+        "409": { description: 检验已经判定或版本冲突 }
+        "422": { description: 数量合计或缺陷说明不符合检验规则 }
+  /api/v1/quality/incoming-inspections:
+    get:
+      operationId: listIncomingInspections
+      summary: 分页查询来料检验任务
+      tags: [Quality]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/Query"
+        - $ref: "#/components/parameters/Status"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+      responses:
+        "200":
+          description: 来料检验任务分页
+          content: { application/json: { schema: { $ref: "#/components/schemas/IncomingInspectionPage" } } }
+  /api/v1/quality/incoming-inspections/{id}:
+    get:
+      operationId: getIncomingInspection
+      summary: 获取来料检验任务详情
+      tags: [Quality]
+      security: [{ basicAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/EntityId" }]
+      responses:
+        "200":
+          description: 来料检验任务详情
+          content: { application/json: { schema: { $ref: "#/components/schemas/IncomingInspection" } } }
+        "404": { description: 检验任务不存在或不可见 }
+  /api/v1/quality/incoming-inspections/{id}/complete:
+    post:
+      operationId: completeIncomingInspection
+      summary: 提交来料检验结论并自动结算库存
+      tags: [Quality]
+      security: [{ basicAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/EntityId" }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/CompleteIncomingInspectionRequest" } } }
+      responses:
+        "200":
+          description: 已完成的来料检验任务
+          content: { application/json: { schema: { $ref: "#/components/schemas/IncomingInspection" } } }
+        "403": { description: 无权提交检验结论 }
+        "409": { description: 检验已经判定或版本冲突 }
+        "422": { description: 数量合计或缺陷说明不符合检验规则 }
+  /api/v1/planning/material-parameters:
+    get:
+      operationId: listMaterialPlanningParameters
+      summary: 分页查询物料计划参数
+      tags: [Planning]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/Query"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+      responses:
+        "200":
+          description: 物料计划参数分页
+          content: { application/json: { schema: { $ref: "#/components/schemas/MaterialPlanningParameterPage" } } }
+  /api/v1/planning/material-parameters/{materialId}:
+    put:
+      operationId: updateMaterialPlanningParameter
+      summary: 创建或修改受控提前期
+      tags: [Planning]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - name: materialId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/UpdateMaterialPlanningParameterRequest" } } }
+      responses:
+        "200":
+          description: 已保存物料计划参数
+          content: { application/json: { schema: { $ref: "#/components/schemas/MaterialPlanningParameter" } } }
+        "409": { description: 乐观锁冲突 }
+  /api/v1/production/material-issues:
+    get:
+      operationId: listMaterialIssues
+      summary: 分页查询生产领料单
+      tags: [Production]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/Query"
+        - $ref: "#/components/parameters/Status"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+      responses:
+        "200":
+          description: 生产领料单分页
+          content: { application/json: { schema: { $ref: "#/components/schemas/MaterialIssuePage" } } }
+    post:
+      operationId: createMaterialIssue
+      summary: 根据生产订单和生效 BOM 生成生产领料单
+      tags: [Production]
+      security: [{ basicAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/CreateMaterialIssueRequest" } } }
+      responses:
+        "200":
+          description: 已生成的生产领料单
+          content: { application/json: { schema: { $ref: "#/components/schemas/MaterialIssue" } } }
+        "409": { description: 生产订单已有未取消领料单或状态不允许 }
+        "422": { description: 订单状态、仓库或 BOM 不满足生成条件 }
+  /api/v1/production/material-issues/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      operationId: getMaterialIssue
+      summary: 查询生产领料单详情
+      tags: [Production]
+      security: [{ basicAuth: [] }]
+      responses:
+        "200":
+          description: 生产领料单详情
+          content: { application/json: { schema: { $ref: "#/components/schemas/MaterialIssue" } } }
+        "404": { description: 领料单不存在或不可见 }
+  /api/v1/production/material-issues/{id}/actions:
+    post:
+      operationId: actOnMaterialIssue
+      summary: 发料或取消生产领料单
+      tags: [Production]
+      security: [{ basicAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/EntityId" }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/MaterialIssueActionRequest" } } }
+      responses:
+        "200":
+          description: 动作后的领料单
+          content: { application/json: { schema: { $ref: "#/components/schemas/MaterialIssue" } } }
+        "409": { description: 状态或并发版本冲突 }
+        "422": { description: 库存不足、数量越界或目标库位无效 }
+  /api/v1/production/material-issues/{id}/returns:
+    post:
+      operationId: createMaterialReturn
+      summary: 将已领组件退回仓库
+      tags: [Production]
+      security: [{ basicAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/EntityId" }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/MaterialReturnRequest" } } }
+      responses:
+        "200":
+          description: 退料后的领料单
+          content: { application/json: { schema: { $ref: "#/components/schemas/MaterialIssue" } } }
+        "409": { description: 并发版本冲突或领料单尚未发料 }
+        "422": { description: 退料数量越界、库位无效或库存回补失败 }
+  /api/v1/production/material-issue-reference-data:
+    get:
+      operationId: getMaterialIssueReferenceData
+      summary: 获取可备料订单、仓库和库位
+      tags: [Production]
+      security: [{ basicAuth: [] }]
+      responses:
+        "200":
+          description: 生产领料参考数据
+          content: { application/json: { schema: { $ref: "#/components/schemas/MaterialIssueReferenceData" } } }
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+      description: 仅用于当前本地开发身份适配器，正式身份接入后替换。
+  headers:
+    RequestId:
+      description: 用于日志和审计追踪的请求编号
+      schema:
+        type: string
+  parameters:
+    EntityId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    Query:
+      name: query
+      in: query
+      schema: { type: string }
+    Status:
+      name: status
+      in: query
+      schema: { type: string, enum: [ALL, ACTIVE, INACTIVE], default: ALL }
+    Page:
+      name: page
+      in: query
+      schema: { type: integer, minimum: 0, default: 0 }
+    Size:
+      name: size
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 200, default: 20 }
+  schemas:
+    PlatformStatus:
+      type: object
+      additionalProperties: false
+      required:
+        - service
+        - status
+        - version
+      properties:
+        service:
+          type: string
+          const: guanseq-server
+        status:
+          type: string
+          enum:
+            - UP
+        version:
+          type: string
+    WorkspaceSession:
+      type: object
+      additionalProperties: false
+      required:
+        - userId
+        - username
+        - displayName
+        - currentWorkspaceId
+        - selectionVersion
+        - workspaces
+      properties:
+        userId:
+          type: string
+          format: uuid
+        username:
+          type: string
+        displayName:
+          type: string
+        currentWorkspaceId:
+          type: string
+          format: uuid
+        selectionVersion:
+          type: integer
+          format: int64
+          minimum: 0
+        workspaces:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/WorkspaceSummary"
+    WorkspaceSummary:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - code
+        - name
+        - organizationId
+        - companyName
+        - roleCode
+        - current
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        organizationId:
+          type: string
+          format: uuid
+        companyName:
+          type: string
+        roleCode:
+          type: string
+        current:
+          type: boolean
+    SwitchWorkspaceRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - workspaceId
+        - expectedVersion
+      properties:
+        workspaceId:
+          type: string
+          format: uuid
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+    CustomerPage:
+      allOf:
+        - $ref: "#/components/schemas/PageMetadata"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/Customer" }
+    MaterialPage:
+      allOf:
+        - $ref: "#/components/schemas/PageMetadata"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/Material" }
+    PageMetadata:
+      type: object
+      required: [totalElements, page, size, totalPages]
+      properties:
+        totalElements: { type: integer, format: int64, minimum: 0 }
+        page: { type: integer, minimum: 0 }
+        size: { type: integer, minimum: 1 }
+        totalPages: { type: integer, minimum: 0 }
+    Customer:
+      type: object
+      required: [id, code, name, customerType, creditLevel, owner, status, version, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string }
+        name: { type: string }
+        customerType: { type: string, enum: [ENTERPRISE, DISTRIBUTOR, INTERNAL] }
+        creditLevel: { type: string, enum: [A, B, C] }
+        contactName: { type: [string, "null"] }
+        contactPhone: { type: [string, "null"] }
+        owner: { type: string }
+        status: { type: string, enum: [ACTIVE, INACTIVE] }
+        version: { type: integer, format: int64, minimum: 0 }
+        updatedAt: { type: string, format: date-time }
+    Material:
+      type: object
+      required: [id, code, name, materialType, baseUnit, procurementType, incomingInspectionRequired, owner, status, version, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string }
+        name: { type: string }
+        specification: { type: [string, "null"] }
+        materialType: { type: string, enum: [FINISHED_GOOD, SEMI_FINISHED, RAW_MATERIAL, PACKAGING, CONSUMABLE] }
+        baseUnit: { type: string }
+        procurementType: { type: string, enum: [MAKE, BUY, OUTSOURCE] }
+        incomingInspectionRequired: { type: boolean }
+        owner: { type: string }
+        status: { type: string, enum: [ACTIVE, INACTIVE] }
+        version: { type: integer, format: int64, minimum: 0 }
+        updatedAt: { type: string, format: date-time }
+    CreateCustomerRequest:
+      type: object
+      additionalProperties: false
+      required: [code, name, customerType, creditLevel, owner]
+      properties:
+        code: { type: string, maxLength: 40 }
+        name: { type: string, maxLength: 160 }
+        customerType: { type: string, enum: [ENTERPRISE, DISTRIBUTOR, INTERNAL] }
+        creditLevel: { type: string, enum: [A, B, C] }
+        contactName: { type: [string, "null"], maxLength: 80 }
+        contactPhone: { type: [string, "null"], maxLength: 40 }
+        owner: { type: string, maxLength: 80 }
+    UpdateCustomerRequest:
+      allOf:
+        - $ref: "#/components/schemas/CreateCustomerRequest"
+        - type: object
+          required: [expectedVersion]
+          properties:
+            expectedVersion: { type: integer, format: int64, minimum: 0 }
+    CreateMaterialRequest:
+      type: object
+      additionalProperties: false
+      required: [code, name, materialType, baseUnit, procurementType, owner]
+      properties:
+        code: { type: string, maxLength: 60 }
+        name: { type: string, maxLength: 160 }
+        specification: { type: [string, "null"], maxLength: 240 }
+        materialType: { type: string, enum: [FINISHED_GOOD, SEMI_FINISHED, RAW_MATERIAL, PACKAGING, CONSUMABLE] }
+        baseUnit: { type: string, maxLength: 20 }
+        procurementType: { type: string, enum: [MAKE, BUY, OUTSOURCE] }
+        owner: { type: string, maxLength: 80 }
+    UpdateMaterialRequest:
+      allOf:
+        - $ref: "#/components/schemas/CreateMaterialRequest"
+        - type: object
+          required: [expectedVersion]
+          properties:
+            expectedVersion: { type: integer, format: int64, minimum: 0 }
+    BomPage:
+      allOf:
+        - $ref: "#/components/schemas/PageMetadata"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/Bom" }
+    Bom:
+      type: object
+      required: [id, bomNumber, parentMaterialId, parentMaterialCode, parentMaterialName, parentUnit, usageType, versionCode, baseQuantity, effectiveFrom, owner, changeReason, status, version, updatedAt, lines, events]
+      properties:
+        id: { type: string, format: uuid }
+        bomNumber: { type: string }
+        parentMaterialId: { type: string, format: uuid }
+        parentMaterialCode: { type: string }
+        parentMaterialName: { type: string }
+        parentMaterialSpecification: { type: [string, "null"] }
+        parentUnit: { type: string }
+        usageType: { type: string, enum: [PRODUCTION] }
+        versionCode: { type: string }
+        baseQuantity: { type: number, exclusiveMinimum: 0 }
+        effectiveFrom: { type: string, format: date }
+        effectiveTo: { type: [string, "null"], format: date }
+        owner: { type: string }
+        changeReason: { type: string }
+        status: { type: string, enum: [DRAFT, PUBLISHED, INACTIVE] }
+        version: { type: integer, format: int64, minimum: 0 }
+        updatedAt: { type: string, format: date-time }
+        publishedAt: { type: [string, "null"], format: date-time }
+        lines:
+          type: array
+          items: { $ref: "#/components/schemas/BomLine" }
+        events:
+          type: array
+          items: { $ref: "#/components/schemas/BomEvent" }
+    BomLine:
+      type: object
+      required: [id, lineNumber, componentMaterialId, componentMaterialCode, componentMaterialName, unit, quantity, scrapRate]
+      properties:
+        id: { type: string, format: uuid }
+        lineNumber: { type: integer, minimum: 1 }
+        componentMaterialId: { type: string, format: uuid }
+        componentMaterialCode: { type: string }
+        componentMaterialName: { type: string }
+        componentMaterialSpecification: { type: [string, "null"] }
+        unit: { type: string }
+        quantity: { type: number, exclusiveMinimum: 0 }
+        scrapRate: { type: number, minimum: 0, exclusiveMaximum: 1 }
+        note: { type: [string, "null"] }
+    BomEvent:
+      type: object
+      required: [id, action, toStatus, occurredAt]
+      properties:
+        id: { type: string, format: uuid }
+        action: { type: string, enum: [CREATED, UPDATED, PUBLISHED, INACTIVATED] }
+        fromStatus: { type: [string, "null"], enum: [DRAFT, PUBLISHED, INACTIVE, null] }
+        toStatus: { type: string, enum: [DRAFT, PUBLISHED, INACTIVE] }
+        requestId: { type: [string, "null"] }
+        details: { type: object, additionalProperties: true }
+        occurredAt: { type: string, format: date-time }
+    BomLineInput:
+      type: object
+      additionalProperties: false
+      required: [componentMaterialId, quantity, scrapRate]
+      properties:
+        componentMaterialId: { type: string, format: uuid }
+        quantity: { type: number, exclusiveMinimum: 0 }
+        scrapRate: { type: number, minimum: 0, exclusiveMaximum: 1 }
+        note: { type: [string, "null"], maxLength: 240 }
+    CreateBomRequest:
+      type: object
+      additionalProperties: false
+      required: [parentMaterialId, usageType, versionCode, baseQuantity, effectiveFrom, owner, changeReason, lines]
+      properties:
+        parentMaterialId: { type: string, format: uuid }
+        usageType: { type: string, enum: [PRODUCTION] }
+        versionCode: { type: string, minLength: 1, maxLength: 32 }
+        baseQuantity: { type: number, exclusiveMinimum: 0 }
+        effectiveFrom: { type: string, format: date }
+        owner: { type: string, minLength: 1, maxLength: 80 }
+        changeReason: { type: string, minLength: 1, maxLength: 500 }
+        lines:
+          type: array
+          minItems: 1
+          maxItems: 500
+          items: { $ref: "#/components/schemas/BomLineInput" }
+    UpdateBomRequest:
+      allOf:
+        - $ref: "#/components/schemas/CreateBomRequest"
+        - type: object
+          required: [expectedVersion]
+          properties:
+            expectedVersion: { type: integer, format: int64, minimum: 0 }
+    BomActionRequest:
+      type: object
+      additionalProperties: false
+      required: [action, expectedVersion]
+      properties:
+        action: { type: string, enum: [PUBLISH, INACTIVATE] }
+        expectedVersion: { type: integer, format: int64, minimum: 0 }
+    BomReferenceData:
+      type: object
+      required: [parentMaterials, componentMaterials]
+      properties:
+        parentMaterials:
+          type: array
+          items: { $ref: "#/components/schemas/BomMaterialReference" }
+        componentMaterials:
+          type: array
+          items: { $ref: "#/components/schemas/BomMaterialReference" }
+    BomMaterialReference:
+      type: object
+      required: [id, code, name, baseUnit, procurementType]
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string }
+        name: { type: string }
+        specification: { type: [string, "null"] }
+        baseUnit: { type: string }
+        procurementType: { type: string, enum: [MAKE, BUY, OUTSOURCE] }
+    RoutingPage:
+      allOf:
+        - $ref: "#/components/schemas/PageMetadata"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/Routing" }
+    Routing:
+      type: object
+      required: [id, routingNumber, materialId, materialCode, materialName, materialUnit, usageType, versionCode, baseQuantity, effectiveFrom, owner, changeReason, status, version, updatedAt, operations, events]
+      properties:
+        id: { type: string, format: uuid }
+        routingNumber: { type: string }
+        materialId: { type: string, format: uuid }
+        materialCode: { type: string }
+        materialName: { type: string }
+        materialSpecification: { type: [string, "null"] }
+        materialUnit: { type: string }
+        usageType: { type: string, enum: [PRODUCTION] }
+        versionCode: { type: string }
+        baseQuantity: { type: number, exclusiveMinimum: 0 }
+        effectiveFrom: { type: string, format: date }
+        effectiveTo: { type: [string, "null"], format: date }
+        owner: { type: string }
+        changeReason: { type: string }
+        status: { type: string, enum: [DRAFT, PUBLISHED, INACTIVE] }
+        version: { type: integer, format: int64, minimum: 0 }
+        updatedAt: { type: string, format: date-time }
+        publishedAt: { type: [string, "null"], format: date-time }
+        operations:
+          type: array
+          items: { $ref: "#/components/schemas/RoutingOperation" }
+        events:
+          type: array
+          items: { $ref: "#/components/schemas/RoutingEvent" }
+    RoutingOperation:
+      type: object
+      required: [id, sequenceNumber, operationCode, operationName, workCenterCode, workCenterName, setupMinutes, runMinutesPerUnit, queueMinutes, inspectionRequired]
+      properties:
+        id: { type: string, format: uuid }
+        sequenceNumber: { type: integer, minimum: 1 }
+        operationCode: { type: string }
+        operationName: { type: string }
+        workCenterCode: { type: string }
+        workCenterName: { type: string }
+        setupMinutes: { type: number, minimum: 0 }
+        runMinutesPerUnit: { type: number, minimum: 0 }
+        queueMinutes: { type: number, minimum: 0 }
+        inspectionRequired: { type: boolean }
+        instructionSummary: { type: [string, "null"] }
+    RoutingEvent:
+      type: object
+      required: [id, action, toStatus, occurredAt]
+      properties:
+        id: { type: string, format: uuid }
+        action: { type: string, enum: [CREATED, UPDATED, PUBLISHED, INACTIVATED] }
+        fromStatus: { type: [string, "null"], enum: [DRAFT, PUBLISHED, INACTIVE, null] }
+        toStatus: { type: string, enum: [DRAFT, PUBLISHED, INACTIVE] }
+        requestId: { type: [string, "null"] }
+        details: { type: object, additionalProperties: true }
+        occurredAt: { type: string, format: date-time }
+    RoutingOperationInput:
+      type: object
+      additionalProperties: false
+      required: [operationCode, operationName, workCenterCode, workCenterName, setupMinutes, runMinutesPerUnit, queueMinutes, inspectionRequired]
+      properties:
+        operationCode: { type: string, minLength: 1, maxLength: 40 }
+        operationName: { type: string, minLength: 1, maxLength: 120 }
+        workCenterCode: { type: string, minLength: 1, maxLength: 40 }
+        workCenterName: { type: string, minLength: 1, maxLength: 120 }
+        setupMinutes: { type: number, minimum: 0 }
+        runMinutesPerUnit: { type: number, minimum: 0 }
+        queueMinutes: { type: number, minimum: 0 }
+        inspectionRequired: { type: boolean }
+        instructionSummary: { type: [string, "null"], maxLength: 500 }
+    CreateRoutingRequest:
+      type: object
+      additionalProperties: false
+      required: [materialId, usageType, versionCode, baseQuantity, effectiveFrom, owner, changeReason, operations]
+      properties:
+        materialId: { type: string, format: uuid }
+        usageType: { type: string, enum: [PRODUCTION] }
+        versionCode: { type: string, minLength: 1, maxLength: 32 }
+        baseQuantity: { type: number, exclusiveMinimum: 0 }
+        effectiveFrom: { type: string, format: date }
+        owner: { type: string, minLength: 1, maxLength: 80 }
+        changeReason: { type: string, minLength: 1, maxLength: 500 }
+        operations:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items: { $ref: "#/components/schemas/RoutingOperationInput" }
+    UpdateRoutingRequest:
+      allOf:
+        - $ref: "#/components/schemas/CreateRoutingRequest"
+        - type: object
+          required: [expectedVersion]
+          properties:
+            expectedVersion: { type: integer, format: int64, minimum: 0 }
+    RoutingActionRequest:
+      type: object
+      additionalProperties: false
+      required: [action, expectedVersion]
+      properties:
+        action: { type: string, enum: [PUBLISH, INACTIVATE] }
+        expectedVersion: { type: integer, format: int64, minimum: 0 }
+    RoutingReferenceData:
+      type: object
+      required: [materials]
+      properties:
+        materials:
+          type: array
+          items: { $ref: "#/components/schemas/BomMaterialReference" }
+    MasterDataBatchRequest:
+      type: object
+      additionalProperties: false
+      required: [records]
+      properties:
+        records:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [id, expectedVersion]
+            properties:
+              id: { type: string, format: uuid }
+              expectedVersion: { type: integer, format: int64, minimum: 0 }
+        status: { type: string, enum: [ACTIVE, INACTIVE] }
+        owner: { type: [string, "null"], maxLength: 80 }
+    SalesOrderPage:
+      allOf:
+        - $ref: "#/components/schemas/PageMetadata"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/SalesOrder" }
+    SalesOrder:
+      type: object
+      required: [id, orderNumber, customerId, customerCode, customerName, currency, taxRate, requestedDeliveryDate, owner, status, totalNetAmount, totalTaxAmount, totalGrossAmount, version, updatedAt, lines]
+      properties:
+        id: { type: string, format: uuid }
+        orderNumber: { type: string }
+        customerId: { type: string, format: uuid }
+        customerCode: { type: string }
+        customerName: { type: string }
+        currency: { type: string, enum: [CNY, USD, EUR] }
+        taxRate: { type: number, minimum: 0, maximum: 1 }
+        requestedDeliveryDate: { type: string, format: date }
+        promisedDeliveryDate: { type: [string, "null"], format: date }
+        owner: { type: string }
+        status: { type: string, enum: [DRAFT, PENDING_APPROVAL, APPROVED, REJECTED, RELEASED, PARTIALLY_SHIPPED, SHIPPED] }
+        totalNetAmount: { type: number, minimum: 0 }
+        totalTaxAmount: { type: number, minimum: 0 }
+        totalGrossAmount: { type: number, minimum: 0 }
+        rejectionReason: { type: [string, "null"] }
+        version: { type: integer, format: int64, minimum: 0 }
+        updatedAt: { type: string, format: date-time }
+        lines:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/SalesOrderLine" }
+    SalesOrderLine:
+      type: object
+      required: [id, lineNumber, materialId, materialCode, materialName, unit, quantity, unitPrice, netAmount, taxAmount, grossAmount, deliveredQuantity]
+      properties:
+        id: { type: string, format: uuid }
+        lineNumber: { type: integer, minimum: 1 }
+        materialId: { type: string, format: uuid }
+        materialCode: { type: string }
+        materialName: { type: string }
+        materialSpecification: { type: [string, "null"] }
+        unit: { type: string }
+        quantity: { type: number, exclusiveMinimum: 0 }
+        unitPrice: { type: number, minimum: 0 }
+        netAmount: { type: number, minimum: 0 }
+        taxAmount: { type: number, minimum: 0 }
+        grossAmount: { type: number, minimum: 0 }
+        deliveredQuantity: { type: number, minimum: 0 }
+    SalesOrderLineInput:
+      type: object
+      additionalProperties: false
+      required: [materialId, quantity, unitPrice]
+      properties:
+        materialId: { type: string, format: uuid }
+        quantity: { type: number, exclusiveMinimum: 0 }
+        unitPrice: { type: number, minimum: 0 }
+    CreateSalesOrderRequest:
+      type: object
+      additionalProperties: false
+      required: [customerId, currency, taxRate, requestedDeliveryDate, owner, lines]
+      properties:
+        customerId: { type: string, format: uuid }
+        currency: { type: string, enum: [CNY, USD, EUR] }
+        taxRate: { type: number, minimum: 0, maximum: 1 }
+        requestedDeliveryDate: { type: string, format: date }
+        promisedDeliveryDate: { type: [string, "null"], format: date }
+        owner: { type: string, maxLength: 80 }
+        lines:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items: { $ref: "#/components/schemas/SalesOrderLineInput" }
+    UpdateSalesOrderRequest:
+      allOf:
+        - $ref: "#/components/schemas/CreateSalesOrderRequest"
+        - type: object
+          required: [expectedVersion]
+          properties:
+            expectedVersion: { type: integer, format: int64, minimum: 0 }
+    SalesOrderActionRequest:
+      type: object
+      additionalProperties: false
+      required: [action, expectedVersion]
+      properties:
+        action: { type: string, enum: [SUBMIT, APPROVE, REJECT, RELEASE] }
+        expectedVersion: { type: integer, format: int64, minimum: 0 }
+        comment: { type: [string, "null"], maxLength: 500 }
+    SalesOrderReferenceData:
+      type: object
+      required: [customers, materials]
+      properties:
+        customers:
+          type: array
+          items:
+            type: object
+            required: [id, code, name, creditLevel]
+            properties:
+              id: { type: string, format: uuid }
+              code: { type: string }
+              name: { type: string }
+              creditLevel: { type: string, enum: [A, B, C] }
+        materials:
+          type: array
+          items:
+            type: object
+            required: [id, code, name, baseUnit]
+            properties:
+              id: { type: string, format: uuid }
+              code: { type: string }
+              name: { type: string }
+              specification: { type: [string, "null"] }
+              baseUnit: { type: string }
+    SalesShipmentPage:
+      allOf:
+        - $ref: "#/components/schemas/PageMetadata"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/SalesShipment" }
+    SalesShipment:
+      type: object
+      required: [id, shipmentNumber, salesOrderId, orderNumber, customerId, customerCode, customerName, warehouseId, warehouseCode, warehouseName, plannedShippingDate, actualShippedAt, status, totalShippedQuantity, version, createdAt, lines]
+      properties:
+        id: { type: string, format: uuid }
+        shipmentNumber: { type: string }
+        salesOrderId: { type: string, format: uuid }
+        orderNumber: { type: string }
+        customerId: { type: string, format: uuid }
+        customerCode: { type: string }
+        customerName: { type: string }
+        warehouseId: { type: string, format: uuid }
+        warehouseCode: { type: string }
+        warehouseName: { type: string }
+        plannedShippingDate: { type: string, format: date }
+        actualShippedAt: { type: string, format: date-time }
+        status: { type: string, enum: [SHIPPED] }
+        note: { type: [string, "null"], maxLength: 500 }
+        totalShippedQuantity: { type: number, exclusiveMinimum: 0 }
+        version: { type: integer, format: int64, minimum: 0 }
+        createdAt: { type: string, format: date-time }
+        lines:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/SalesShipmentLine" }
+    SalesShipmentLine:
+      type: object
+      required: [id, orderLineId, lineNumber, materialId, materialCode, materialName, unit, shippedQuantity, stockSummary]
+      properties:
+        id: { type: string, format: uuid }
+        orderLineId: { type: string, format: uuid }
+        lineNumber: { type: integer, minimum: 1 }
+        materialId: { type: string, format: uuid }
+        materialCode: { type: string }
+        materialName: { type: string }
+        materialSpecification: { type: [string, "null"] }
+        unit: { type: string }
+        shippedQuantity: { type: number, exclusiveMinimum: 0 }
+        stockSummary: { type: string }
+    CreateSalesShipmentRequest:
+      type: object
+      additionalProperties: false
+      required: [salesOrderId, warehouseId, plannedShippingDate, lines]
+      properties:
+        salesOrderId: { type: string, format: uuid }
+        warehouseId: { type: string, format: uuid }
+        plannedShippingDate: { type: string, format: date }
+        note: { type: [string, "null"], maxLength: 500 }
+        lines:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items: { $ref: "#/components/schemas/SalesShipmentLineInput" }
+    SalesShipmentLineInput:
+      type: object
+      additionalProperties: false
+      required: [orderLineId, shippedQuantity]
+      properties:
+        orderLineId: { type: string, format: uuid }
+        shippedQuantity: { type: number, exclusiveMinimum: 0 }
+    SalesShipmentReferenceData:
+      type: object
+      required: [releasedOrders, warehouses]
+      properties:
+        releasedOrders:
+          type: array
+          items:
+            type: object
+            required: [id, orderNumber, customerId, customerCode, customerName, promisedDeliveryDate, lines]
+            properties:
+              id: { type: string, format: uuid }
+              orderNumber: { type: string }
+              customerId: { type: string, format: uuid }
+              customerCode: { type: string }
+              customerName: { type: string }
+              promisedDeliveryDate: { type: [string, "null"], format: date }
+              lines:
+                type: array
+                items:
+                  type: object
+                  required: [id, lineNumber, materialId, materialCode, materialName, unit, orderedQuantity, deliveredQuantity, outstandingQuantity]
+                  properties:
+                    id: { type: string, format: uuid }
+                    lineNumber: { type: integer, minimum: 1 }
+                    materialId: { type: string, format: uuid }
+                    materialCode: { type: string }
+                    materialName: { type: string }
+                    materialSpecification: { type: [string, "null"] }
+                    unit: { type: string }
+                    orderedQuantity: { type: number, exclusiveMinimum: 0 }
+                    deliveredQuantity: { type: number, minimum: 0 }
+                    outstandingQuantity: { type: number, minimum: 0 }
+        warehouses:
+          type: array
+          items:
+            type: object
+            required: [id, code, name]
+            properties:
+              id: { type: string, format: uuid }
+              code: { type: string }
+              name: { type: string }
+    ReceivableInvoicePage:
+      allOf:
+        - $ref: "#/components/schemas/PageMetadata"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/ReceivableInvoice" }
+    ReceivableInvoice:
+      type: object
+      required: [id, invoiceNumber, salesOrderId, orderNumber, customerId, customerCode, customerName, currency, invoiceDate, dueDate, taxRate, netAmount, taxAmount, grossAmount, receivedAmount, outstandingAmount, status, version, createdAt, lines, receipts]
+      properties:
+        id: { type: string, format: uuid }
+        invoiceNumber: { type: string }
+        salesOrderId: { type: string, format: uuid }
+        orderNumber: { type: string }
+        customerId: { type: string, format: uuid }
+        customerCode: { type: string }
+        customerName: { type: string }
+        currency: { type: string, minLength: 3, maxLength: 3 }
+        invoiceDate: { type: string, format: date }
+        dueDate: { type: string, format: date }
+        taxRate: { type: number, minimum: 0, maximum: 1 }
+        netAmount: { type: number, minimum: 0 }
+        taxAmount: { type: number, minimum: 0 }
+        grossAmount: { type: number, exclusiveMinimum: 0 }
+        receivedAmount: { type: number, minimum: 0 }
+        outstandingAmount: { type: number, minimum: 0 }
+        status: { type: string, enum: [OPEN, PARTIALLY_PAID, PAID] }
+        version: { type: integer, format: int64, minimum: 0 }
+        createdAt: { type: string, format: date-time }
+        lines:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/ReceivableInvoiceLine" }
+        receipts:
+          type: array
+          items: { $ref: "#/components/schemas/ReceivableReceipt" }
+    ReceivableInvoiceLine:
+      type: object
+      required: [id, salesOrderLineId, lineNumber, materialId, materialCode, materialName, unit, invoiceQuantity, unitPrice, netAmount, taxAmount, grossAmount]
+      properties:
+        id: { type: string, format: uuid }
+        salesOrderLineId: { type: string, format: uuid }
+        lineNumber: { type: integer, minimum: 1 }
+        materialId: { type: string, format: uuid }
+        materialCode: { type: string }
+        materialName: { type: string }
+        materialSpecification: { type: [string, "null"] }
+        unit: { type: string }
+        invoiceQuantity: { type: number, exclusiveMinimum: 0 }
+        unitPrice: { type: number, minimum: 0 }
+        netAmount: { type: number, minimum: 0 }
+        taxAmount: { type: number, minimum: 0 }
+        grossAmount: { type: number, minimum: 0 }
+    ReceivableReceipt:
+      type: object
+      required: [id, receiptNumber, amount, receiptDate, paymentMethod, status, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        receiptNumber: { type: string }
+        amount: { type: number, exclusiveMinimum: 0 }
+        receiptDate: { type: string, format: date }
+        paymentMethod: { type: string, enum: [BANK_TRANSFER, CASH, BILL, OTHER] }
+        bankReference: { type: [string, "null"] }
+        note: { type: [string, "null"] }
+        status: { type: string, enum: [POSTED] }
+        createdAt: { type: string, format: date-time }
+    CreateReceivableInvoiceRequest:
+      type: object
+      required: [salesOrderId, invoiceDate, dueDate, lines]
+      properties:
+        salesOrderId: { type: string, format: uuid }
+        invoiceDate: { type: string, format: date }
+        dueDate: { type: string, format: date }
+        lines:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            type: object
+            required: [salesOrderLineId, invoiceQuantity]
+            properties:
+              salesOrderLineId: { type: string, format: uuid }
+              invoiceQuantity: { type: number, minimum: 0.0001 }
+    PostReceivableReceiptRequest:
+      type: object
+      required: [expectedVersion, receiptDate, amount, paymentMethod]
+      properties:
+        expectedVersion: { type: integer, format: int64, minimum: 0 }
+        receiptDate: { type: string, format: date }
+        amount: { type: number, minimum: 0.01 }
+        paymentMethod: { type: string, enum: [BANK_TRANSFER, CASH, BILL, OTHER] }
+        bankReference: { type: [string, "null"], maxLength: 120 }
+        note: { type: [string, "null"], maxLength: 500 }
+    ReceivableReferenceData:
+      type: object
+      required: [orders]
+      properties:
+        orders:
+          type: array
+          items:
+            type: object
+            required: [salesOrderId, orderNumber, customerId, customerCode, customerName, currency, taxRate, orderStatus, deliveredAmount, invoicedAmount, remainingAmount, lines]
+            properties:
+              salesOrderId: { type: string, format: uuid }
+              orderNumber: { type: string }
+              customerId: { type: string, format: uuid }
+              customerCode: { type: string }
+              customerName: { type: string }
+              currency: { type: string }
+              taxRate: { type: number, minimum: 0, maximum: 1 }
+              orderStatus: { type: string, enum: [PARTIALLY_SHIPPED, SHIPPED] }
+              deliveredAmount: { type: number, minimum: 0 }
+              invoicedAmount: { type: number, minimum: 0 }
+              remainingAmount: { type: number, minimum: 0 }
+              lines:
+                type: array
+                items: { $ref: "#/components/schemas/ReceivableReferenceLine" }
+    ReceivableReferenceLine:
+      type: object
+      required: [salesOrderLineId, lineNumber, materialId, materialCode, materialName, unit, deliveredQuantity, invoicedQuantity, remainingQuantity, unitPrice]
+      properties:
+        salesOrderLineId: { type: string, format: uuid }
+        lineNumber: { type: integer, minimum: 1 }
+        materialId: { type: string, format: uuid }
+        materialCode: { type: string }
+        materialName: { type: string }
+        materialSpecification: { type: [string, "null"] }
+        unit: { type: string }
+        deliveredQuantity: { type: number, minimum: 0 }
+        invoicedQuantity: { type: number, minimum: 0 }
+        remainingQuantity: { type: number, minimum: 0 }
+        unitPrice: { type: number, minimum: 0 }
+    PayableInvoicePage:
+      allOf:
+        - $ref: "#/components/schemas/PageMetadata"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/PayableInvoice" }
+    PayableInvoice:
+      type: object
+      required: [id, invoiceNumber, supplierInvoiceNumber, purchaseOrderId, orderNumber, supplierId, supplierCode, supplierName, currency, invoiceDate, dueDate, taxRate, netAmount, taxAmount, grossAmount, paidAmount, outstandingAmount, status, version, createdAt, lines, payments]
+      properties:
+        id: { type: string, format: uuid }
+        invoiceNumber: { type: string }
+        supplierInvoiceNumber: { type: string }
+        purchaseOrderId: { type: string, format: uuid }
+        orderNumber: { type: string }
+        supplierId: { type: string, format: uuid }
+        supplierCode: { type: string }
+        supplierName: { type: string }
+        currency: { type: string, minLength: 3, maxLength: 3 }
+        invoiceDate: { type: string, format: date }
+        dueDate: { type: string, format: date }
+        taxRate: { type: number, minimum: 0, maximum: 1 }
+        netAmount: { type: number, minimum: 0 }
+        taxAmount: { type: number, minimum: 0 }
+        grossAmount: { type: number, exclusiveMinimum: 0 }
+        paidAmount: { type: number, minimum: 0 }
+        outstandingAmount: { type: number, minimum: 0 }
+        status: { type: string, enum: [OPEN, PARTIALLY_PAID, PAID] }
+        version: { type: integer, format: int64, minimum: 0 }
+        createdAt: { type: string, format: date-time }
+        lines:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/PayableInvoiceLine" }
+        payments:
+          type: array
+          items: { $ref: "#/components/schemas/PayablePayment" }
+    PayableInvoiceLine:
+      type: object
+      required: [id, purchaseOrderLineId, lineNumber, materialId, materialCode, materialName, unit, invoiceQuantity, unitPrice, netAmount, taxAmount, grossAmount]
+      properties:
+        id: { type: string, format: uuid }
+        purchaseOrderLineId: { type: string, format: uuid }
+        lineNumber: { type: integer, minimum: 1 }
+        materialId: { type: string, format: uuid }
+        materialCode: { type: string }
+        materialName: { type: string }
+        materialSpecification: { type: [string, "null"] }
+        unit: { type: string }
+        invoiceQuantity: { type: number, exclusiveMinimum: 0 }
+        unitPrice: { type: number, minimum: 0 }
+        netAmount: { type: number, minimum: 0 }
+        taxAmount: { type: number, minimum: 0 }
+        grossAmount: { type: number, minimum: 0 }
+    PayablePayment:
+      type: object
+      required: [id, paymentNumber, amount, paymentDate, paymentMethod, status, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        paymentNumber: { type: string }
+        amount: { type: number, exclusiveMinimum: 0 }
+        paymentDate: { type: string, format: date }
+        paymentMethod: { type: string, enum: [BANK_TRANSFER, CASH, BILL, OTHER] }
+        bankReference: { type: [string, "null"] }
+        note: { type: [string, "null"] }
+        status: { type: string, enum: [POSTED] }
+        createdAt: { type: string, format: date-time }
+    CreatePayableInvoiceRequest:
+      type: object
+      required: [purchaseOrderId, supplierInvoiceNumber, invoiceDate, dueDate, lines]
+      properties:
+        purchaseOrderId: { type: string, format: uuid }
+        supplierInvoiceNumber: { type: string, minLength: 1, maxLength: 80 }
+        invoiceDate: { type: string, format: date }
+        dueDate: { type: string, format: date }
+        lines:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            type: object
+            required: [purchaseOrderLineId, invoiceQuantity]
+            properties:
+              purchaseOrderLineId: { type: string, format: uuid }
+              invoiceQuantity: { type: number, minimum: 0.0001 }
+    PostPayablePaymentRequest:
+      type: object
+      required: [expectedVersion, paymentDate, amount, paymentMethod]
+      properties:
+        expectedVersion: { type: integer, format: int64, minimum: 0 }
+        paymentDate: { type: string, format: date }
+        amount: { type: number, minimum: 0.01 }
+        paymentMethod: { type: string, enum: [BANK_TRANSFER, CASH, BILL, OTHER] }
+        bankReference: { type: [string, "null"], maxLength: 120 }
+        note: { type: [string, "null"], maxLength: 500 }
+    PayableReferenceData:
+      type: object
+      required: [orders]
+      properties:
+        orders:
+          type: array
+          items:
+            type: object
+            required: [purchaseOrderId, orderNumber, supplierId, supplierCode, supplierName, currency, taxRate, orderStatus, acceptedAmount, invoicedAmount, remainingAmount, lines]
+            properties:
+              purchaseOrderId: { type: string, format: uuid }
+              orderNumber: { type: string }
+              supplierId: { type: string, format: uuid }
+              supplierCode: { type: string }
+              supplierName: { type: string }
+              currency: { type: string }
+              taxRate: { type: number, minimum: 0, maximum: 1 }
+              orderStatus: { type: string }
+              acceptedAmount: { type: number, minimum: 0 }
+              invoicedAmount: { type: number, minimum: 0 }
+              remainingAmount: { type: number, minimum: 0 }
+              lines:
+                type: array
+                items: { $ref: "#/components/schemas/PayableReferenceLine" }
+    PayableReferenceLine:
+      type: object
+      required: [purchaseOrderLineId, lineNumber, materialId, materialCode, materialName, unit, acceptedQuantity, invoicedQuantity, remainingQuantity, unitPrice]
+      properties:
+        purchaseOrderLineId: { type: string, format: uuid }
+        lineNumber: { type: integer, minimum: 1 }
+        materialId: { type: string, format: uuid }
+        materialCode: { type: string }
+        materialName: { type: string }
+        materialSpecification: { type: [string, "null"] }
+        unit: { type: string }
+        acceptedQuantity: { type: number, minimum: 0 }
+        invoicedQuantity: { type: number, minimum: 0 }
+        remainingQuantity: { type: number, minimum: 0 }
+        unitPrice: { type: number, minimum: 0 }
+    WorkCenterCostRatePage:
+      allOf:
+        - $ref: "#/components/schemas/PageMetadata"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/WorkCenterCostRate" }
+    WorkCenterCostRate:
+      type: object
+      required: [id, workCenterCode, workCenterName, currency, laborRatePerHour, overheadRatePerHour, totalRatePerHour, effectiveDate, status, version, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        workCenterCode: { type: string, maxLength: 40 }
+        workCenterName: { type: string, maxLength: 120 }
+        currency: { type: string, enum: [CNY, USD, EUR] }
+        laborRatePerHour: { type: number, minimum: 0 }
+        overheadRatePerHour: { type: number, minimum: 0 }
+        totalRatePerHour: { type: number, exclusiveMinimum: 0 }
+        effectiveDate: { type: string, format: date }
+        status: { type: string, enum: [ACTIVE, INACTIVE] }
+        version: { type: integer, format: int64, minimum: 0 }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    CreateWorkCenterCostRateRequest:
+      type: object
+      required: [workCenterCode, workCenterName, currency, laborRatePerHour, overheadRatePerHour, effectiveDate]
+      properties:
+        workCenterCode: { type: string, minLength: 1, maxLength: 40 }
+        workCenterName: { type: string, minLength: 1, maxLength: 120 }
+        currency: { type: string, enum: [CNY, USD, EUR] }
+        laborRatePerHour: { type: number, minimum: 0 }
+        overheadRatePerHour: { type: number, minimum: 0 }
+        effectiveDate: { type: string, format: date }
+    ChangeWorkCenterCostRateStatusRequest:
+      type: object
+      required: [status, expectedVersion]
+      properties:
+        status: { type: string, enum: [ACTIVE, INACTIVE] }
+        expectedVersion: { type: integer, format: int64, minimum: 0 }
+    OrderProfitPage:
+      allOf:
+        - $ref: "#/components/schemas/PageMetadata"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/OrderProfit" }
+    OrderProfit:
+      type: object
+      required: [id, settlementNumber, salesOrderId, orderNumber, customerId, customerCode, customerName, currency, shippedQuantity, revenue, materialCost, laborCost, overheadCost, processingCost, totalCost, grossProfit, costBasis, costStatus, status, missingItems, version, settledAt, lines]
+      properties:
+        id: { type: string, format: uuid }
+        settlementNumber: { type: string }
+        salesOrderId: { type: string, format: uuid }
+        orderNumber: { type: string }
+        customerId: { type: string, format: uuid }
+        customerCode: { type: string }
+        customerName: { type: string }
+        currency: { type: string }
+        orderStatus: { type: [string, "null"] }
+        orderedQuantity: { type: number, exclusiveMinimum: 0 }
+        shippedQuantity: { type: number, exclusiveMinimum: 0 }
+        revenue: { type: number, minimum: 0 }
+        materialCost: { type: number, minimum: 0 }
+        laborCost: { type: number, minimum: 0 }
+        overheadCost: { type: number, minimum: 0 }
+        processingCost: { type: number, minimum: 0 }
+        totalCost: { type: number, minimum: 0 }
+        grossProfit: { type: number }
+        grossMargin: { type: [number, "null"] }
+        costBasis: { type: string }
+        costStatus: { type: string, enum: [COMPLETE, MISSING_COST] }
+        status: { type: string, enum: [SETTLED] }
+        missingItems:
+          type: array
+          items: { type: string }
+        version: { type: integer, format: int64, minimum: 0 }
+        settledAt: { type: string, format: date-time }
+        lines:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/OrderProfitLine" }
+    OrderProfitLine:
+      type: object
+      required: [id, salesOrderLineId, lineNumber, materialId, materialCode, materialName, unit, orderedQuantity, shippedQuantity, unitPrice, revenue, materialCost, laborCost, overheadCost, processingCost, totalCost, grossProfit, costStatus, missingItems]
+      properties:
+        id: { type: string, format: uuid }
+        salesOrderLineId: { type: string, format: uuid }
+        lineNumber: { type: integer, minimum: 1 }
+        productionOrderId: { type: [string, "null"], format: uuid }
+        productionOrderNumber: { type: [string, "null"] }
+        materialId: { type: string, format: uuid }
+        materialCode: { type: string }
+        materialName: { type: string }
+        materialSpecification: { type: [string, "null"] }
+        unit: { type: string }
+        orderedQuantity: { type: number, exclusiveMinimum: 0 }
+        shippedQuantity: { type: number, exclusiveMinimum: 0 }
+        acceptedQuantity: { type: [number, "null"], minimum: 0 }
+        consumedQuantity: { type: [number, "null"], minimum: 0 }
+        unitPrice: { type: number, minimum: 0 }
+        revenue: { type: number, minimum: 0 }
+        materialCost: { type: number, minimum: 0 }
+        laborCost: { type: number, minimum: 0 }
+        overheadCost: { type: number, minimum: 0 }
+        processingCost: { type: number, minimum: 0 }
+        totalCost: { type: number, minimum: 0 }
+        grossProfit: { type: number }
+        grossMargin: { type: [number, "null"] }
+        costStatus: { type: string, enum: [COMPLETE, MISSING_COST] }
+        missingItems:
+          type: array
+          items: { type: string }
+    OrderProfitReferenceData:
+      type: object
+      required: [orders]
+      properties:
+        orders:
+          type: array
+          items:
+            type: object
+            required: [salesOrderId, orderNumber, customerName, orderStatus, orderedQuantity, shippedQuantity, revenueCandidate, settled]
+            properties:
+              salesOrderId: { type: string, format: uuid }
+              orderNumber: { type: string }
+              customerName: { type: string }
+              orderStatus: { type: string }
+              orderedQuantity: { type: number, exclusiveMinimum: 0 }
+              shippedQuantity: { type: number, minimum: 0 }
+              revenueCandidate: { type: number, minimum: 0 }
+              settled: { type: boolean }
+              settlementId: { type: [string, "null"], format: uuid }
+              settlementNumber: { type: [string, "null"] }
+              costStatus: { type: [string, "null"], enum: [COMPLETE, MISSING_COST] }
+    IndependentDemandPage:
+      allOf:
+        - $ref: "#/components/schemas/PageMetadata"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/IndependentDemand" }
+    IndependentDemand:
+      type: object
+      required: [id, demandNumber, sourceType, materialId, materialCode, materialName, unit, quantity, requiredDate, priority, owner, status, version, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        demandNumber: { type: string }
+        sourceType: { type: string, enum: [SALES_ORDER, MANUAL] }
+        sourceId: { type: [string, "null"], format: uuid }
+        sourceNumber: { type: [string, "null"] }
+        sourceLineId: { type: [string, "null"], format: uuid }
+        sourceLineNumber: { type: [integer, "null"], minimum: 1 }
+        sourceCustomer: { type: [string, "null"] }
+        materialId: { type: string, format: uuid }
+        materialCode: { type: string }
+        materialName: { type: string }
+        materialSpecification: { type: [string, "null"] }
+        unit: { type: string }
+        quantity: { type: number, exclusiveMinimum: 0 }
+        requiredDate: { type: string, format: date }
+        priority: { type: string, enum: [LOW, NORMAL, HIGH, URGENT] }
+        owner: { type: string }
+        status: { type: string, enum: [DRAFT, ACTIVE, CANCELLED] }
+        note: { type: [string, "null"] }
+        cancellationReason: { type: [string, "null"] }
+        version: { type: integer, format: int64, minimum: 0 }
+        updatedAt: { type: string, format: date-time }
+    CreateIndependentDemandRequest:
+      type: object
+      additionalProperties: false
+      required: [materialId, quantity, requiredDate, priority, owner]
+      properties:
+        materialId: { type: string, format: uuid }
+        quantity: { type: number, exclusiveMinimum: 0 }
+        requiredDate: { type: string, format: date }
+        priority: { type: string, enum: [LOW, NORMAL, HIGH, URGENT] }
+        owner: { type: string, maxLength: 80 }
+        note: { type: [string, "null"], maxLength: 500 }
+    UpdateIndependentDemandRequest:
+      allOf:
+        - $ref: "#/components/schemas/CreateIndependentDemandRequest"
+        - type: object
+          required: [expectedVersion]
+          properties:
+            expectedVersion: { type: integer, format: int64, minimum: 0 }
+    IndependentDemandActionRequest:
+      type: object
+      additionalProperties: false
+      required: [action, expectedVersion]
+      properties:
+        action: { type: string, enum: [ACTIVATE, CANCEL] }
+        expectedVersion: { type: integer, format: int64, minimum: 0 }
+        comment: { type: [string, "null"], maxLength: 500 }
+    PlanningDemandReferenceData:
+      type: object
+      required: [materials]
+      properties:
+        materials:
+          type: array
+          items:
+            type: object
+            required: [id, code, name, baseUnit]
+            properties:
+              id: { type: string, format: uuid }
+              code: { type: string }
+              name: { type: string }
+              specification: { type: [string, "null"] }
+              baseUnit: { type: string }
+    MrpRunPage:
+      allOf:
+        - $ref: "#/components/schemas/PageMetadata"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/MrpRun" }
+    MrpRun:
+      type: object
+      required: [id, runNumber, name, horizonStart, horizonEnd, status, demandCount, totalQuantity, exceptionCount, startedAt, version, demands, supplies, scheduledReceipts, netRequirements, exceptions]
+      properties:
+        id: { type: string, format: uuid }
+        runNumber: { type: string }
+        name: { type: string }
+        horizonStart: { type: string, format: date }
+        horizonEnd: { type: string, format: date }
+        status: { type: string, enum: [PREPARING, BLOCKED, COMPLETED] }
+        demandCount: { type: integer, minimum: 1 }
+        totalQuantity: { type: number, exclusiveMinimum: 0 }
+        exceptionCount: { type: integer, minimum: 0 }
+        startedAt: { type: string, format: date-time }
+        finishedAt: { type: [string, "null"], format: date-time }
+        requestId: { type: [string, "null"] }
+        version: { type: integer, format: int64, minimum: 0 }
+        demands:
+          type: array
+          items: { $ref: "#/components/schemas/MrpDemandSnapshot" }
+        supplies:
+          type: array
+          items: { $ref: "#/components/schemas/MrpSupplySnapshot" }
+        scheduledReceipts:
+          type: array
+          items: { $ref: "#/components/schemas/MrpScheduledReceiptSnapshot" }
+        netRequirements:
+          type: array
+          items: { $ref: "#/components/schemas/MrpNetRequirement" }
+        exceptions:
+          type: array
+          items: { $ref: "#/components/schemas/MrpRunException" }
+    MrpDemandSnapshot:
+      type: object
+      required: [id, demandId, demandNumber, sourceType, materialId, materialCode, materialName, procurementType, unit, quantity, requiredDate, priority, owner, snapshottedAt]
+      properties:
+        id: { type: string, format: uuid }
+        demandId: { type: string, format: uuid }
+        demandNumber: { type: string }
+        sourceType: { type: string, enum: [SALES_ORDER, MANUAL] }
+        sourceNumber: { type: [string, "null"] }
+        materialId: { type: string, format: uuid }
+        materialCode: { type: string }
+        materialName: { type: string }
+        materialSpecification: { type: [string, "null"] }
+        procurementType: { type: string, enum: [MAKE, BUY, OUTSOURCE] }
+        unit: { type: string }
+        quantity: { type: number, exclusiveMinimum: 0 }
+        requiredDate: { type: string, format: date }
+        priority: { type: string, enum: [LOW, NORMAL, HIGH, URGENT] }
+        owner: { type: string }
+        snapshottedAt: { type: string, format: date-time }
+    MrpSupplySnapshot:
+      type: object
+      required: [id, materialId, materialCode, materialName, unit, onHandQuantity, allocatedQuantity, frozenQuantity, availableQuantity, balanceCount, snapshottedAt]
+      properties:
+        id: { type: string, format: uuid }
+        materialId: { type: string, format: uuid }
+        materialCode: { type: string }
+        materialName: { type: string }
+        unit: { type: string }
+        onHandQuantity: { type: number, minimum: 0 }
+        allocatedQuantity: { type: number, minimum: 0 }
+        frozenQuantity: { type: number, minimum: 0 }
+        availableQuantity: { type: number, minimum: 0 }
+        balanceCount: { type: integer, minimum: 0 }
+        snapshottedAt: { type: string, format: date-time }
+    MrpRunException:
+      type: object
+      required: [id, code, severity, message, resolutionPath, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string, enum: [SCHEDULED_RECEIPTS_UNAVAILABLE, STOCK_POSITION_UNAVAILABLE, LEAD_TIME_UNAVAILABLE, BOM_UNAVAILABLE, ROUTING_UNAVAILABLE] }
+        severity: { type: string, enum: [BLOCKER, WARNING] }
+        materialId: { type: [string, "null"], format: uuid }
+        materialCode: { type: [string, "null"] }
+        materialName: { type: [string, "null"] }
+        message: { type: string }
+        resolutionPath: { type: string }
+        createdAt: { type: string, format: date-time }
+    MrpScheduledReceiptSnapshot:
+      type: object
+      required: [id, sourceType, sourceOrderId, sourceOrderNumber, sourceLineId, materialId, materialCode, materialName, unit, outstandingQuantity, expectedReceiptDate, snapshottedAt]
+      properties:
+        id: { type: string, format: uuid }
+        sourceType: { type: string, enum: [PURCHASE_ORDER, PRODUCTION_ORDER] }
+        sourceOrderId: { type: string, format: uuid }
+        sourceOrderNumber: { type: string }
+        sourceLineId: { type: string, format: uuid }
+        sourceName: { type: [string, "null"] }
+        materialId: { type: string, format: uuid }
+        materialCode: { type: string }
+        materialName: { type: string }
+        unit: { type: string }
+        outstandingQuantity: { type: number, exclusiveMinimum: 0 }
+        expectedReceiptDate: { type: string, format: date }
+        snapshottedAt: { type: string, format: date-time }
+    MrpNetRequirement:
+      type: object
+      required: [id, requirementLevel, sourceType, materialId, materialCode, materialName, procurementType, unit, grossQuantity, availableConsumed, scheduledReceiptConsumed, netQuantity, requiredDate, recommendationType, decisionStatus, version, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        requirementLevel: { type: integer, minimum: 0, maximum: 50 }
+        sourceType: { type: string, enum: [INDEPENDENT_DEMAND, BOM_COMPONENT] }
+        parentMaterialId: { type: [string, "null"], format: uuid }
+        parentMaterialCode: { type: [string, "null"] }
+        materialId: { type: string, format: uuid }
+        materialCode: { type: string }
+        materialName: { type: string }
+        procurementType: { type: string, enum: [MAKE, BUY, OUTSOURCE] }
+        unit: { type: string }
+        grossQuantity: { type: number, exclusiveMinimum: 0 }
+        availableConsumed: { type: number, minimum: 0 }
+        scheduledReceiptConsumed: { type: number, minimum: 0 }
+        netQuantity: { type: number, minimum: 0 }
+        requiredDate: { type: string, format: date }
+        recommendedReleaseDate: { type: [string, "null"], format: date }
+        recommendationType: { type: string, enum: [NONE, PRODUCTION, PURCHASE, OUTSOURCE, BLOCKED] }
+        decisionStatus: { type: string, enum: [NOT_APPLICABLE, PROPOSED, APPROVED, REJECTED, CONVERTED] }
+        convertedOrderType: { type: [string, "null"], enum: [PURCHASE_ORDER, PRODUCTION_ORDER, null] }
+        convertedOrderId: { type: [string, "null"], format: uuid }
+        convertedOrderNumber: { type: [string, "null"] }
+        version: { type: integer, format: int64, minimum: 0 }
+        createdAt: { type: string, format: date-time }
+    MrpSuggestionPage:
+      allOf:
+        - $ref: "#/components/schemas/PageMetadata"
+        - type: object
+          required: [items]
+          properties:
+            items: { type: array, items: { $ref: "#/components/schemas/MrpSuggestion" } }
+    MrpSuggestion:
+      type: object
+      required: [id, runId, runNumber, runName, requirementLevel, sourceType, materialId, materialCode, materialName, procurementType, unit, grossQuantity, netQuantity, requiredDate, recommendationType, decisionStatus, version, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        runId: { type: string, format: uuid }
+        runNumber: { type: string }
+        runName: { type: string }
+        requirementLevel: { type: integer, minimum: 0, maximum: 50 }
+        sourceType: { type: string, enum: [INDEPENDENT_DEMAND, BOM_COMPONENT] }
+        parentMaterialCode: { type: [string, "null"] }
+        materialId: { type: string, format: uuid }
+        materialCode: { type: string }
+        materialName: { type: string }
+        procurementType: { type: string, enum: [MAKE, BUY, OUTSOURCE] }
+        unit: { type: string }
+        grossQuantity: { type: number, exclusiveMinimum: 0 }
+        netQuantity: { type: number, exclusiveMinimum: 0 }
+        requiredDate: { type: string, format: date }
+        recommendedReleaseDate: { type: [string, "null"], format: date }
+        recommendationType: { type: string, enum: [PRODUCTION, PURCHASE, OUTSOURCE] }
+        decisionStatus: { type: string, enum: [PROPOSED, APPROVED, REJECTED, CONVERTED] }
+        decisionComment: { type: [string, "null"] }
+        decidedAt: { type: [string, "null"], format: date-time }
+        convertedOrderType: { type: [string, "null"], enum: [PURCHASE_ORDER, PRODUCTION_ORDER, null] }
+        convertedOrderId: { type: [string, "null"], format: uuid }
+        convertedOrderNumber: { type: [string, "null"] }
+        convertedAt: { type: [string, "null"], format: date-time }
+        version: { type: integer, format: int64, minimum: 0 }
+        createdAt: { type: string, format: date-time }
+    MrpSuggestionActionRequest:
+      type: object
+      additionalProperties: false
+      required: [action, expectedVersion]
+      properties:
+        action: { type: string, enum: [APPROVE, REJECT] }
+        expectedVersion: { type: integer, format: int64, minimum: 0 }
+        comment: { type: [string, "null"], maxLength: 500 }
+    MrpSuggestionConvertRequest:
+      type: object
+      additionalProperties: false
+      required: [expectedVersion]
+      properties:
+        expectedVersion: { type: integer, format: int64, minimum: 0 }
+        supplierId: { type: [string, "null"], format: uuid }
+        currency: { type: [string, "null"], enum: [CNY, USD, EUR, null] }
+        taxRate: { type: [number, "null"], minimum: 0, maximum: 1 }
+        unitPrice: { type: [number, "null"], minimum: 0 }
+        requestedReceiptDate: { type: [string, "null"], format: date }
+        buyer: { type: [string, "null"], maxLength: 80 }
+        plannedStartDate: { type: [string, "null"], format: date }
+        plannedReceiptDate: { type: [string, "null"], format: date }
+        workshop: { type: [string, "null"], maxLength: 120 }
+        owner: { type: [string, "null"], maxLength: 80 }
+    CreateMrpRunRequest:
+      type: object
+      additionalProperties: false
+      required: [name, horizonStart, horizonEnd]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        horizonStart: { type: string, format: date }
+        horizonEnd: { type: string, format: date }
+    InventoryPage:
+      allOf:
+        - $ref: "#/components/schemas/PageMetadata"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/InventoryBalance" }
+    InventoryBalance:
+      type: object
+      required: [id, warehouseId, warehouseCode, warehouseName, locationId, locationCode, locationName, materialId, materialCode, materialName, unit, lotNumber, qualityStatus, onHandQuantity, allocatedQuantity, frozenQuantity, availableQuantity, version, updatedAt, movements]
+      properties:
+        id: { type: string, format: uuid }
+        warehouseId: { type: string, format: uuid }
+        warehouseCode: { type: string }
+        warehouseName: { type: string }
+        locationId: { type: string, format: uuid }
+        locationCode: { type: string }
+        locationName: { type: string }
+        materialId: { type: string, format: uuid }
+        materialCode: { type: string }
+        materialName: { type: string }
+        materialSpecification: { type: [string, "null"] }
+        unit: { type: string }
+        lotNumber: { type: string }
+        qualityStatus: { type: string, enum: [AVAILABLE, INSPECTION, BLOCKED] }
+        onHandQuantity: { type: number, minimum: 0 }
+        allocatedQuantity: { type: number, minimum: 0 }
+        frozenQuantity: { type: number, minimum: 0 }
+        availableQuantity: { type: number, minimum: 0 }
+        version: { type: integer, format: int64, minimum: 0 }
+        updatedAt: { type: string, format: date-time }
+        movements:
+          type: array
+          items: { $ref: "#/components/schemas/InventoryMovement" }
+    InventoryMovement:
+      type: object
+      required: [id, movementNumber, movementType, quantity, reason, requestId, beforeOnHand, afterOnHand, beforeAllocated, afterAllocated, beforeFrozen, afterFrozen, occurredAt]
+      properties:
+        id: { type: string, format: uuid }
+        movementNumber: { type: string }
+        movementType: { type: string, enum: [RECEIPT, ISSUE, RETURN, ALLOCATE, DEALLOCATE, FREEZE, UNFREEZE] }
+        quantity: { type: number, exclusiveMinimum: 0 }
+        reason: { type: string }
+        requestId: { type: string }
+        beforeOnHand: { type: number, minimum: 0 }
+        afterOnHand: { type: number, minimum: 0 }
+        beforeAllocated: { type: number, minimum: 0 }
+        afterAllocated: { type: number, minimum: 0 }
+        beforeFrozen: { type: number, minimum: 0 }
+        afterFrozen: { type: number, minimum: 0 }
+        occurredAt: { type: string, format: date-time }
+    InventoryMovementRequest:
+      type: object
+      additionalProperties: false
+      required: [movementType, quantity, reason, expectedVersion]
+      properties:
+        movementType: { type: string, enum: [RECEIPT, ISSUE, ALLOCATE, DEALLOCATE, FREEZE, UNFREEZE] }
+        quantity: { type: number, exclusiveMinimum: 0 }
+        reason: { type: string, minLength: 1, maxLength: 500 }
+        expectedVersion: { type: integer, format: int64, minimum: 0 }
+    InventoryReferenceData:
+      type: object
+      required: [warehouses, locations]
+      properties:
+        warehouses:
+          type: array
+          items: { $ref: "#/components/schemas/WarehouseOption" }
+        locations:
+          type: array
+          items: { $ref: "#/components/schemas/LocationOption" }
+    WarehouseOption:
+      type: object
+      required: [id, code, name]
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string }
+        name: { type: string }
+    LocationOption:
+      type: object
+      required: [id, warehouseId, code, name, locationType]
+      properties:
+        id: { type: string, format: uuid }
+        warehouseId: { type: string, format: uuid }
+        code: { type: string }
+        name: { type: string }
+        locationType: { type: string }
+    PurchaseOrderPage:
+      allOf:
+        - $ref: "#/components/schemas/PageMetadata"
+        - type: object
+          required: [items]
+          properties:
+            items: { type: array, items: { $ref: "#/components/schemas/PurchaseOrder" } }
+    PurchaseOrder:
+      type: object
+      required: [id, orderNumber, supplierId, supplierCode, supplierName, currency, taxRate, requestedReceiptDate, buyer, status, totalNetAmount, totalTaxAmount, totalGrossAmount, sourceType, version, updatedAt, lines]
+      properties:
+        id: { type: string, format: uuid }
+        orderNumber: { type: string }
+        supplierId: { type: string, format: uuid }
+        supplierCode: { type: string }
+        supplierName: { type: string }
+        currency: { type: string, enum: [CNY, USD, EUR] }
+        taxRate: { type: number, minimum: 0, maximum: 1 }
+        requestedReceiptDate: { type: string, format: date }
+        promisedReceiptDate: { type: [string, "null"], format: date }
+        buyer: { type: string }
+        status: { type: string, enum: [DRAFT, PENDING_APPROVAL, APPROVED, REJECTED, RELEASED, PARTIALLY_SHIPPED, SHIPPED] }
+        totalNetAmount: { type: number, minimum: 0 }
+        totalTaxAmount: { type: number, minimum: 0 }
+        totalGrossAmount: { type: number, minimum: 0 }
+        rejectionReason: { type: [string, "null"] }
+        sourceType: { type: string, enum: [MANUAL, MRP] }
+        sourceId: { type: [string, "null"], format: uuid }
+        sourceNumber: { type: [string, "null"] }
+        version: { type: integer, format: int64, minimum: 0 }
+        updatedAt: { type: string, format: date-time }
+        lines: { type: array, minItems: 1, items: { $ref: "#/components/schemas/PurchaseOrderLine" } }
+    PurchaseOrderLine:
+      type: object
+      required: [id, lineNumber, materialId, materialCode, materialName, unit, orderedQuantity, receivedQuantity, outstandingQuantity, unitPrice, netAmount, taxAmount, grossAmount]
+      properties:
+        id: { type: string, format: uuid }
+        lineNumber: { type: integer, minimum: 1 }
+        materialId: { type: string, format: uuid }
+        materialCode: { type: string }
+        materialName: { type: string }
+        materialSpecification: { type: [string, "null"] }
+        unit: { type: string }
+        orderedQuantity: { type: number, exclusiveMinimum: 0 }
+        receivedQuantity: { type: number, minimum: 0 }
+        outstandingQuantity: { type: number, minimum: 0 }
+        unitPrice: { type: number, minimum: 0 }
+        netAmount: { type: number, minimum: 0 }
+        taxAmount: { type: number, minimum: 0 }
+        grossAmount: { type: number, minimum: 0 }
+    PurchaseOrderLineInput:
+      type: object
+      additionalProperties: false
+      required: [materialId, orderedQuantity, unitPrice]
+      properties:
+        materialId: { type: string, format: uuid }
+        orderedQuantity: { type: number, exclusiveMinimum: 0 }
+        unitPrice: { type: number, minimum: 0 }
+    PurchaseOrderWriteRequest:
+      type: object
+      additionalProperties: false
+      required: [supplierId, currency, taxRate, requestedReceiptDate, buyer, lines]
+      properties:
+        supplierId: { type: string, format: uuid }
+        currency: { type: string, enum: [CNY, USD, EUR] }
+        taxRate: { type: number, minimum: 0, maximum: 1 }
+        requestedReceiptDate: { type: string, format: date }
+        promisedReceiptDate: { type: [string, "null"], format: date }
+        buyer: { type: string, minLength: 1, maxLength: 80 }
+        lines: { type: array, minItems: 1, maxItems: 100, items: { $ref: "#/components/schemas/PurchaseOrderLineInput" } }
+    PurchaseOrderUpdateRequest:
+      allOf:
+        - $ref: "#/components/schemas/PurchaseOrderWriteRequest"
+        - type: object
+          required: [expectedVersion]
+          properties: { expectedVersion: { type: integer, format: int64, minimum: 0 } }
+    PurchaseOrderActionRequest:
+      type: object
+      additionalProperties: false
+      required: [action, expectedVersion]
+      properties:
+        action: { type: string, enum: [SUBMIT, APPROVE, REJECT, RELEASE] }
+        expectedVersion: { type: integer, format: int64, minimum: 0 }
+        comment: { type: [string, "null"], maxLength: 500 }
+    PurchaseOrderReferenceData:
+      type: object
+      required: [suppliers, materials]
+      properties:
+        suppliers:
+          type: array
+          items:
+            type: object
+            required: [id, code, name]
+            properties:
+              id: { type: string, format: uuid }
+              code: { type: string }
+              name: { type: string }
+              contactName: { type: [string, "null"] }
+              contactPhone: { type: [string, "null"] }
+        materials:
+          type: array
+          items:
+            type: object
+            required: [id, code, name, baseUnit]
+            properties:
+              id: { type: string, format: uuid }
+              code: { type: string }
+              name: { type: string }
+              specification: { type: [string, "null"] }
+              baseUnit: { type: string }
+    PurchaseReceiptPage:
+      allOf:
+        - $ref: "#/components/schemas/PageMetadata"
+        - type: object
+          required: [items]
+          properties:
+            items: { type: array, items: { $ref: "#/components/schemas/PurchaseReceipt" } }
+    PurchaseReceipt:
+      type: object
+      required: [id, receiptNumber, purchaseOrderId, orderNumber, supplierId, supplierCode, supplierName, warehouseId, locationId, status, totalReceivedQuantity, acceptedQuantity, rejectedQuantity, version, createdAt, lines]
+      properties:
+        id: { type: string, format: uuid }
+        receiptNumber: { type: string }
+        purchaseOrderId: { type: string, format: uuid }
+        orderNumber: { type: string }
+        supplierId: { type: string, format: uuid }
+        supplierCode: { type: string }
+        supplierName: { type: string }
+        warehouseId: { type: string, format: uuid }
+        warehouseCode: { type: string }
+        warehouseName: { type: string }
+        locationId: { type: string, format: uuid }
+        locationCode: { type: string }
+        locationName: { type: string }
+        note: { type: [string, "null"] }
+        status: { type: string, enum: [PENDING_INSPECTION, PARTIALLY_RECEIVED, RECEIVED, REJECTED_CLOSED] }
+        totalReceivedQuantity: { type: number, exclusiveMinimum: 0 }
+        acceptedQuantity: { type: number, minimum: 0 }
+        rejectedQuantity: { type: number, minimum: 0 }
+        version: { type: integer, format: int64, minimum: 0 }
+        createdAt: { type: string, format: date-time }
+        lines: { type: array, minItems: 1, items: { $ref: "#/components/schemas/PurchaseReceiptLine" } }
+    PurchaseReceiptLine:
+      type: object
+      required: [id, lineNumber, purchaseOrderLineId, materialId, materialCode, materialName, unit, receivedQuantity, inspectionRequired, lotNumber, status, version]
+      properties:
+        id: { type: string, format: uuid }
+        lineNumber: { type: integer, minimum: 1 }
+        purchaseOrderLineId: { type: string, format: uuid }
+        materialId: { type: string, format: uuid }
+        materialCode: { type: string }
+        materialName: { type: string }
+        materialSpecification: { type: [string, "null"] }
+        unit: { type: string }
+        receivedQuantity: { type: number, exclusiveMinimum: 0 }
+        inspectionRequired: { type: boolean }
+        lotNumber: { type: string }
+        status: { type: string, enum: [PENDING_INSPECTION, PARTIALLY_RECEIVED, RECEIVED, REJECTED_CLOSED] }
+        inspectionId: { type: [string, "null"], format: uuid }
+        inspectionNumber: { type: [string, "null"] }
+        acceptedQuantity: { type: [number, "null"], minimum: 0 }
+        rejectedQuantity: { type: [number, "null"], minimum: 0 }
+        acceptedBalanceId: { type: [string, "null"], format: uuid }
+        rejectedBalanceId: { type: [string, "null"], format: uuid }
+        stockSummary: { type: string }
+        version: { type: integer, format: int64, minimum: 0 }
+    CreatePurchaseReceiptRequest:
+      type: object
+      additionalProperties: false
+      required: [purchaseOrderId, warehouseId, locationId, lines]
+      properties:
+        purchaseOrderId: { type: string, format: uuid }
+        warehouseId: { type: string, format: uuid }
+        locationId: { type: string, format: uuid }
+        note: { type: [string, "null"], maxLength: 500 }
+        lines:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            type: object
+            additionalProperties: false
+            required: [orderLineId, receivedQuantity, lotNumber]
+            properties:
+              orderLineId: { type: string, format: uuid }
+              receivedQuantity: { type: number, exclusiveMinimum: 0 }
+              lotNumber: { type: string, minLength: 1, maxLength: 80 }
+    PurchaseReceiptReferenceData:
+      type: object
+      required: [releasedOrders, warehouses, locations]
+      properties:
+        releasedOrders:
+          type: array
+          items:
+            type: object
+            required: [id, orderNumber, supplierId, supplierCode, supplierName, lines]
+            properties:
+              id: { type: string, format: uuid }
+              orderNumber: { type: string }
+              supplierId: { type: string, format: uuid }
+              supplierCode: { type: string }
+              supplierName: { type: string }
+              promisedReceiptDate: { type: [string, "null"], format: date }
+              lines:
+                type: array
+                items:
+                  type: object
+                  required: [id, lineNumber, materialId, materialCode, materialName, unit, orderedQuantity, receivedQuantity, outstandingQuantity, inspectionRequired]
+                  properties:
+                    id: { type: string, format: uuid }
+                    lineNumber: { type: integer }
+                    materialId: { type: string, format: uuid }
+                    materialCode: { type: string }
+                    materialName: { type: string }
+                    materialSpecification: { type: [string, "null"] }
+                    unit: { type: string }
+                    orderedQuantity: { type: number }
+                    receivedQuantity: { type: number }
+                    outstandingQuantity: { type: number }
+                    inspectionRequired: { type: boolean }
+        warehouses: { type: array, items: { $ref: "#/components/schemas/WarehouseOption" } }
+        locations: { type: array, items: { $ref: "#/components/schemas/WarehouseLocationOption" } }
+    IncomingInspectionPage:
+      allOf:
+        - $ref: "#/components/schemas/PageMetadata"
+        - type: object
+          required: [items]
+          properties:
+            items: { type: array, items: { $ref: "#/components/schemas/IncomingInspection" } }
+    IncomingInspection:
+      type: object
+      required: [id, inspectionNumber, sourceId, sourceNumber, purchaseOrderId, purchaseOrderNumber, supplierId, supplierCode, supplierName, materialId, materialCode, materialName, unit, inspectionQuantity, status, version, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        inspectionNumber: { type: string }
+        sourceId: { type: string, format: uuid }
+        sourceNumber: { type: string }
+        purchaseOrderId: { type: string, format: uuid }
+        purchaseOrderNumber: { type: string }
+        supplierId: { type: string, format: uuid }
+        supplierCode: { type: string }
+        supplierName: { type: string }
+        materialId: { type: string, format: uuid }
+        materialCode: { type: string }
+        materialName: { type: string }
+        materialSpecification: { type: [string, "null"] }
+        unit: { type: string }
+        inspectionQuantity: { type: number, exclusiveMinimum: 0 }
+        status: { type: string, enum: [PENDING, COMPLETED] }
+        result: { type: [string, "null"], enum: [PASSED, PARTIALLY_PASSED, FAILED] }
+        acceptedQuantity: { type: [number, "null"], minimum: 0 }
+        rejectedQuantity: { type: [number, "null"], minimum: 0 }
+        inspector: { type: [string, "null"] }
+        defectDescription: { type: [string, "null"] }
+        conclusion: { type: [string, "null"] }
+        version: { type: integer, format: int64, minimum: 0 }
+        createdAt: { type: string, format: date-time }
+        completedAt: { type: [string, "null"], format: date-time }
+    CompleteIncomingInspectionRequest:
+      type: object
+      additionalProperties: false
+      required: [acceptedQuantity, rejectedQuantity, inspector, conclusion, expectedVersion]
+      properties:
+        acceptedQuantity: { type: number, minimum: 0 }
+        rejectedQuantity: { type: number, minimum: 0 }
+        inspector: { type: string, minLength: 1, maxLength: 80 }
+        defectDescription: { type: [string, "null"], maxLength: 500 }
+        conclusion: { type: string, minLength: 1, maxLength: 500 }
+        expectedVersion: { type: integer, format: int64, minimum: 0 }
+    OperationTaskPage:
+      allOf:
+        - $ref: "#/components/schemas/PageMetadata"
+        - type: object
+          required: [items]
+          properties:
+            items: { type: array, items: { $ref: "#/components/schemas/OperationTask" } }
+    OperationTaskEvent:
+      type: object
+      required: [id, action, fromStatus, toStatus, occurredAt]
+      properties:
+        id: { type: string, format: uuid }
+        action: { type: string, enum: [CREATED, START, COMPLETE] }
+        fromStatus: { type: [string, "null"], enum: [PENDING, IN_PROGRESS, COMPLETED, null] }
+        toStatus: { type: string, enum: [PENDING, IN_PROGRESS, COMPLETED] }
+        requestId: { type: [string, "null"] }
+        comment: { type: [string, "null"] }
+        occurredAt: { type: string, format: date-time }
+    OperationTask:
+      type: object
+      required: [id, taskNumber, orderId, orderNumber, materialId, materialCode, materialName, unit, plannedQuantity, routingId, routingNumber, routingVersionCode, sourceOperationId, sequenceNumber, operationCode, operationName, workCenterCode, workCenterName, setupMinutes, runMinutesPerUnit, queueMinutes, inspectionRequired, status, version, createdAt, updatedAt, events]
+      properties:
+        id: { type: string, format: uuid }
+        taskNumber: { type: string }
+        orderId: { type: string, format: uuid }
+        orderNumber: { type: string }
+        materialId: { type: string, format: uuid }
+        materialCode: { type: string }
+        materialName: { type: string }
+        materialSpecification: { type: [string, "null"] }
+        unit: { type: string }
+        plannedQuantity: { type: number, exclusiveMinimum: 0 }
+        workshop: { type: [string, "null"] }
+        routingId: { type: string, format: uuid }
+        routingNumber: { type: string }
+        routingVersionCode: { type: string }
+        sourceOperationId: { type: string, format: uuid }
+        sequenceNumber: { type: integer, minimum: 1 }
+        operationCode: { type: string }
+        operationName: { type: string }
+        workCenterCode: { type: string }
+        workCenterName: { type: string }
+        setupMinutes: { type: number, minimum: 0 }
+        runMinutesPerUnit: { type: number, minimum: 0 }
+        queueMinutes: { type: number, minimum: 0 }
+        inspectionRequired: { type: boolean }
+        instructionSummary: { type: [string, "null"] }
+        status: { type: string, enum: [PENDING, IN_PROGRESS, COMPLETED] }
+        startedAt: { type: [string, "null"], format: date-time }
+        completedAt: { type: [string, "null"], format: date-time }
+        completedQuantity: { type: [number, "null"], exclusiveMinimum: 0 }
+        shiftName: { type: [string, "null"] }
+        operatorName: { type: [string, "null"] }
+        note: { type: [string, "null"] }
+        version: { type: integer, format: int64, minimum: 0 }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        events:
+          type: array
+          items: { $ref: "#/components/schemas/OperationTaskEvent" }
+    OperationTaskActionRequest:
+      type: object
+      additionalProperties: false
+      required: [action, expectedVersion]
+      properties:
+        action: { type: string, enum: [START, COMPLETE] }
+        expectedVersion: { type: integer, format: int64, minimum: 0 }
+        shiftName: { type: [string, "null"], maxLength: 80 }
+        operatorName: { type: [string, "null"], maxLength: 80 }
+        completedQuantity: { type: [number, "null"], exclusiveMinimum: 0 }
+        note: { type: [string, "null"], maxLength: 500 }
+    OperationLaborEntryPage:
+      allOf:
+        - $ref: "#/components/schemas/PageMetadata"
+        - type: object
+          required: [items]
+          properties:
+            items: { type: array, items: { $ref: "#/components/schemas/OperationLaborEntry" } }
+    OperationLaborEvent:
+      type: object
+      required: [id, action, toStatus, requestId, occurredAt]
+      properties:
+        id: { type: string, format: uuid }
+        action: { type: string, enum: [RECORDED, APPROVED, VOIDED] }
+        fromStatus: { type: [string, "null"], enum: [RECORDED, APPROVED, VOIDED, null] }
+        toStatus: { type: string, enum: [RECORDED, APPROVED, VOIDED] }
+        requestId: { type: string }
+        comment: { type: [string, "null"] }
+        occurredAt: { type: string, format: date-time }
+    OperationLaborEntry:
+      type: object
+      required: [id, entryNumber, taskId, taskNumber, orderId, orderNumber, operationCode, operationName, workCenterCode, workCenterName, workDate, shiftName, operatorName, actualMinutes, status, version, createdAt, updatedAt, events]
+      properties:
+        id: { type: string, format: uuid }
+        entryNumber: { type: string }
+        taskId: { type: string, format: uuid }
+        taskNumber: { type: string }
+        orderId: { type: string, format: uuid }
+        orderNumber: { type: string }
+        operationCode: { type: string }
+        operationName: { type: string }
+        workCenterCode: { type: string }
+        workCenterName: { type: string }
+        workDate: { type: string, format: date }
+        shiftName: { type: string }
+        operatorName: { type: string }
+        actualMinutes: { type: number, exclusiveMinimum: 0, maximum: 1440 }
+        status: { type: string, enum: [RECORDED, APPROVED, VOIDED] }
+        note: { type: [string, "null"] }
+        approvedBy: { type: [string, "null"], format: uuid }
+        approvedAt: { type: [string, "null"], format: date-time }
+        voidedBy: { type: [string, "null"], format: uuid }
+        voidedAt: { type: [string, "null"], format: date-time }
+        voidReason: { type: [string, "null"] }
+        version: { type: integer, format: int64, minimum: 0 }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        events:
+          type: array
+          items: { $ref: "#/components/schemas/OperationLaborEvent" }
+    CreateOperationLaborEntryRequest:
+      type: object
+      additionalProperties: false
+      required: [taskId, workDate, shiftName, operatorName, actualMinutes]
+      properties:
+        taskId: { type: string, format: uuid }
+        workDate: { type: string, format: date }
+        shiftName: { type: string, minLength: 1, maxLength: 80 }
+        operatorName: { type: string, minLength: 1, maxLength: 80 }
+        actualMinutes: { type: number, minimum: 0.01, maximum: 1440 }
+        note: { type: [string, "null"], maxLength: 500 }
+    OperationLaborEntryActionRequest:
+      type: object
+      additionalProperties: false
+      required: [action, expectedVersion]
+      properties:
+        action: { type: string, enum: [APPROVE, VOID] }
+        expectedVersion: { type: integer, format: int64, minimum: 0 }
+        reason: { type: [string, "null"], maxLength: 500 }
+    ProductionOrderPage:
+      allOf:
+        - $ref: "#/components/schemas/PageMetadata"
+        - type: object
+          required: [items]
+          properties:
+            items: { type: array, items: { $ref: "#/components/schemas/ProductionOrder" } }
+    ProductionOrder:
+      type: object
+      required: [id, orderNumber, materialId, materialCode, materialName, unit, plannedQuantity, completedQuantity, reportedQuantity, reportableQuantity, outstandingQuantity, plannedStartDate, plannedReceiptDate, workshop, owner, sourceType, status, version, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        orderNumber: { type: string }
+        materialId: { type: string, format: uuid }
+        materialCode: { type: string }
+        materialName: { type: string }
+        materialSpecification: { type: [string, "null"] }
+        unit: { type: string }
+        plannedQuantity: { type: number, exclusiveMinimum: 0 }
+        completedQuantity: { type: number, minimum: 0 }
+        reportedQuantity: { type: number, minimum: 0 }
+        reportableQuantity: { type: number, minimum: 0 }
+        outstandingQuantity: { type: number, minimum: 0 }
+        plannedStartDate: { type: string, format: date }
+        plannedReceiptDate: { type: string, format: date }
+        workshop: { type: string }
+        owner: { type: string }
+        sourceType: { type: string, enum: [MANUAL, MRP, SALES_ORDER] }
+        sourceId: { type: [string, "null"], format: uuid }
+        sourceNumber: { type: [string, "null"] }
+        status: { type: string, enum: [DRAFT, RELEASED, IN_PROGRESS, COMPLETED, CANCELLED] }
+        cancellationReason: { type: [string, "null"] }
+        version: { type: integer, format: int64, minimum: 0 }
+        updatedAt: { type: string, format: date-time }
+    ProductionOrderWriteRequest:
+      type: object
+      additionalProperties: false
+      required: [materialId, plannedQuantity, plannedStartDate, plannedReceiptDate, workshop, owner, sourceType]
+      properties:
+        materialId: { type: string, format: uuid }
+        plannedQuantity: { type: number, exclusiveMinimum: 0 }
+        plannedStartDate: { type: string, format: date }
+        plannedReceiptDate: { type: string, format: date }
+        workshop: { type: string, minLength: 1, maxLength: 120 }
+        owner: { type: string, minLength: 1, maxLength: 80 }
+        sourceType: { type: string, enum: [MANUAL, MRP, SALES_ORDER] }
+        sourceId: { type: [string, "null"], format: uuid }
+        sourceNumber: { type: [string, "null"], maxLength: 60 }
+    ProductionOrderUpdateRequest:
+      allOf:
+        - $ref: "#/components/schemas/ProductionOrderWriteRequest"
+        - type: object
+          required: [expectedVersion]
+          properties: { expectedVersion: { type: integer, format: int64, minimum: 0 } }
+    ProductionOrderActionRequest:
+      type: object
+      additionalProperties: false
+      required: [action, expectedVersion]
+      properties:
+        action: { type: string, enum: [RELEASE, START, CANCEL] }
+        expectedVersion: { type: integer, format: int64, minimum: 0 }
+        comment: { type: [string, "null"], maxLength: 500 }
+    ProductionOrderReferenceData:
+      type: object
+      required: [materials]
+      properties:
+        materials:
+          type: array
+          items:
+            type: object
+            required: [id, code, name, baseUnit]
+            properties:
+              id: { type: string, format: uuid }
+              code: { type: string }
+              name: { type: string }
+              specification: { type: [string, "null"] }
+              baseUnit: { type: string }
+    ProductionWorkReportPage:
+      allOf:
+        - $ref: "#/components/schemas/PageMetadata"
+        - type: object
+          required: [items]
+          properties:
+            items: { type: array, items: { $ref: "#/components/schemas/ProductionWorkReport" } }
+    ProductionWorkReport:
+      type: object
+      required: [id, reportNumber, orderId, orderNumber, materialId, materialCode, materialName, unit, workshop, shiftName, operatorName, reportedQuantity, inspectionId, inspectionNumber, inspectionStatus, status, version, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        reportNumber: { type: string }
+        orderId: { type: string, format: uuid }
+        orderNumber: { type: string }
+        materialId: { type: string, format: uuid }
+        materialCode: { type: string }
+        materialName: { type: string }
+        materialSpecification: { type: [string, "null"] }
+        unit: { type: string }
+        workshop: { type: string }
+        shiftName: { type: string }
+        operatorName: { type: string }
+        reportedQuantity: { type: number, exclusiveMinimum: 0 }
+        note: { type: [string, "null"] }
+        inspectionId: { type: string, format: uuid }
+        inspectionNumber: { type: string }
+        inspectionStatus: { type: string, enum: [PENDING, COMPLETED] }
+        qualityResult: { type: [string, "null"], enum: [PASSED, PARTIALLY_PASSED, FAILED, null] }
+        acceptedQuantity: { type: [number, "null"], minimum: 0 }
+        rejectedQuantity: { type: [number, "null"], minimum: 0 }
+        receiptBalanceId: { type: [string, "null"], format: uuid }
+        receiptMovementId: { type: [string, "null"], format: uuid }
+        receiptWarehouse: { type: [string, "null"] }
+        receiptLocation: { type: [string, "null"] }
+        lotNumber: { type: [string, "null"] }
+        status: { type: string, enum: [PENDING_INSPECTION, READY_FOR_RECEIPT, READY_TO_CLOSE, RECEIVED, REJECTED_CLOSED] }
+        version: { type: integer, format: int64, minimum: 0 }
+        createdAt: { type: string, format: date-time }
+        settledAt: { type: [string, "null"], format: date-time }
+    CreateProductionWorkReportRequest:
+      type: object
+      additionalProperties: false
+      required: [orderId, quantity, shiftName, operatorName, expectedOrderVersion]
+      properties:
+        orderId: { type: string, format: uuid }
+        quantity: { type: number, exclusiveMinimum: 0 }
+        shiftName: { type: string, minLength: 1, maxLength: 80 }
+        operatorName: { type: string, minLength: 1, maxLength: 80 }
+        note: { type: [string, "null"], maxLength: 500 }
+        expectedOrderVersion: { type: integer, format: int64, minimum: 0 }
+    SettleProductionWorkReportRequest:
+      type: object
+      additionalProperties: false
+      required: [expectedVersion]
+      properties:
+        warehouseId: { type: [string, "null"], format: uuid }
+        locationId: { type: [string, "null"], format: uuid }
+        lotNumber: { type: [string, "null"], maxLength: 80 }
+        expectedVersion: { type: integer, format: int64, minimum: 0 }
+    FinalInspectionPage:
+      allOf:
+        - $ref: "#/components/schemas/PageMetadata"
+        - type: object
+          required: [items]
+          properties:
+            items: { type: array, items: { $ref: "#/components/schemas/FinalInspection" } }
+    FinalInspection:
+      type: object
+      required: [id, inspectionNumber, sourceType, sourceId, sourceNumber, orderId, orderNumber, materialId, materialCode, materialName, unit, inspectionQuantity, status, version, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        inspectionNumber: { type: string }
+        sourceType: { type: string, enum: [PRODUCTION_REPORT] }
+        sourceId: { type: string, format: uuid }
+        sourceNumber: { type: string }
+        orderId: { type: string, format: uuid }
+        orderNumber: { type: string }
+        materialId: { type: string, format: uuid }
+        materialCode: { type: string }
+        materialName: { type: string }
+        materialSpecification: { type: [string, "null"] }
+        unit: { type: string }
+        inspectionQuantity: { type: number, exclusiveMinimum: 0 }
+        status: { type: string, enum: [PENDING, COMPLETED] }
+        result: { type: [string, "null"], enum: [PASSED, PARTIALLY_PASSED, FAILED, null] }
+        acceptedQuantity: { type: [number, "null"], minimum: 0 }
+        rejectedQuantity: { type: [number, "null"], minimum: 0 }
+        inspector: { type: [string, "null"] }
+        defectDescription: { type: [string, "null"] }
+        conclusion: { type: [string, "null"] }
+        version: { type: integer, format: int64, minimum: 0 }
+        createdAt: { type: string, format: date-time }
+        completedAt: { type: [string, "null"], format: date-time }
+    CompleteFinalInspectionRequest:
+      type: object
+      additionalProperties: false
+      required: [acceptedQuantity, rejectedQuantity, inspector, conclusion, expectedVersion]
+      properties:
+        acceptedQuantity: { type: number, minimum: 0 }
+        rejectedQuantity: { type: number, minimum: 0 }
+        inspector: { type: string, minLength: 1, maxLength: 80 }
+        defectDescription: { type: [string, "null"], maxLength: 500 }
+        conclusion: { type: string, minLength: 1, maxLength: 500 }
+        expectedVersion: { type: integer, format: int64, minimum: 0 }
+    MaterialPlanningParameterPage:
+      allOf:
+        - $ref: "#/components/schemas/PageMetadata"
+        - type: object
+          required: [items]
+          properties:
+            items: { type: array, items: { $ref: "#/components/schemas/MaterialPlanningParameter" } }
+    MaterialPlanningParameter:
+      type: object
+      required: [materialId, materialCode, materialName, procurementType, unit, configured, version]
+      properties:
+        materialId: { type: string, format: uuid }
+        materialCode: { type: string }
+        materialName: { type: string }
+        materialSpecification: { type: [string, "null"] }
+        procurementType: { type: string, enum: [MAKE, BUY, OUTSOURCE] }
+        unit: { type: string }
+        leadTimeDays: { type: [integer, "null"], minimum: 1, maximum: 3650 }
+        configured: { type: boolean }
+        version: { type: integer, format: int64, minimum: 0 }
+        updatedAt: { type: [string, "null"], format: date-time }
+    UpdateMaterialPlanningParameterRequest:
+      type: object
+      additionalProperties: false
+      required: [leadTimeDays, expectedVersion]
+      properties:
+        leadTimeDays: { type: integer, minimum: 1, maximum: 3650 }
+        expectedVersion: { type: integer, format: int64, minimum: 0 }
+    MaterialIssuePage:
+      allOf:
+        - $ref: "#/components/schemas/PageMetadata"
+        - type: object
+          required: [items]
+          properties:
+            items: { type: array, items: { $ref: "#/components/schemas/MaterialIssue" } }
+    MaterialIssue:
+      type: object
+      required: [id, issueNumber, productionOrderId, orderNumber, materialId, materialCode, materialName, unit, plannedQuantity, warehouseId, warehouseCode, status, version, createdAt, updatedAt, lines, returns, events, stockTransactions]
+      properties:
+        id: { type: string, format: uuid }
+        issueNumber: { type: string }
+        productionOrderId: { type: string, format: uuid }
+        orderNumber: { type: string }
+        materialId: { type: string, format: uuid }
+        materialCode: { type: string }
+        materialName: { type: string }
+        materialSpecification: { type: [string, "null"] }
+        unit: { type: string }
+        plannedQuantity: { type: number, exclusiveMinimum: 0 }
+        warehouseId: { type: string, format: uuid }
+        warehouseCode: { type: string }
+        warehouseName: { type: string }
+        status: { type: string, enum: [DRAFT, PARTIAL, ISSUED, CANCELLED] }
+        cancellationReason: { type: [string, "null"] }
+        version: { type: integer, format: int64, minimum: 0 }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        lines: { type: array, items: { $ref: "#/components/schemas/MaterialIssueLine" } }
+        returns: { type: array, items: { $ref: "#/components/schemas/MaterialReturn" } }
+        events: { type: array, items: { $ref: "#/components/schemas/MaterialIssueEvent" } }
+        stockTransactions: { type: array, items: { $ref: "#/components/schemas/MaterialIssueStockTransaction" } }
+    MaterialIssueLine:
+      type: object
+      required: [id, lineNumber, componentMaterialId, componentMaterialCode, componentMaterialName, unit, requiredQuantity, issuedQuantity, returnedQuantity, issuableQuantity, version]
+      properties:
+        id: { type: string, format: uuid }
+        lineNumber: { type: integer }
+        componentMaterialId: { type: string, format: uuid }
+        componentMaterialCode: { type: string }
+        componentMaterialName: { type: string }
+        componentMaterialSpecification: { type: [string, "null"] }
+        unit: { type: string }
+        requiredQuantity: { type: number, minimum: 0 }
+        issuedQuantity: { type: number, minimum: 0 }
+        returnedQuantity: { type: number, minimum: 0 }
+        issuableQuantity: { type: number, minimum: 0 }
+        bomNote: { type: [string, "null"] }
+        version: { type: integer, format: int64, minimum: 0 }
+    MaterialIssueEvent:
+      type: object
+      required: [id, action, fromStatus, toStatus, occurredAt]
+      properties:
+        id: { type: string, format: uuid }
+        action: { type: string }
+        fromStatus: { type: [string, "null"] }
+        toStatus: { type: string }
+        requestId: { type: [string, "null"] }
+        occurredAt: { type: string, format: date-time }
+    MaterialIssueStockTransaction:
+      type: object
+      required: [id, movementType, componentMaterialCode, quantity, warehouseId, warehouseCode, locationId, locationCode, movementId, movementNumber, requestId, occurredAt]
+      properties:
+        id: { type: string, format: uuid }
+        issueLineId: { type: [string, "null"], format: uuid }
+        returnLineId: { type: [string, "null"], format: uuid }
+        movementType: { type: string, enum: [ISSUE, RETURN] }
+        componentMaterialCode: { type: string }
+        quantity: { type: number, exclusiveMinimum: 0 }
+        warehouseId: { type: string, format: uuid }
+        warehouseCode: { type: string }
+        warehouseName: { type: string }
+        locationId: { type: string, format: uuid }
+        locationCode: { type: string }
+        locationName: { type: string }
+        movementId: { type: string, format: uuid }
+        movementNumber: { type: string }
+        requestId: { type: string }
+        occurredAt: { type: string, format: date-time }
+    MaterialReturn:
+      type: object
+      required: [id, returnNumber, issueId, issueNumber, productionOrderId, orderNumber, warehouseId, locationId, reason, createdAt, lines]
+      properties:
+        id: { type: string, format: uuid }
+        returnNumber: { type: string }
+        issueId: { type: string, format: uuid }
+        issueNumber: { type: string }
+        productionOrderId: { type: string, format: uuid }
+        orderNumber: { type: string }
+        warehouseId: { type: string, format: uuid }
+        warehouseCode: { type: string }
+        warehouseName: { type: string }
+        locationId: { type: string, format: uuid }
+        locationCode: { type: string }
+        locationName: { type: string }
+        reason: { type: string }
+        createdAt: { type: string, format: date-time }
+        lines: { type: array, items: { $ref: "#/components/schemas/MaterialReturnLine" } }
+    MaterialReturnLine:
+      type: object
+      required: [id, issueLineId, lineNumber, componentMaterialId, componentMaterialCode, componentMaterialName, unit, quantity]
+      properties:
+        id: { type: string, format: uuid }
+        issueLineId: { type: string, format: uuid }
+        lineNumber: { type: integer }
+        componentMaterialId: { type: string, format: uuid }
+        componentMaterialCode: { type: string }
+        componentMaterialName: { type: string }
+        componentMaterialSpecification: { type: [string, "null"] }
+        unit: { type: string }
+        quantity: { type: number, exclusiveMinimum: 0 }
+        reason: { type: [string, "null"] }
+    CreateMaterialIssueRequest:
+      type: object
+      additionalProperties: false
+      required: [productionOrderId, warehouseId]
+      properties:
+        productionOrderId: { type: string, format: uuid }
+        warehouseId: { type: string, format: uuid }
+    MaterialIssueActionRequest:
+      type: object
+      additionalProperties: false
+      required: [action, expectedVersion]
+      properties:
+        action: { type: string, enum: [ISSUE, CANCEL] }
+        expectedVersion: { type: integer, format: int64, minimum: 0 }
+        comment: { type: [string, "null"], maxLength: 500 }
+        lines:
+          type: array
+          maxItems: 200
+          items:
+            type: object
+            additionalProperties: false
+            required: [lineId, quantity, expectedLineVersion]
+            properties:
+              lineId: { type: string, format: uuid }
+              quantity: { type: number, exclusiveMinimum: 0 }
+              expectedLineVersion: { type: integer, format: int64, minimum: 0 }
+    MaterialReturnRequest:
+      type: object
+      additionalProperties: false
+      required: [locationId, reason, lines]
+      properties:
+        locationId: { type: string, format: uuid }
+        reason: { type: string, minLength: 1, maxLength: 500 }
+        lines:
+          type: array
+          minItems: 1
+          maxItems: 200
+          items:
+            type: object
+            additionalProperties: false
+            required: [lineId, quantity, expectedLineVersion]
+            properties:
+              lineId: { type: string, format: uuid }
+              quantity: { type: number, exclusiveMinimum: 0 }
+              expectedLineVersion: { type: integer, format: int64, minimum: 0 }
+              reason: { type: [string, "null"], maxLength: 500 }
+    MaterialIssueReferenceData:
+      type: object
+      required: [productionOrders, warehouses, locations]
+      properties:
+        productionOrders:
+          type: array
+          items:
+            type: object
+            required: [id, orderNumber, materialId, materialCode, materialName, unit, plannedQuantity, plannedStartDate]
+            properties:
+              id: { type: string, format: uuid }
+              orderNumber: { type: string }
+              materialId: { type: string, format: uuid }
+              materialCode: { type: string }
+              materialName: { type: string }
+              materialSpecification: { type: [string, "null"] }
+              unit: { type: string }
+              plannedQuantity: { type: number, exclusiveMinimum: 0 }
+              plannedStartDate: { type: string, format: date }
+              workshop: { type: [string, "null"] }
+              owner: { type: [string, "null"] }
+        warehouses: { type: array, items: { $ref: "#/components/schemas/WarehouseOption" } }
+        locations: { type: array, items: { $ref: "#/components/schemas/WarehouseLocationOption" } }
+    WarehouseOption:
+      type: object
+      required: [id, code, name]
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string }
+        name: { type: string }
+    WarehouseLocationOption:
+      type: object
+      required: [id, warehouseId, code, name, locationType]
+      properties:
+        id: { type: string, format: uuid }
+        warehouseId: { type: string, format: uuid }
+        code: { type: string }
+        name: { type: string }
+        locationType: { type: string }
+
