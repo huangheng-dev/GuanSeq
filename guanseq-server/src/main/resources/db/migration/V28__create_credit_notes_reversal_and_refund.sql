@@ -1,6 +1,7 @@
--- 红字发票与反核销
--- 依赖 V24（应收）、V25（应付）。本迁移不删除任何已过账事实，只新增反向业务单据，
--- 并扩展现有状态机以支持红冲后的待退余额和核销的反向撤销。
+-- 红字发票、反核销与退款
+-- 依赖 V24（应收）、V25（应付）。本迁移不删除任何已过账事实：
+-- 红字发票以新增负数单据表达，反核销以新增反向记录表达，
+-- 退款复用现有收/付款表并增加 direction 字段，不引入独立退款单。
 
 CREATE SEQUENCE finance.receivable_credit_note_number_seq START WITH 1 INCREMENT BY 1;
 CREATE SEQUENCE finance.receivable_reversal_number_seq START WITH 1 INCREMENT BY 1;
@@ -191,6 +192,7 @@ CREATE TABLE finance.receivable_reversals (
     customer_name VARCHAR(160) NOT NULL,
     currency VARCHAR(3) NOT NULL,
     amount NUMERIC(18, 2) NOT NULL,
+    reversed_direction VARCHAR(16) NOT NULL,
     reversal_date DATE NOT NULL,
     reason VARCHAR(500) NOT NULL,
     status VARCHAR(24) NOT NULL DEFAULT 'POSTED',
@@ -201,6 +203,7 @@ CREATE TABLE finance.receivable_reversals (
     CONSTRAINT uk_receivable_reversal_tenant_request UNIQUE (tenant_organization_id, request_id),
     CONSTRAINT uk_receivable_reversal_receipt UNIQUE (receipt_id),
     CONSTRAINT ck_receivable_reversal_status CHECK (status IN ('POSTED')),
+    CONSTRAINT ck_receivable_reversal_direction CHECK (reversed_direction IN ('RECEIPT', 'REFUND')),
     CONSTRAINT ck_receivable_reversal_amount CHECK (amount > 0),
     CONSTRAINT ck_receivable_reversal_reason CHECK (char_length(trim(reason)) >= 4)
 );
@@ -223,6 +226,7 @@ CREATE TABLE finance.payable_reversals (
     supplier_name VARCHAR(160) NOT NULL,
     currency VARCHAR(3) NOT NULL,
     amount NUMERIC(18, 2) NOT NULL,
+    reversed_direction VARCHAR(16) NOT NULL,
     reversal_date DATE NOT NULL,
     reason VARCHAR(500) NOT NULL,
     status VARCHAR(24) NOT NULL DEFAULT 'POSTED',
@@ -233,6 +237,7 @@ CREATE TABLE finance.payable_reversals (
     CONSTRAINT uk_payable_reversal_tenant_request UNIQUE (tenant_organization_id, request_id),
     CONSTRAINT uk_payable_reversal_payment UNIQUE (payment_id),
     CONSTRAINT ck_payable_reversal_status CHECK (status IN ('POSTED')),
+    CONSTRAINT ck_payable_reversal_direction CHECK (reversed_direction IN ('PAYMENT', 'REFUND')),
     CONSTRAINT ck_payable_reversal_amount CHECK (amount > 0),
     CONSTRAINT ck_payable_reversal_reason CHECK (char_length(trim(reason)) >= 4)
 );
@@ -241,12 +246,11 @@ CREATE INDEX idx_payable_reversal_invoice
     ON finance.payable_reversals (tenant_organization_id, invoice_id, reversal_date DESC);
 
 -- ============================================================
--- 扩展现有表：状态机与待退余额
+-- 扩展现有发票：待退余额与扩展状态机
 -- ============================================================
 
 ALTER TABLE finance.receivable_invoices
     ADD COLUMN credit_balance NUMERIC(18, 2) NOT NULL DEFAULT 0;
-
 ALTER TABLE finance.payable_invoices
     ADD COLUMN credit_balance NUMERIC(18, 2) NOT NULL DEFAULT 0;
 
@@ -254,24 +258,37 @@ ALTER TABLE finance.receivable_invoices
     DROP CONSTRAINT ck_receivable_invoice_status;
 ALTER TABLE finance.receivable_invoices
     ADD CONSTRAINT ck_receivable_invoice_status
-    CHECK (status IN ('OPEN', 'PARTIALLY_PAID', 'PAID', 'OVERPAID'));
+    CHECK (status IN ('OPEN', 'PARTIALLY_PAID', 'PAID', 'CREDIT_PENDING', 'SETTLED'));
 
 ALTER TABLE finance.payable_invoices
     DROP CONSTRAINT ck_payable_invoice_status;
 ALTER TABLE finance.payable_invoices
     ADD CONSTRAINT ck_payable_invoice_status
-    CHECK (status IN ('OPEN', 'PARTIALLY_PAID', 'PAID', 'OVERPAID'));
+    CHECK (status IN ('OPEN', 'PARTIALLY_PAID', 'PAID', 'CREDIT_PENDING', 'SETTLED'));
 
 ALTER TABLE finance.receivable_invoices
     ADD CONSTRAINT ck_receivable_invoice_credit_balance CHECK (credit_balance >= 0);
 ALTER TABLE finance.payable_invoices
     ADD CONSTRAINT ck_payable_invoice_credit_balance CHECK (credit_balance >= 0);
 
+-- ============================================================
+-- 扩展现有收付款：方向、反核销、退款关联
+-- direction 让退款复用同一张表，不引入独立退款单。
+-- ============================================================
+
+ALTER TABLE finance.receivable_receipts
+    ADD COLUMN direction VARCHAR(16) NOT NULL DEFAULT 'RECEIPT';
+ALTER TABLE finance.receivable_receipts
+    ADD COLUMN credit_note_id UUID REFERENCES finance.receivable_credit_notes(id);
 ALTER TABLE finance.receivable_receipts
     ADD COLUMN reversal_id UUID REFERENCES finance.receivable_reversals(id);
 ALTER TABLE finance.receivable_receipts
     ADD COLUMN reversed_at TIMESTAMPTZ;
 
+ALTER TABLE finance.payable_payments
+    ADD COLUMN direction VARCHAR(16) NOT NULL DEFAULT 'PAYMENT';
+ALTER TABLE finance.payable_payments
+    ADD COLUMN credit_note_id UUID REFERENCES finance.payable_credit_notes(id);
 ALTER TABLE finance.payable_payments
     ADD COLUMN reversal_id UUID REFERENCES finance.payable_reversals(id);
 ALTER TABLE finance.payable_payments
@@ -282,18 +299,31 @@ ALTER TABLE finance.receivable_receipts
 ALTER TABLE finance.receivable_receipts
     ADD CONSTRAINT ck_receivable_receipt_status
     CHECK (status IN ('POSTED', 'REVERSED'));
+ALTER TABLE finance.receivable_receipts
+    ADD CONSTRAINT ck_receivable_receipt_direction CHECK (direction IN ('RECEIPT', 'REFUND'));
 
 ALTER TABLE finance.payable_payments
     DROP CONSTRAINT ck_payable_payment_status;
 ALTER TABLE finance.payable_payments
     ADD CONSTRAINT ck_payable_payment_status
     CHECK (status IN ('POSTED', 'REVERSED'));
+ALTER TABLE finance.payable_payments
+    ADD CONSTRAINT ck_payable_payment_direction CHECK (direction IN ('PAYMENT', 'REFUND'));
 
-COMMENT ON TABLE finance.receivable_credit_notes IS '对已过账应收发票按行或整票开具的红字发票，金额为负，不可修改或删除';
+CREATE INDEX idx_receivable_receipt_credit_note
+    ON finance.receivable_receipts (tenant_organization_id, credit_note_id)
+    WHERE credit_note_id IS NOT NULL;
+CREATE INDEX idx_payable_payment_credit_note
+    ON finance.payable_payments (tenant_organization_id, credit_note_id)
+    WHERE credit_note_id IS NOT NULL;
+
+COMMENT ON TABLE finance.receivable_credit_notes IS '对已过账应收发票按行或整票开具的红字发票，金额为负，过账后不可修改或删除';
 COMMENT ON TABLE finance.receivable_credit_note_lines IS '应收红字发票行，引用原蓝字发票行，记录红冲数量与单价';
-COMMENT ON TABLE finance.payable_credit_notes IS '对已过账应付发票按行或整票开具的红字发票，金额为负，不可修改或删除';
+COMMENT ON TABLE finance.payable_credit_notes IS '对已过账应付发票按行或整票开具的红字发票，金额为负，过账后不可修改或删除';
 COMMENT ON TABLE finance.payable_credit_note_lines IS '应付红字发票行，引用原蓝字发票行，记录红冲数量与单价';
-COMMENT ON TABLE finance.receivable_reversals IS '收款核销反操作；不删除原收款，将其状态置为 REVERSED 并恢复应收余额';
-COMMENT ON TABLE finance.payable_reversals IS '付款核销反操作；不删除原付款，将其状态置为 REVERSED 并恢复应付余额';
-COMMENT ON COLUMN finance.receivable_invoices.credit_balance IS '红冲后形成的应退客户余额，由后续退款单切片消费';
-COMMENT ON COLUMN finance.payable_invoices.credit_balance IS '红冲后形成的应退供应商余额，由后续退款单切片消费';
+COMMENT ON TABLE finance.receivable_reversals IS '收款或退款核销反操作；不删除原记录，将其状态置为 REVERSED 并恢复余额';
+COMMENT ON TABLE finance.payable_reversals IS '付款或退款核销反操作；不删除原记录，将其状态置为 REVERSED 并恢复余额';
+COMMENT ON COLUMN finance.receivable_invoices.credit_balance IS '红冲后形成的应退客户余额，退款登记后逐步扣减至零';
+COMMENT ON COLUMN finance.payable_invoices.credit_balance IS '红冲后形成的应向供应商收回余额，退款登记后逐步扣减至零';
+COMMENT ON COLUMN finance.receivable_receipts.direction IS 'RECEIPT 为客户收款，REFUND 为向客户退款；退款复用同一表';
+COMMENT ON COLUMN finance.payable_payments.direction IS 'PAYMENT 为向供应商付款，REFUND 为从供应商收回退款；退款复用同一表';
