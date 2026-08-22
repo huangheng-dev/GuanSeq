@@ -21,6 +21,7 @@ import { getMaterialIssuePageData } from "@/services/material-issue-server-servi
 import { getOperationTaskPageData } from "@/services/operation-task-server-service";
 import { getOrderProfitPageData } from "@/services/order-profit-server-service";
 import { getReceivablePageData } from "@/services/receivable-server-service";
+import { getPayablePageData } from "@/services/payable-server-service";
 
 type RoutePageProps = {
   params: Promise<{ segments: string[] }>;
@@ -29,7 +30,7 @@ type RoutePageProps = {
 export default async function RoutePage({ params }: RoutePageProps) {
   const { segments } = await params;
   const pathname = `/${segments.join("/")}`;
-  const [snapshot, pageModel, searchIndex, salesOrderPage, planningDemandPage, mrpRunPage, mrpSuggestionPage, bomPage, routingPage, inventoryPage, procurementPage, planningParameterPage, productionOrderPage, productionExecutionPage, finalInspectionPage, materialIssuePage, operationTaskPage, purchaseReceiptPage, incomingInspectionPage, salesShipmentPage, orderProfitPage, receivablePage] = await Promise.all([
+  const [snapshot, pageModel, searchIndex, salesOrderPage, planningDemandPage, mrpRunPage, mrpSuggestionPage, bomPage, routingPage, inventoryPage, procurementPage, planningParameterPage, productionOrderPage, productionExecutionPage, finalInspectionPage, materialIssuePage, operationTaskPage, purchaseReceiptPage, incomingInspectionPage, salesShipmentPage, orderProfitPage, receivablePage, payablePage] = await Promise.all([
     getManufacturingSnapshot(),
     getBusinessPageWithData(pathname),
     getGlobalSearchIndex(),
@@ -52,8 +53,9 @@ export default async function RoutePage({ params }: RoutePageProps) {
     getSalesShipmentPageData(pathname),
     getOrderProfitPageData(pathname),
     getReceivablePageData(pathname),
+    getPayablePageData(pathname),
   ]);
   if (!pageModel) notFound();
-  return <ManufacturingWorkspace initialSnapshot={snapshot} initialPageModel={pageModel} initialSearchIndex={searchIndex} initialSalesOrderPage={salesOrderPage} initialPlanningDemandPage={planningDemandPage} initialMrpRunPage={mrpRunPage} initialMrpSuggestionPage={mrpSuggestionPage} initialBomPage={bomPage} initialRoutingPage={routingPage} initialInventoryPage={inventoryPage} initialProcurementPage={procurementPage} initialPlanningParameterPage={planningParameterPage} initialProductionOrderPage={productionOrderPage} initialProductionExecutionPage={productionExecutionPage} initialFinalInspectionPage={finalInspectionPage} initialMaterialIssuePage={materialIssuePage} initialOperationTaskPage={operationTaskPage} initialPurchaseReceiptPage={purchaseReceiptPage} initialIncomingInspectionPage={incomingInspectionPage} initialSalesShipmentPage={salesShipmentPage} initialOrderProfitPage={orderProfitPage} initialReceivablePage={receivablePage} />;
+  return <ManufacturingWorkspace initialSnapshot={snapshot} initialPageModel={pageModel} initialSearchIndex={searchIndex} initialSalesOrderPage={salesOrderPage} initialPlanningDemandPage={planningDemandPage} initialMrpRunPage={mrpRunPage} initialMrpSuggestionPage={mrpSuggestionPage} initialBomPage={bomPage} initialRoutingPage={routingPage} initialInventoryPage={inventoryPage} initialProcurementPage={procurementPage} initialPlanningParameterPage={planningParameterPage} initialProductionOrderPage={productionOrderPage} initialProductionExecutionPage={productionExecutionPage} initialFinalInspectionPage={finalInspectionPage} initialMaterialIssuePage={materialIssuePage} initialOperationTaskPage={operationTaskPage} initialPurchaseReceiptPage={purchaseReceiptPage} initialIncomingInspectionPage={incomingInspectionPage} initialSalesShipmentPage={salesShipmentPage} initialOrderProfitPage={orderProfitPage} initialReceivablePage={receivablePage} initialPayablePage={payablePage} />;
 }
 
