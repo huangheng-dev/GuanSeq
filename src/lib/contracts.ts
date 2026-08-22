@@ -280,9 +280,10 @@ export const orderProfitReferenceDataSchema = z.object({
 });
 
 export const receivableReceiptSchema = z.object({
-  id: z.string().uuid(), receiptNumber: z.string(), amount: z.number().positive(), receiptDate: z.string(),
+  id: z.string().uuid(), receiptNumber: z.string(), direction: z.enum(["RECEIPT", "REFUND"]),
+  amount: z.number().positive(), receiptDate: z.string(),
   paymentMethod: z.enum(["BANK_TRANSFER", "CASH", "BILL", "OTHER"]), bankReference: z.string().nullable(),
-  note: z.string().nullable(), status: z.literal("POSTED"), createdAt: z.string().datetime(),
+  note: z.string().nullable(), status: z.enum(["POSTED", "REVERSED"]), createdAt: z.string().datetime(),
 });
 
 export const receivableInvoiceLineSchema = z.object({
@@ -297,7 +298,8 @@ export const receivableInvoiceRecordSchema = z.object({
   customerId: z.string().uuid(), customerCode: z.string(), customerName: z.string(), currency: z.string(),
   invoiceDate: z.string(), dueDate: z.string(), taxRate: z.number().min(0).max(1), netAmount: z.number().nonnegative(),
   taxAmount: z.number().nonnegative(), grossAmount: z.number().positive(), receivedAmount: z.number().nonnegative(),
-  outstandingAmount: z.number().nonnegative(), status: z.enum(["OPEN", "PARTIALLY_PAID", "PAID"]),
+  outstandingAmount: z.number().nonnegative(), creditBalance: z.number().nonnegative(),
+  status: z.enum(["OPEN", "PARTIALLY_PAID", "PAID", "CREDIT_PENDING", "SETTLED"]),
   version: z.number().int().nonnegative(), createdAt: z.string().datetime(), lines: z.array(receivableInvoiceLineSchema).min(1),
   receipts: z.array(receivableReceiptSchema),
 });
@@ -317,6 +319,27 @@ export const receivableReferenceDataSchema = z.object({
     })),
   })),
 });
+
+export const receivableCreditNoteLineSchema = z.object({
+  id: z.string().uuid(), originalInvoiceLineId: z.string().uuid(), salesOrderLineId: z.string().uuid(),
+  lineNumber: z.number().int().positive(), materialId: z.string().uuid(), materialCode: z.string(),
+  materialName: z.string(), materialSpecification: z.string().nullable(), unit: z.string(),
+  creditQuantity: z.number().positive(), unitPrice: z.number().nonnegative(),
+  netAmount: z.number().nonpositive(), taxAmount: z.number().nonpositive(), grossAmount: z.number().negative(),
+});
+
+export const receivableCreditNoteSchema = z.object({
+  id: z.string().uuid(), creditNoteNumber: z.string(), originalInvoiceId: z.string().uuid(),
+  originalInvoiceNumber: z.string(), salesOrderId: z.string().uuid(), orderNumber: z.string(),
+  customerId: z.string().uuid(), customerCode: z.string(), customerName: z.string(), currency: z.string(),
+  taxNoticeNumber: z.string().nullable(), creditNoteDate: z.string(), dueDate: z.string(),
+  taxRate: z.number().min(0).max(1), netAmount: z.number().nonpositive(), taxAmount: z.number().nonpositive(),
+  grossAmount: z.number().negative(), reason: z.string().min(4), status: z.literal("POSTED"),
+  version: z.number().int().nonnegative(), createdAt: z.string().datetime(),
+  lines: z.array(receivableCreditNoteLineSchema).min(1),
+});
+
+export const receivableCreditNotePageSchema = pageEnvelope(receivableCreditNoteSchema);
 
 export const purchaseOrderLineSchema = z.object({
   id: z.string().uuid(), lineNumber: z.number().int().positive(), materialId: z.string().uuid(),
@@ -843,6 +866,7 @@ export type OrderProfitRecord = z.infer<typeof orderProfitRecordSchema>;
 export type OrderProfitReferenceData = z.infer<typeof orderProfitReferenceDataSchema>;
 export type ReceivableInvoiceRecord = z.infer<typeof receivableInvoiceRecordSchema>;
 export type ReceivableReferenceData = z.infer<typeof receivableReferenceDataSchema>;
+export type ReceivableCreditNoteRecord = z.infer<typeof receivableCreditNoteSchema>;
 export type SalesShipmentReferenceData = z.infer<typeof salesShipmentReferenceDataSchema>;
 export type PurchaseOrderLine = z.infer<typeof purchaseOrderLineSchema>;
 export type PurchaseOrderRecord = z.infer<typeof purchaseOrderRecordSchema>;
