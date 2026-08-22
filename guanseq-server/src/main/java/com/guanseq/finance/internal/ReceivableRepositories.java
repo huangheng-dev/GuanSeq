@@ -32,6 +32,27 @@ interface ReceivableInvoiceRepository extends JpaRepository<ReceivableInvoiceEnt
 
 interface ReceivableReceiptRepository extends JpaRepository<ReceivableReceiptEntity, UUID> {
 	Optional<ReceivableReceiptEntity> findByTenantOrganizationIdAndRequestId(UUID tenantOrganizationId, String requestId);
+	Optional<ReceivableReceiptEntity> findByIdAndTenantOrganizationId(UUID id, UUID tenantOrganizationId);
+}
+
+interface ReceivableCreditNoteRepository extends JpaRepository<ReceivableCreditNoteEntity, UUID> {
+	@Query("""
+			select cn from ReceivableCreditNoteEntity cn
+			where cn.tenantOrganizationId = :tenantId
+			  and (:query = '' or lower(cn.creditNoteNumber) like lower(concat('%', :query, '%'))
+			       or lower(cn.originalInvoiceNumber) like lower(concat('%', :query, '%'))
+			       or lower(cn.customerCode) like lower(concat('%', :query, '%'))
+			       or lower(cn.customerName) like lower(concat('%', :query, '%')))
+			""")
+	Page<ReceivableCreditNoteEntity> search(@Param("tenantId") UUID tenantId, @Param("query") String query, Pageable pageable);
+
+	Optional<ReceivableCreditNoteEntity> findByIdAndTenantOrganizationId(UUID id, UUID tenantOrganizationId);
+	Optional<ReceivableCreditNoteEntity> findByTenantOrganizationIdAndRequestId(UUID tenantOrganizationId, String requestId);
+	List<ReceivableCreditNoteEntity> findByTenantOrganizationIdAndOriginalInvoiceId(UUID tenantOrganizationId, UUID originalInvoiceId);
+}
+
+interface ReceivableReversalRepository extends JpaRepository<ReceivableReversalEntity, UUID> {
+	Optional<ReceivableReversalEntity> findByTenantOrganizationIdAndRequestId(UUID tenantOrganizationId, String requestId);
 }
 
 interface ReceivableEventRepository extends JpaRepository<ReceivableEventEntity, UUID> { }

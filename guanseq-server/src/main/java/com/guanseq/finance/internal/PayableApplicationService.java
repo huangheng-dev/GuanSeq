@@ -26,6 +26,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.guanseq.finance.api.PayableCreditNotePage;
+import com.guanseq.finance.api.PayableCreditNoteRecord;
 import com.guanseq.finance.api.PayableInvoicePage;
 import com.guanseq.finance.api.PayableInvoiceRecord;
 import com.guanseq.finance.api.PayableReferenceData;
@@ -39,21 +41,26 @@ import com.guanseq.procurement.api.ProcurementPayableQueryProvider.PayableOrder;
 public class PayableApplicationService {
 
 	private static final Set<String> WRITE_ROLES = Set.of("ADMIN", "FINANCE_MANAGER");
-	private static final Set<String> STATUSES = Set.of("OPEN", "PARTIALLY_PAID", "PAID");
+	private static final Set<String> STATUSES = Set.of("OPEN", "PARTIALLY_PAID", "PAID", "CREDIT_PENDING", "SETTLED");
 	private final CurrentWorkspaceProvider workspaceProvider;
 	private final ProcurementPayableQueryProvider procurementProvider;
 	private final PayableInvoiceRepository invoiceRepository;
 	private final PayablePaymentRepository paymentRepository;
+	private final PayableCreditNoteRepository creditNoteRepository;
+	private final PayableReversalRepository reversalRepository;
 	private final PayableEventRepository eventRepository;
 	private final JdbcTemplate jdbcTemplate;
 
 	PayableApplicationService(CurrentWorkspaceProvider workspaceProvider, ProcurementPayableQueryProvider procurementProvider,
 			PayableInvoiceRepository invoiceRepository, PayablePaymentRepository paymentRepository,
+			PayableCreditNoteRepository creditNoteRepository, PayableReversalRepository reversalRepository,
 			PayableEventRepository eventRepository, JdbcTemplate jdbcTemplate) {
 		this.workspaceProvider = workspaceProvider;
 		this.procurementProvider = procurementProvider;
 		this.invoiceRepository = invoiceRepository;
 		this.paymentRepository = paymentRepository;
+		this.creditNoteRepository = creditNoteRepository;
+		this.reversalRepository = reversalRepository;
 		this.eventRepository = eventRepository;
 		this.jdbcTemplate = jdbcTemplate;
 	}
@@ -177,6 +184,152 @@ public class PayableApplicationService {
 		return toRecord(invoice);
 	}
 
+	// ---- 红字发票 ----
+
+	@Transactional(readOnly = true)
+	public PayableCreditNotePage listCreditNotes(String username, String query, int page, int size) {
+		CurrentWorkspaceAccess access = workspaceProvider.resolve(username);
+		Page<PayableCreditNoteEntity> result = creditNoteRepository.search(access.tenantOrganizationId(), normalize(query),
+				PageRequest.of(Math.max(0, page), Math.min(100, Math.max(1, size)),
+						Sort.by(Sort.Direction.DESC, "createdAt")));
+		return new PayableCreditNotePage(result.getContent().stream().map(this::toCreditNoteRecord).toList(),
+				result.getTotalElements(), result.getNumber(), result.getSize(), result.getTotalPages());
+	}
+
+	@Transactional(readOnly = true)
+	public PayableCreditNoteRecord getCreditNote(String username, UUID id) {
+		CurrentWorkspaceAccess access = workspaceProvider.resolve(username);
+		return toCreditNoteRecord(creditNoteRepository.findByIdAndTenantOrganizationId(id, access.tenantOrganizationId())
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "红字发票不存在或不在当前租户范围")));
+	}
+
+	@Transactional
+	public PayableCreditNoteRecord createCreditNote(String username, String requestIdHeader,
+			PayableCreditNoteRecord.CreateRequest request) {
+		CurrentWorkspaceAccess access = workspaceProvider.resolve(username);
+		requireWriteRole(access, "登记应付红字发票");
+		String requestId = normalizeRequestId(requestIdHeader, "payable-credit-note");
+		PayableCreditNoteEntity duplicate = creditNoteRepository
+				.findByTenantOrganizationIdAndRequestId(access.tenantOrganizationId(), requestId).orElse(null);
+		if (duplicate != null) return toCreditNoteRecord(duplicate);
+		if (request.dueDate().isBefore(request.creditNoteDate())) throw invalid("到期日不能早于红字发票日期");
+		lockBusinessKey("payable-credit-note:" + request.originalInvoiceId());
+		duplicate = creditNoteRepository.findByTenantOrganizationIdAndRequestId(access.tenantOrganizationId(), requestId).orElse(null);
+		if (duplicate != null) return toCreditNoteRecord(duplicate);
+		PayableInvoiceEntity original = findInvoice(access, request.originalInvoiceId());
+		Map<UUID, PayableInvoiceLineEntity> originalLines = original.getLines().stream()
+				.collect(Collectors.toMap(PayableInvoiceLineEntity::getId, Function.identity()));
+		Map<UUID, BigDecimal> alreadyCredited = creditedQuantities(access.tenantOrganizationId(), original.getId());
+		Set<UUID> requestedLines = new HashSet<>();
+		PayableCreditNoteEntity creditNote = new PayableCreditNoteEntity(access.tenantOrganizationId(),
+				access.operatingOrganizationId(), access.workspaceId(), nextCreditNoteNumber(), original,
+				request.supplierCreditNoteNumber(), request.taxNoticeNumber(), request.creditNoteDate(),
+				request.dueDate(), request.reason().trim(), requestId, access.userId());
+		for (PayableCreditNoteRecord.LineInput input : request.lines()) {
+			if (!requestedLines.add(input.originalInvoiceLineId())) throw invalid("同一原发票行不能重复红冲");
+			PayableInvoiceLineEntity originalLine = originalLines.get(input.originalInvoiceLineId());
+			if (originalLine == null) throw invalid("红冲行不属于指定的原蓝字发票");
+			BigDecimal creditQuantity = input.creditQuantity().setScale(4, RoundingMode.HALF_UP);
+			BigDecimal remaining = originalLine.getInvoiceQuantity()
+					.subtract(alreadyCredited.getOrDefault(originalLine.getId(), BigDecimal.ZERO))
+					.setScale(4, RoundingMode.HALF_UP);
+			if (creditQuantity.signum() <= 0 || creditQuantity.compareTo(remaining) > 0) {
+				throw invalid(originalLine.getMaterialCode() + " 红冲数量超过可冲数量 " + remaining.toPlainString());
+			}
+			creditNote.addLine(originalLine, creditQuantity, input.unitPrice());
+		}
+		if (creditNote.getGrossAmount().signum() >= 0) throw invalid("红字发票含税金额必须为负数");
+		String fromStatus = original.getStatus();
+		original.applyCreditNote(creditNote.getGrossAmount(), access.userId());
+		try {
+			creditNoteRepository.saveAndFlush(creditNote);
+			invoiceRepository.saveAndFlush(original);
+			eventRepository.saveAndFlush(new PayableEventEntity(access.tenantOrganizationId(), access.workspaceId(),
+					access.userId(), original.getId(), null, "CREATE_CREDIT_NOTE", fromStatus, original.getStatus(), requestId,
+					Map.of("creditNoteNumber", creditNote.getCreditNoteNumber(), "creditNoteId", creditNote.getId(),
+							"originalInvoiceId", original.getId(), "grossAmount", creditNote.getGrossAmount(),
+							"creditBalance", original.getCreditBalance())));
+		} catch (DataIntegrityViolationException exception) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "红字发票请求与已有业务事实冲突，请刷新后确认", exception);
+		}
+		return toCreditNoteRecord(creditNote);
+	}
+
+	@Transactional
+	public PayableInvoiceRecord postRefund(String username, UUID invoiceId, String requestIdHeader,
+			PayableCreditNoteRecord.RefundRequest request) {
+		CurrentWorkspaceAccess access = workspaceProvider.resolve(username);
+		requireWriteRole(access, "登记应付退款");
+		String requestId = normalizeRequestId(requestIdHeader, "payable-refund");
+		lockBusinessKey("payable-refund:" + invoiceId);
+		PayablePaymentEntity duplicate = paymentRepository
+				.findByTenantOrganizationIdAndRequestId(access.tenantOrganizationId(), requestId).orElse(null);
+		if (duplicate != null) return toRecord(findInvoice(access, duplicate.getInvoiceId()));
+		PayableInvoiceEntity invoice = findInvoice(access, invoiceId);
+		if (invoice.getVersion() != request.expectedVersion()) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "应付发票已被其他事务更新，请刷新后重试");
+		}
+		if (invoice.getCreditBalance().signum() <= 0) throw invalid("该发票没有待收回余额，不能登记退款");
+		if (request.refundDate().isBefore(invoice.getInvoiceDate())) throw invalid("退款日期不能早于发票日期");
+		BigDecimal amount = request.amount().setScale(2, RoundingMode.HALF_UP);
+		if (amount.signum() <= 0 || amount.compareTo(invoice.getCreditBalance()) > 0) {
+			throw invalid("退款金额不能超过待收回余额 " + invoice.getCreditBalance().toPlainString());
+		}
+		String fromStatus = invoice.getStatus();
+		PayablePaymentEntity refund = invoice.applyRefund(nextRefundNumber(), amount, request.refundDate(),
+				request.paymentMethod().trim().toUpperCase(), request.bankReference(), request.note(), requestId, access.userId());
+		try {
+			invoiceRepository.saveAndFlush(invoice);
+			eventRepository.saveAndFlush(new PayableEventEntity(access.tenantOrganizationId(), access.workspaceId(),
+					access.userId(), invoice.getId(), refund.getId(), "POST_REFUND", fromStatus, invoice.getStatus(), requestId,
+					Map.of("refundNumber", refund.getPaymentNumber(), "amount", amount,
+							"creditBalance", invoice.getCreditBalance())));
+		} catch (ObjectOptimisticLockingFailureException exception) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "应付发票已被其他事务更新，请刷新后重试", exception);
+		} catch (DataIntegrityViolationException exception) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "退款请求与已有业务事实冲突，请刷新后确认", exception);
+		}
+		return toRecord(invoice);
+	}
+
+	@Transactional
+	public PayableInvoiceRecord reversePayment(String username, UUID paymentId, String requestIdHeader,
+			PayableCreditNoteRecord.ReverseRequest request) {
+		CurrentWorkspaceAccess access = workspaceProvider.resolve(username);
+		requireWriteRole(access, "反核销应付付款或退款");
+		String requestId = normalizeRequestId(requestIdHeader, "payable-reversal");
+		PayableReversalEntity duplicate = reversalRepository
+				.findByTenantOrganizationIdAndRequestId(access.tenantOrganizationId(), requestId).orElse(null);
+		if (duplicate != null) return toRecord(findInvoice(access, duplicate.getInvoiceId()));
+		lockBusinessKey("payable-reversal:" + paymentId);
+		duplicate = reversalRepository.findByTenantOrganizationIdAndRequestId(access.tenantOrganizationId(), requestId).orElse(null);
+		if (duplicate != null) return toRecord(findInvoice(access, duplicate.getInvoiceId()));
+		PayablePaymentEntity payment = paymentRepository.findByIdAndTenantOrganizationId(paymentId, access.tenantOrganizationId())
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "付款记录不存在或不在当前租户范围"));
+		if ("REVERSED".equals(payment.getStatus())) throw new ResponseStatusException(HttpStatus.CONFLICT, "该记录已被反核销，不能重复操作");
+		PayableInvoiceEntity invoice = findInvoice(access, payment.getInvoiceId());
+		if (request.reversalDate().isBefore(payment.getPaymentDate())) throw invalid("反核销日期不能早于原记录日期");
+		if (request.reason().trim().length() < 4) throw invalid("反核销原因至少需要 4 个字符");
+		PayableReversalEntity reversal = new PayableReversalEntity(access.tenantOrganizationId(),
+				access.operatingOrganizationId(), access.workspaceId(), nextReversalNumber(), payment, invoice,
+				request.reversalDate(), request.reason().trim(), requestId, access.userId());
+		String fromStatus = invoice.getStatus();
+		invoice.reversePayment(payment, reversal.getId(), access.userId());
+		try {
+			reversalRepository.saveAndFlush(reversal);
+			invoiceRepository.saveAndFlush(invoice);
+			eventRepository.saveAndFlush(new PayableEventEntity(access.tenantOrganizationId(), access.workspaceId(),
+					access.userId(), invoice.getId(), payment.getId(), "REVERSE_PAYMENT", fromStatus, invoice.getStatus(), requestId,
+					Map.of("reversalNumber", reversal.getReversalNumber(), "reversedDirection", payment.getDirection(),
+							"amount", payment.getAmount())));
+		} catch (ObjectOptimisticLockingFailureException exception) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "应付发票已被其他事务更新，请刷新后重试", exception);
+		} catch (DataIntegrityViolationException exception) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "反核销请求与已有业务事实冲突，请刷新后确认", exception);
+		}
+		return toRecord(invoice);
+	}
+
 	private PayableReferenceData.InvoiceableOrder toReferenceOrder(PayableOrder order, Map<UUID, BigDecimal> invoicedByLine) {
 		List<PayableReferenceData.InvoiceableLine> lines = order.lines().stream().map(line -> {
 			BigDecimal invoiced = invoicedByLine.getOrDefault(line.id(), BigDecimal.ZERO).setScale(4, RoundingMode.HALF_UP);
@@ -204,6 +357,16 @@ public class PayableApplicationService {
 		return result;
 	}
 
+	private Map<UUID, BigDecimal> creditedQuantities(UUID tenantId, UUID originalInvoiceId) {
+		Map<UUID, BigDecimal> result = new HashMap<>();
+		for (PayableCreditNoteEntity cn : creditNoteRepository.findByTenantOrganizationIdAndOriginalInvoiceId(tenantId, originalInvoiceId)) {
+			for (PayableCreditNoteLineEntity line : cn.getLines()) {
+				result.merge(line.getOriginalInvoiceLineId(), line.getCreditQuantity(), BigDecimal::add);
+			}
+		}
+		return result;
+	}
+
 	private PayableInvoiceEntity findInvoice(CurrentWorkspaceAccess access, UUID id) {
 		return invoiceRepository.findByIdAndTenantOrganizationId(id, access.tenantOrganizationId())
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "应付发票不存在或不在当前租户范围"));
@@ -214,7 +377,8 @@ public class PayableApplicationService {
 				invoice.getPurchaseOrderId(), invoice.getOrderNumber(), invoice.getSupplierId(), invoice.getSupplierCode(),
 				invoice.getSupplierName(), invoice.getCurrency(), invoice.getInvoiceDate(), invoice.getDueDate(), invoice.getTaxRate(),
 				invoice.getNetAmount(), invoice.getTaxAmount(), invoice.getGrossAmount(), invoice.getPaidAmount(),
-				invoice.outstandingAmount(), invoice.getStatus(), invoice.getVersion(), invoice.getCreatedAt(),
+				invoice.outstandingAmount(), invoice.getCreditBalance(), invoice.getStatus(), invoice.getVersion(),
+				invoice.getCreatedAt(),
 				invoice.getLines().stream().sorted(Comparator.comparingInt(PayableInvoiceLineEntity::getLineNumber))
 						.map(this::toLineRecord).toList(),
 				invoice.getPayments().stream().sorted(Comparator.comparing(PayablePaymentEntity::getPaymentDate)
@@ -228,9 +392,26 @@ public class PayableApplicationService {
 	}
 
 	private PayableInvoiceRecord.Payment toPaymentRecord(PayablePaymentEntity payment) {
-		return new PayableInvoiceRecord.Payment(payment.getId(), payment.getPaymentNumber(), payment.getAmount(),
-				payment.getPaymentDate(), payment.getPaymentMethod(), payment.getBankReference(), payment.getNote(),
-				payment.getStatus(), payment.getCreatedAt());
+		return new PayableInvoiceRecord.Payment(payment.getId(), payment.getPaymentNumber(), payment.getDirection(),
+				payment.getAmount(), payment.getPaymentDate(), payment.getPaymentMethod(), payment.getBankReference(),
+				payment.getNote(), payment.getStatus(), payment.getCreatedAt());
+	}
+
+	private PayableCreditNoteRecord toCreditNoteRecord(PayableCreditNoteEntity cn) {
+		return new PayableCreditNoteRecord(cn.getId(), cn.getCreditNoteNumber(), cn.getOriginalInvoiceId(),
+				cn.getOriginalInvoiceNumber(), cn.getSupplierCreditNoteNumber(), cn.getPurchaseOrderId(), cn.getOrderNumber(),
+				cn.getSupplierId(), cn.getSupplierCode(), cn.getSupplierName(), cn.getCurrency(), cn.getTaxNoticeNumber(),
+				cn.getCreditNoteDate(), cn.getDueDate(), cn.getTaxRate(), cn.getNetAmount(), cn.getTaxAmount(),
+				cn.getGrossAmount(), cn.getReason(), cn.getStatus(), cn.getVersion(), cn.getCreatedAt(),
+				cn.getLines().stream().sorted(Comparator.comparingInt(PayableCreditNoteLineEntity::getLineNumber))
+						.map(this::toCreditNoteLineRecord).toList());
+	}
+
+	private PayableCreditNoteRecord.Line toCreditNoteLineRecord(PayableCreditNoteLineEntity line) {
+		return new PayableCreditNoteRecord.Line(line.getId(), line.getOriginalInvoiceLineId(), line.getPurchaseOrderLineId(),
+				line.getLineNumber(), line.getMaterialId(), line.getMaterialCode(), line.getMaterialName(),
+				line.getMaterialSpecification(), line.getUnit(), line.getCreditQuantity(), line.getUnitPrice(),
+				line.getNetAmount(), line.getTaxAmount(), line.getGrossAmount());
 	}
 
 	private void lockBusinessKey(String key) {
@@ -246,6 +427,21 @@ public class PayableApplicationService {
 	private String nextPaymentNumber() {
 		Long value = jdbcTemplate.queryForObject("select nextval('finance.payable_payment_number_seq')", Long.class);
 		return "APPAY-" + LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE) + "-" + String.format("%06d", value);
+	}
+
+	private String nextCreditNoteNumber() {
+		Long value = jdbcTemplate.queryForObject("select nextval('finance.payable_credit_note_number_seq')", Long.class);
+		return "APCN-" + LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE) + "-" + String.format("%06d", value);
+	}
+
+	private String nextRefundNumber() {
+		Long value = jdbcTemplate.queryForObject("select nextval('finance.payable_payment_number_seq')", Long.class);
+		return "APRF-" + LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE) + "-" + String.format("%06d", value);
+	}
+
+	private String nextReversalNumber() {
+		Long value = jdbcTemplate.queryForObject("select nextval('finance.payable_reversal_number_seq')", Long.class);
+		return "APRV-" + LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE) + "-" + String.format("%06d", value);
 	}
 
 	private static void requireWriteRole(CurrentWorkspaceAccess access, String action) {

@@ -33,6 +33,7 @@ public record PayableInvoiceRecord(
 		BigDecimal grossAmount,
 		BigDecimal paidAmount,
 		BigDecimal outstandingAmount,
+		BigDecimal creditBalance,
 		String status,
 		long version,
 		Instant createdAt,
@@ -57,6 +58,7 @@ public record PayableInvoiceRecord(
 	public record Payment(
 			UUID id,
 			String paymentNumber,
+			String direction,
 			BigDecimal amount,
 			LocalDate paymentDate,
 			String paymentMethod,

@@ -56,4 +56,38 @@ public class ReceivableInvoiceController {
 			@Valid @RequestBody ReceivableInvoiceRecord.ReceiptRequest request) {
 		return service.postReceipt(principal.getName(), id, requestId, request);
 	}
+
+	// ---- 红字发票与退款 / 反核销 ----
+
+	@GetMapping("/receivable-credit-notes")
+	ReceivableCreditNotePage listCreditNotes(Principal principal, @RequestParam(required = false) String query,
+			@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "50") int size) {
+		return service.listCreditNotes(principal.getName(), query, page, size);
+	}
+
+	@GetMapping("/receivable-credit-notes/{id}")
+	ReceivableCreditNoteRecord getCreditNote(Principal principal, @PathVariable UUID id) {
+		return service.getCreditNote(principal.getName(), id);
+	}
+
+	@PostMapping(path = "/receivable-credit-notes", consumes = MediaType.APPLICATION_JSON_VALUE)
+	ReceivableCreditNoteRecord createCreditNote(Principal principal,
+			@RequestHeader(value = "X-Request-Id", required = false) String requestId,
+			@Valid @RequestBody ReceivableCreditNoteRecord.CreateRequest request) {
+		return service.createCreditNote(principal.getName(), requestId, request);
+	}
+
+	@PostMapping(path = "/receivable-invoices/{id}/refunds", consumes = MediaType.APPLICATION_JSON_VALUE)
+	ReceivableInvoiceRecord postRefund(Principal principal, @PathVariable UUID id,
+			@RequestHeader(value = "X-Request-Id", required = false) String requestId,
+			@Valid @RequestBody ReceivableCreditNoteRecord.RefundRequest request) {
+		return service.postRefund(principal.getName(), id, requestId, request);
+	}
+
+	@PostMapping(path = "/receivables/receipts/{id}/reverse", consumes = MediaType.APPLICATION_JSON_VALUE)
+	ReceivableInvoiceRecord reverseReceipt(Principal principal, @PathVariable UUID id,
+			@RequestHeader(value = "X-Request-Id", required = false) String requestId,
+			@Valid @RequestBody ReceivableCreditNoteRecord.ReverseRequest request) {
+		return service.reverseReceipt(principal.getName(), id, requestId, request);
+	}
 }

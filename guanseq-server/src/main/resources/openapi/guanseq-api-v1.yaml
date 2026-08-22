@@ -493,7 +493,7 @@ paths:
         - $ref: "#/components/parameters/Query"
         - name: status
           in: query
-          schema: { type: string, enum: [ALL, OPEN, PARTIALLY_PAID, PAID], default: ALL }
+          schema: { type: string, enum: [ALL, OPEN, PARTIALLY_PAID, PAID, CREDIT_PENDING, SETTLED], default: ALL }
         - $ref: "#/components/parameters/Page"
         - $ref: "#/components/parameters/Size"
       responses:
@@ -578,6 +578,113 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ReceivableReferenceData" }
+  /api/v1/finance/receivable-credit-notes:
+    get:
+      operationId: listReceivableCreditNotes
+      summary: 分页查询应收红字发票
+      tags: [Finance]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/Query"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+      responses:
+        "200":
+          description: 应收红字发票分页
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReceivableCreditNotePage" }
+    post:
+      operationId: createReceivableCreditNote
+      summary: 对已过账应收发票开具红字发票
+      tags: [Finance]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - name: X-Request-Id
+          in: header
+          required: false
+          schema: { type: string, maxLength: 120 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateReceivableCreditNoteRequest" }
+      responses:
+        "200":
+          description: 已过账红字发票
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReceivableCreditNote" }
+        "403": { description: 当前角色无权开具红字发票 }
+        "409": { description: 请求编号或并发冲突 }
+        "422": { description: 日期、数量或原发票状态不满足约束 }
+  /api/v1/finance/receivable-credit-notes/{id}:
+    get:
+      operationId: getReceivableCreditNote
+      summary: 获取应收红字发票详情
+      tags: [Finance]
+      security: [{ basicAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/EntityId" }]
+      responses:
+        "200":
+          description: 红字发票详情
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReceivableCreditNote" }
+        "404": { description: 红字发票不存在或不可见 }
+  /api/v1/finance/receivable-invoices/{id}/refunds:
+    post:
+      operationId: postReceivableRefund
+      summary: 对存在待退余额的应收发票登记退款
+      tags: [Finance]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/EntityId"
+        - name: X-Request-Id
+          in: header
+          required: false
+          schema: { type: string, maxLength: 120 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PostReceivableRefundRequest" }
+      responses:
+        "200":
+          description: 已登记退款并返回更新后的发票
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReceivableInvoice" }
+        "403": { description: 当前角色无权登记退款 }
+        "409": { description: 发票版本、请求编号或并发冲突 }
+        "422": { description: 退款日期、金额或待退余额不满足约束 }
+  /api/v1/finance/receivables/receipts/{id}/reverse:
+    post:
+      operationId: reverseReceivableReceipt
+      summary: 反核销一笔应收收款或退款
+      tags: [Finance]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/EntityId"
+        - name: X-Request-Id
+          in: header
+          required: false
+          schema: { type: string, maxLength: 120 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ReverseReceivableReceiptRequest" }
+      responses:
+        "200":
+          description: 已反核销并返回更新后的发票
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReceivableInvoice" }
+        "403": { description: 当前角色无权反核销 }
+        "409": { description: 请求编号、重复反核销或并发冲突 }
+        "422": { description: 日期或原因不满足约束 }
+        "404": { description: 收款记录不存在或不可见 }
   /api/v1/finance/payable-invoices:
     get:
       operationId: listPayableInvoices
@@ -588,7 +695,7 @@ paths:
         - $ref: "#/components/parameters/Query"
         - name: status
           in: query
-          schema: { type: string, enum: [ALL, OPEN, PARTIALLY_PAID, PAID], default: ALL }
+          schema: { type: string, enum: [ALL, OPEN, PARTIALLY_PAID, PAID, CREDIT_PENDING, SETTLED], default: ALL }
         - $ref: "#/components/parameters/Page"
         - $ref: "#/components/parameters/Size"
       responses:
@@ -673,6 +780,113 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/PayableReferenceData" }
+  /api/v1/finance/payable-credit-notes:
+    get:
+      operationId: listPayableCreditNotes
+      summary: 分页查询应付红字发票
+      tags: [Finance]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/Query"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+      responses:
+        "200":
+          description: 应付红字发票分页
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PayableCreditNotePage" }
+    post:
+      operationId: createPayableCreditNote
+      summary: 对已过账应付发票开具红字发票
+      tags: [Finance]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - name: X-Request-Id
+          in: header
+          required: false
+          schema: { type: string, maxLength: 120 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreatePayableCreditNoteRequest" }
+      responses:
+        "200":
+          description: 已过账红字发票
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PayableCreditNote" }
+        "403": { description: 当前角色无权开具红字发票 }
+        "409": { description: 请求编号或并发冲突 }
+        "422": { description: 日期、数量或原发票状态不满足约束 }
+  /api/v1/finance/payable-credit-notes/{id}:
+    get:
+      operationId: getPayableCreditNote
+      summary: 获取应付红字发票详情
+      tags: [Finance]
+      security: [{ basicAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/EntityId" }]
+      responses:
+        "200":
+          description: 红字发票详情
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PayableCreditNote" }
+        "404": { description: 红字发票不存在或不可见 }
+  /api/v1/finance/payable-invoices/{id}/refunds:
+    post:
+      operationId: postPayableRefund
+      summary: 对存在待退余额的应付发票登记从供应商收回的退款
+      tags: [Finance]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/EntityId"
+        - name: X-Request-Id
+          in: header
+          required: false
+          schema: { type: string, maxLength: 120 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PostPayableRefundRequest" }
+      responses:
+        "200":
+          description: 已登记退款并返回更新后的发票
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PayableInvoice" }
+        "403": { description: 当前角色无权登记退款 }
+        "409": { description: 发票版本、请求编号或并发冲突 }
+        "422": { description: 退款日期、金额或待退余额不满足约束 }
+  /api/v1/finance/payables/payments/{id}/reverse:
+    post:
+      operationId: reversePayablePayment
+      summary: 反核销一笔应付付款或退款
+      tags: [Finance]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/EntityId"
+        - name: X-Request-Id
+          in: header
+          required: false
+          schema: { type: string, maxLength: 120 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ReversePayablePaymentRequest" }
+      responses:
+        "200":
+          description: 已反核销并返回更新后的发票
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PayableInvoice" }
+        "403": { description: 当前角色无权反核销 }
+        "409": { description: 请求编号、重复反核销或并发冲突 }
+        "422": { description: 日期或原因不满足约束 }
+        "404": { description: 付款记录不存在或不可见 }
   /api/v1/finance/order-profit-reference-data:
     get:
       operationId: getOrderProfitReferenceData
@@ -2590,7 +2804,7 @@ components:
               items: { $ref: "#/components/schemas/ReceivableInvoice" }
     ReceivableInvoice:
       type: object
-      required: [id, invoiceNumber, salesOrderId, orderNumber, customerId, customerCode, customerName, currency, invoiceDate, dueDate, taxRate, netAmount, taxAmount, grossAmount, receivedAmount, outstandingAmount, status, version, createdAt, lines, receipts]
+      required: [id, invoiceNumber, salesOrderId, orderNumber, customerId, customerCode, customerName, currency, invoiceDate, dueDate, taxRate, netAmount, taxAmount, grossAmount, receivedAmount, outstandingAmount, creditBalance, status, version, createdAt, lines, receipts]
       properties:
         id: { type: string, format: uuid }
         invoiceNumber: { type: string }
@@ -2608,7 +2822,8 @@ components:
         grossAmount: { type: number, exclusiveMinimum: 0 }
         receivedAmount: { type: number, minimum: 0 }
         outstandingAmount: { type: number, minimum: 0 }
-        status: { type: string, enum: [OPEN, PARTIALLY_PAID, PAID] }
+        creditBalance: { type: number, minimum: 0, description: 红冲后形成的应退客户余额 }
+        status: { type: string, enum: [OPEN, PARTIALLY_PAID, PAID, CREDIT_PENDING, SETTLED] }
         version: { type: integer, format: int64, minimum: 0 }
         createdAt: { type: string, format: date-time }
         lines:
@@ -2637,16 +2852,17 @@ components:
         grossAmount: { type: number, minimum: 0 }
     ReceivableReceipt:
       type: object
-      required: [id, receiptNumber, amount, receiptDate, paymentMethod, status, createdAt]
+      required: [id, receiptNumber, direction, amount, receiptDate, paymentMethod, status, createdAt]
       properties:
         id: { type: string, format: uuid }
         receiptNumber: { type: string }
+        direction: { type: string, enum: [RECEIPT, REFUND], description: RECEIPT 为客户收款，REFUND 为向客户退款 }
         amount: { type: number, exclusiveMinimum: 0 }
         receiptDate: { type: string, format: date }
         paymentMethod: { type: string, enum: [BANK_TRANSFER, CASH, BILL, OTHER] }
         bankReference: { type: [string, "null"] }
         note: { type: [string, "null"] }
-        status: { type: string, enum: [POSTED] }
+        status: { type: string, enum: [POSTED, REVERSED] }
         createdAt: { type: string, format: date-time }
     CreateReceivableInvoiceRequest:
       type: object
@@ -2725,7 +2941,7 @@ components:
               items: { $ref: "#/components/schemas/PayableInvoice" }
     PayableInvoice:
       type: object
-      required: [id, invoiceNumber, supplierInvoiceNumber, purchaseOrderId, orderNumber, supplierId, supplierCode, supplierName, currency, invoiceDate, dueDate, taxRate, netAmount, taxAmount, grossAmount, paidAmount, outstandingAmount, status, version, createdAt, lines, payments]
+      required: [id, invoiceNumber, supplierInvoiceNumber, purchaseOrderId, orderNumber, supplierId, supplierCode, supplierName, currency, invoiceDate, dueDate, taxRate, netAmount, taxAmount, grossAmount, paidAmount, outstandingAmount, creditBalance, status, version, createdAt, lines, payments]
       properties:
         id: { type: string, format: uuid }
         invoiceNumber: { type: string }
@@ -2744,7 +2960,8 @@ components:
         grossAmount: { type: number, exclusiveMinimum: 0 }
         paidAmount: { type: number, minimum: 0 }
         outstandingAmount: { type: number, minimum: 0 }
-        status: { type: string, enum: [OPEN, PARTIALLY_PAID, PAID] }
+        creditBalance: { type: number, minimum: 0, description: 红冲后形成的应向供应商收回余额 }
+        status: { type: string, enum: [OPEN, PARTIALLY_PAID, PAID, CREDIT_PENDING, SETTLED] }
         version: { type: integer, format: int64, minimum: 0 }
         createdAt: { type: string, format: date-time }
         lines:
@@ -2773,16 +2990,17 @@ components:
         grossAmount: { type: number, minimum: 0 }
     PayablePayment:
       type: object
-      required: [id, paymentNumber, amount, paymentDate, paymentMethod, status, createdAt]
+      required: [id, paymentNumber, direction, amount, paymentDate, paymentMethod, status, createdAt]
       properties:
         id: { type: string, format: uuid }
         paymentNumber: { type: string }
+        direction: { type: string, enum: [PAYMENT, REFUND], description: PAYMENT 为向供应商付款，REFUND 为从供应商收回退款 }
         amount: { type: number, exclusiveMinimum: 0 }
         paymentDate: { type: string, format: date }
         paymentMethod: { type: string, enum: [BANK_TRANSFER, CASH, BILL, OTHER] }
         bankReference: { type: [string, "null"] }
         note: { type: [string, "null"] }
-        status: { type: string, enum: [POSTED] }
+        status: { type: string, enum: [POSTED, REVERSED] }
         createdAt: { type: string, format: date-time }
     CreatePayableInvoiceRequest:
       type: object
@@ -2851,6 +3069,192 @@ components:
         invoicedQuantity: { type: number, minimum: 0 }
         remainingQuantity: { type: number, minimum: 0 }
         unitPrice: { type: number, minimum: 0 }
+    ReceivableCreditNotePage:
+      allOf:
+        - $ref: "#/components/schemas/PageMetadata"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/ReceivableCreditNote" }
+    ReceivableCreditNote:
+      type: object
+      required: [id, creditNoteNumber, originalInvoiceId, originalInvoiceNumber, salesOrderId, orderNumber, customerId, customerCode, customerName, currency, creditNoteDate, dueDate, taxRate, netAmount, taxAmount, grossAmount, reason, status, version, createdAt, lines]
+      properties:
+        id: { type: string, format: uuid }
+        creditNoteNumber: { type: string }
+        originalInvoiceId: { type: string, format: uuid }
+        originalInvoiceNumber: { type: string }
+        salesOrderId: { type: string, format: uuid }
+        orderNumber: { type: string }
+        customerId: { type: string, format: uuid }
+        customerCode: { type: string }
+        customerName: { type: string }
+        currency: { type: string, minLength: 3, maxLength: 3 }
+        taxNoticeNumber: { type: [string, "null"], maxLength: 80, description: 增值税红字信息表编号，可空 }
+        creditNoteDate: { type: string, format: date }
+        dueDate: { type: string, format: date }
+        taxRate: { type: number, minimum: 0, maximum: 1 }
+        netAmount: { type: number, maximum: 0, description: 负数净额 }
+        taxAmount: { type: number, maximum: 0, description: 负数税额 }
+        grossAmount: { type: number, exclusiveMaximum: 0, description: 负数含税金额 }
+        reason: { type: string, minLength: 4, maxLength: 500 }
+        status: { type: string, enum: [POSTED] }
+        version: { type: integer, format: int64, minimum: 0 }
+        createdAt: { type: string, format: date-time }
+        lines:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/ReceivableCreditNoteLine" }
+    ReceivableCreditNoteLine:
+      type: object
+      required: [id, originalInvoiceLineId, salesOrderLineId, lineNumber, materialId, materialCode, materialName, unit, creditQuantity, unitPrice, netAmount, taxAmount, grossAmount]
+      properties:
+        id: { type: string, format: uuid }
+        originalInvoiceLineId: { type: string, format: uuid }
+        salesOrderLineId: { type: string, format: uuid }
+        lineNumber: { type: integer, minimum: 1 }
+        materialId: { type: string, format: uuid }
+        materialCode: { type: string }
+        materialName: { type: string }
+        materialSpecification: { type: [string, "null"] }
+        unit: { type: string }
+        creditQuantity: { type: number, exclusiveMinimum: 0 }
+        unitPrice: { type: number, minimum: 0 }
+        netAmount: { type: number, maximum: 0 }
+        taxAmount: { type: number, maximum: 0 }
+        grossAmount: { type: number, exclusiveMaximum: 0 }
+    CreateReceivableCreditNoteRequest:
+      type: object
+      required: [originalInvoiceId, creditNoteDate, dueDate, reason, lines]
+      properties:
+        originalInvoiceId: { type: string, format: uuid }
+        taxNoticeNumber: { type: [string, "null"], maxLength: 80 }
+        creditNoteDate: { type: string, format: date }
+        dueDate: { type: string, format: date }
+        reason: { type: string, minLength: 4, maxLength: 500 }
+        lines:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            type: object
+            required: [originalInvoiceLineId, creditQuantity]
+            properties:
+              originalInvoiceLineId: { type: string, format: uuid }
+              creditQuantity: { type: number, minimum: 0.0001 }
+              unitPrice: { type: [number, "null"], minimum: 0, description: 不填则取原蓝字发票行单价；用于折让场景 }
+    PostReceivableRefundRequest:
+      type: object
+      required: [expectedVersion, refundDate, amount, paymentMethod]
+      properties:
+        expectedVersion: { type: integer, format: int64, minimum: 0 }
+        refundDate: { type: string, format: date }
+        amount: { type: number, minimum: 0.01 }
+        paymentMethod: { type: string, enum: [BANK_TRANSFER, CASH, BILL, OTHER] }
+        bankReference: { type: [string, "null"], maxLength: 120 }
+        note: { type: [string, "null"], maxLength: 500 }
+    ReverseReceivableReceiptRequest:
+      type: object
+      required: [reversalDate, reason]
+      properties:
+        reversalDate: { type: string, format: date }
+        reason: { type: string, minLength: 4, maxLength: 500 }
+    PayableCreditNotePage:
+      allOf:
+        - $ref: "#/components/schemas/PageMetadata"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/PayableCreditNote" }
+    PayableCreditNote:
+      type: object
+      required: [id, creditNoteNumber, originalInvoiceId, originalInvoiceNumber, supplierCreditNoteNumber, purchaseOrderId, orderNumber, supplierId, supplierCode, supplierName, currency, creditNoteDate, dueDate, taxRate, netAmount, taxAmount, grossAmount, reason, status, version, createdAt, lines]
+      properties:
+        id: { type: string, format: uuid }
+        creditNoteNumber: { type: string }
+        originalInvoiceId: { type: string, format: uuid }
+        originalInvoiceNumber: { type: string }
+        supplierCreditNoteNumber: { type: [string, "null"], maxLength: 80 }
+        purchaseOrderId: { type: string, format: uuid }
+        orderNumber: { type: string }
+        supplierId: { type: string, format: uuid }
+        supplierCode: { type: string }
+        supplierName: { type: string }
+        currency: { type: string, minLength: 3, maxLength: 3 }
+        taxNoticeNumber: { type: [string, "null"], maxLength: 80 }
+        creditNoteDate: { type: string, format: date }
+        dueDate: { type: string, format: date }
+        taxRate: { type: number, minimum: 0, maximum: 1 }
+        netAmount: { type: number, maximum: 0 }
+        taxAmount: { type: number, maximum: 0 }
+        grossAmount: { type: number, exclusiveMaximum: 0 }
+        reason: { type: string, minLength: 4, maxLength: 500 }
+        status: { type: string, enum: [POSTED] }
+        version: { type: integer, format: int64, minimum: 0 }
+        createdAt: { type: string, format: date-time }
+        lines:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/PayableCreditNoteLine" }
+    PayableCreditNoteLine:
+      type: object
+      required: [id, originalInvoiceLineId, purchaseOrderLineId, lineNumber, materialId, materialCode, materialName, unit, creditQuantity, unitPrice, netAmount, taxAmount, grossAmount]
+      properties:
+        id: { type: string, format: uuid }
+        originalInvoiceLineId: { type: string, format: uuid }
+        purchaseOrderLineId: { type: string, format: uuid }
+        lineNumber: { type: integer, minimum: 1 }
+        materialId: { type: string, format: uuid }
+        materialCode: { type: string }
+        materialName: { type: string }
+        materialSpecification: { type: [string, "null"] }
+        unit: { type: string }
+        creditQuantity: { type: number, exclusiveMinimum: 0 }
+        unitPrice: { type: number, minimum: 0 }
+        netAmount: { type: number, maximum: 0 }
+        taxAmount: { type: number, maximum: 0 }
+        grossAmount: { type: number, exclusiveMaximum: 0 }
+    CreatePayableCreditNoteRequest:
+      type: object
+      required: [originalInvoiceId, creditNoteDate, dueDate, reason, lines]
+      properties:
+        originalInvoiceId: { type: string, format: uuid }
+        supplierCreditNoteNumber: { type: [string, "null"], maxLength: 80 }
+        taxNoticeNumber: { type: [string, "null"], maxLength: 80 }
+        creditNoteDate: { type: string, format: date }
+        dueDate: { type: string, format: date }
+        reason: { type: string, minLength: 4, maxLength: 500 }
+        lines:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            type: object
+            required: [originalInvoiceLineId, creditQuantity]
+            properties:
+              originalInvoiceLineId: { type: string, format: uuid }
+              creditQuantity: { type: number, minimum: 0.0001 }
+              unitPrice: { type: [number, "null"], minimum: 0 }
+    PostPayableRefundRequest:
+      type: object
+      required: [expectedVersion, refundDate, amount, paymentMethod]
+      properties:
+        expectedVersion: { type: integer, format: int64, minimum: 0 }
+        refundDate: { type: string, format: date }
+        amount: { type: number, minimum: 0.01 }
+        paymentMethod: { type: string, enum: [BANK_TRANSFER, CASH, BILL, OTHER] }
+        bankReference: { type: [string, "null"], maxLength: 120 }
+        note: { type: [string, "null"], maxLength: 500 }
+    ReversePayablePaymentRequest:
+      type: object
+      required: [reversalDate, reason]
+      properties:
+        reversalDate: { type: string, format: date }
+        reason: { type: string, minLength: 4, maxLength: 500 }
     WorkCenterCostRatePage:
       allOf:
         - $ref: "#/components/schemas/PageMetadata"

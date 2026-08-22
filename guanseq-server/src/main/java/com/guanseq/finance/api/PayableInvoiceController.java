@@ -56,4 +56,38 @@ public class PayableInvoiceController {
 			@Valid @RequestBody PayableInvoiceRecord.PaymentRequest request) {
 		return service.postPayment(principal.getName(), id, requestId, request);
 	}
+
+	// ---- 红字发票与退款 / 反核销 ----
+
+	@GetMapping("/payable-credit-notes")
+	PayableCreditNotePage listCreditNotes(Principal principal, @RequestParam(required = false) String query,
+			@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "50") int size) {
+		return service.listCreditNotes(principal.getName(), query, page, size);
+	}
+
+	@GetMapping("/payable-credit-notes/{id}")
+	PayableCreditNoteRecord getCreditNote(Principal principal, @PathVariable UUID id) {
+		return service.getCreditNote(principal.getName(), id);
+	}
+
+	@PostMapping(path = "/payable-credit-notes", consumes = MediaType.APPLICATION_JSON_VALUE)
+	PayableCreditNoteRecord createCreditNote(Principal principal,
+			@RequestHeader(value = "X-Request-Id", required = false) String requestId,
+			@Valid @RequestBody PayableCreditNoteRecord.CreateRequest request) {
+		return service.createCreditNote(principal.getName(), requestId, request);
+	}
+
+	@PostMapping(path = "/payable-invoices/{id}/refunds", consumes = MediaType.APPLICATION_JSON_VALUE)
+	PayableInvoiceRecord postRefund(Principal principal, @PathVariable UUID id,
+			@RequestHeader(value = "X-Request-Id", required = false) String requestId,
+			@Valid @RequestBody PayableCreditNoteRecord.RefundRequest request) {
+		return service.postRefund(principal.getName(), id, requestId, request);
+	}
+
+	@PostMapping(path = "/payables/payments/{id}/reverse", consumes = MediaType.APPLICATION_JSON_VALUE)
+	PayableInvoiceRecord reversePayment(Principal principal, @PathVariable UUID id,
+			@RequestHeader(value = "X-Request-Id", required = false) String requestId,
+			@Valid @RequestBody PayableCreditNoteRecord.ReverseRequest request) {
+		return service.reversePayment(principal.getName(), id, requestId, request);
+	}
 }
