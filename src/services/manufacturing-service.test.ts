@@ -45,7 +45,7 @@ describe("manufacturing service", () => {
   it("covers every declared route with a professional page definition", async () => {
     const pages = await Promise.all(allProductPaths().map((pathname) => getBusinessPage(pathname)));
 
-    expect(pages).toHaveLength(231);
+    expect(pages).toHaveLength(232);
     expect(pages.every(Boolean)).toBe(true);
     expect(pages.every((page) => page?.definitionId !== "legacy-generic")).toBe(true);
     expect(new Set(pages.map((page) => page?.definitionId)).size).toBeGreaterThanOrEqual(20);

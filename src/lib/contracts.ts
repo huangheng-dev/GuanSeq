@@ -950,6 +950,88 @@ export const reopenAccountingPeriodSchema = z.object({
   expectedVersion: z.number().int().nonnegative().optional(),
 });
 
+export const grirAccrualLineSchema = z.object({
+  id: z.string().uuid(),
+  purchaseOrderId: z.string().uuid(),
+  orderNumber: z.string(),
+  supplierId: z.string().uuid(),
+  supplierCode: z.string(),
+  supplierName: z.string(),
+  purchaseOrderLineId: z.string().uuid(),
+  lineNumber: z.number().int().positive(),
+  materialId: z.string().uuid(),
+  materialCode: z.string(),
+  materialName: z.string(),
+  materialSpecification: z.string().nullable(),
+  unit: z.string(),
+  receivedQuantity: z.number(),
+  invoicedQuantity: z.number(),
+  accruedQuantity: z.number(),
+  unitPrice: z.number(),
+  netAmount: z.number(),
+});
+
+export const grirAccrualSchema = z.object({
+  id: z.string().uuid(),
+  accrualNumber: z.string(),
+  fiscalYear: z.number().int().min(2000).max(2100),
+  fiscalPeriod: z.number().int().min(1).max(12),
+  accrualDate: z.string().date(),
+  status: z.enum(["POSTED", "REVERSED"]),
+  totalNetAmount: z.number(),
+  reversedByAccrualId: z.string().uuid().nullable(),
+  reversalDate: z.string().date().nullable(),
+  reversalReason: z.string().nullable(),
+  note: z.string().nullable(),
+  version: z.number().int().nonnegative(),
+  createdAt: z.string().datetime(),
+  lines: z.array(grirAccrualLineSchema),
+});
+
+export const grirAccrualPageSchema = pageEnvelope(grirAccrualSchema);
+
+export const grirAccrualPreviewLineSchema = z.object({
+  purchaseOrderId: z.string().uuid(),
+  orderNumber: z.string(),
+  supplierId: z.string().uuid(),
+  supplierCode: z.string(),
+  supplierName: z.string(),
+  purchaseOrderLineId: z.string().uuid(),
+  lineNumber: z.number().int().positive(),
+  materialId: z.string().uuid(),
+  materialCode: z.string(),
+  materialName: z.string(),
+  materialSpecification: z.string().nullable(),
+  unit: z.string(),
+  receivedQuantity: z.number(),
+  invoicedQuantity: z.number(),
+  accruedQuantity: z.number(),
+  unitPrice: z.number(),
+  netAmount: z.number(),
+});
+
+export const grirAccrualPreviewSchema = z.object({
+  fiscalYear: z.number().int(),
+  fiscalPeriod: z.number().int(),
+  priorAccrualId: z.string().uuid().nullable(),
+  priorAccrualNumber: z.string().nullable(),
+  priorAccrualAmount: z.number(),
+  totalNetAmount: z.number(),
+  lines: z.array(grirAccrualPreviewLineSchema),
+});
+
+export const runGrirAccrualSchema = z.object({
+  fiscalYear: z.number().int().min(2000).max(2100),
+  fiscalPeriod: z.number().int().min(1).max(12),
+  accrualDate: z.string().date().optional(),
+  note: z.string().max(500).optional(),
+});
+
+export const reverseGrirAccrualSchema = z.object({
+  reversalDate: z.string().date(),
+  reason: z.string().min(4).max(500),
+});
+
 export type ManufacturingSnapshot = z.infer<typeof manufacturingSnapshotSchema>;
 export type FlowStage = z.infer<typeof flowStageSchema>;
 export type WorkOrder = z.infer<typeof workOrderSchema>;
@@ -1114,5 +1196,10 @@ export type OperationLaborEvent = z.infer<typeof operationLaborEventSchema>;
 export type OperationLaborEntry = z.infer<typeof operationLaborEntrySchema>;
 
 export type AccountingPeriod = z.infer<typeof accountingPeriodSchema>;
+export type GrirAccrual = z.infer<typeof grirAccrualSchema>;
+export type GrirAccrualLine = z.infer<typeof grirAccrualLineSchema>;
+export type GrirAccrualPreview = z.infer<typeof grirAccrualPreviewSchema>;
+export type RunGrirAccrualPayload = z.infer<typeof runGrirAccrualSchema>;
+export type ReverseGrirAccrualPayload = z.infer<typeof reverseGrirAccrualSchema>;
 export type CreateAccountingPeriodPayload = z.infer<typeof createAccountingPeriodSchema>;
 

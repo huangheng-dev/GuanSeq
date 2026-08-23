@@ -2504,3 +2504,16 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, a:focus-visib
 @media (max-width: 720px) {
   .dialogGrid, .historyGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* 暂估应付 GR/IR */
+.grirPreview {
+  background: #faf6ef;
+  border: 1px solid #e2cfaa;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 10px 0 4px;
+  padding: 10px 14px;
+}
+.grirPreview .rowWarnHint { max-width: none; margin-top: 0; }

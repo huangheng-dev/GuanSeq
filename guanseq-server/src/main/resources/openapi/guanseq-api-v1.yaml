@@ -1152,6 +1152,128 @@ paths:
         "404": { description: 会计期间不存在或不在当前租户范围 }
         "409": { description: 期间版本冲突或期间未关账 }
         "422": { description: 重开原因不满足要求 }
+  /api/v1/finance/grir-accruals:
+    get:
+      operationId: listGrirAccruals
+      summary: 分页查询暂估应付单
+      tags: [Finance]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - name: year
+          in: query
+          required: false
+          schema: { type: integer, minimum: 2000, maximum: 2100 }
+        - name: status
+          in: query
+          required: false
+          schema: { type: string, enum: [ALL, POSTED, REVERSED], default: ALL }
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+      responses:
+        "200":
+          description: 暂估应付分页
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GrirAccrualPage" }
+  /api/v1/finance/grir-accruals/preview:
+    get:
+      operationId: previewGrirAccrual
+      summary: 预览指定年月将暂估的明细（不落库）
+      tags: [Finance]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - name: year
+          in: query
+          required: true
+          schema: { type: integer, minimum: 2000, maximum: 2100 }
+        - name: period
+          in: query
+          required: true
+          schema: { type: integer, minimum: 1, maximum: 12 }
+      responses:
+        "200":
+          description: 暂估预览
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GrirAccrualPreview" }
+  /api/v1/finance/grir-accruals/run:
+    post:
+      operationId: runGrirAccrual
+      summary: 运行月末暂估（自动冲回上期）
+      description: |
+        按会计年月运行暂估。同一租户同一年月若已有 POSTED 暂估单，直接返回已有单（幂等）。
+        若存在更早的 POSTED 暂估单，在同一事务中标记为 REVERSED。
+      tags: [Finance]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - name: X-Request-Id
+          in: header
+          required: false
+          schema: { type: string, maxLength: 120 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RunGrirAccrualRequest" }
+      responses:
+        "200":
+          description: 暂估完成
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GrirAccrual" }
+        "403": { description: 当前角色无权运行暂估（仅 ADMIN/FINANCE_MANAGER） }
+        "409":
+          description: 会计期间已关账或并发冲突
+          headers:
+            X-Period-Label: { schema: { type: string } }
+            X-Error-Code: { schema: { type: string }, example: PERIOD_CLOSED }
+        "422": { description: 请求参数校验失败 }
+  /api/v1/finance/grir-accruals/{id}:
+    get:
+      operationId: getGrirAccrual
+      summary: 暂估应付详情（含行）
+      tags: [Finance]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/EntityId"
+      responses:
+        "200":
+          description: 暂估应付详情
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GrirAccrual" }
+        "404": { description: 暂估单不存在或不在当前租户范围 }
+  /api/v1/finance/grir-accruals/{id}/reverse:
+    post:
+      operationId: reverseGrirAccrual
+      summary: 手动冲回暂估单
+      tags: [Finance]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/EntityId"
+        - name: X-Request-Id
+          in: header
+          required: false
+          schema: { type: string, maxLength: 120 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ReverseGrirAccrualRequest" }
+      responses:
+        "200":
+          description: 已冲回
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GrirAccrual" }
+        "403": { description: 当前角色无权冲回暂估 }
+        "404": { description: 暂估单不存在或不在当前租户范围 }
+        "409":
+          description: 期间已关账或已冲回
+          headers:
+            X-Period-Label: { schema: { type: string } }
+            X-Error-Code: { schema: { type: string }, example: PERIOD_CLOSED }
+        "422": { description: 冲回原因不满足要求 }
   /api/v1/planning/independent-demands:
     get:
       operationId: listIndependentDemands
@@ -3645,6 +3767,105 @@ components:
       properties:
         reason: { type: string, minLength: 4, maxLength: 500, description: 重开原因（至少 4 字符） }
         expectedVersion: { type: [integer, "null"], format: int64, description: 乐观锁版本号，传入则校验 }
+    GrirAccrual:
+      type: object
+      required: [id, accrualNumber, fiscalYear, fiscalPeriod, accrualDate, status, totalNetAmount, version, createdAt, lines]
+      properties:
+        id: { type: string, format: uuid }
+        accrualNumber: { type: string, example: GRIR-20260831-000001 }
+        fiscalYear: { type: integer, minimum: 2000, maximum: 2100 }
+        fiscalPeriod: { type: integer, minimum: 1, maximum: 12 }
+        accrualDate: { type: string, format: date }
+        status: { type: string, enum: [POSTED, REVERSED] }
+        totalNetAmount: { type: number, format: double, minimum: 0, description: 暂估净额合计（不含税） }
+        reversedByAccrualId: { type: [string, "null"], format: uuid, description: 被哪张新暂估单自动冲回 }
+        reversalDate: { type: [string, "null"], format: date }
+        reversalReason: { type: [string, "null"] }
+        note: { type: [string, "null"], maxLength: 500 }
+        version: { type: integer, format: int64, minimum: 0 }
+        createdAt: { type: string, format: date-time }
+        lines:
+          type: array
+          items: { $ref: "#/components/schemas/GrirAccrualLine" }
+    GrirAccrualLine:
+      type: object
+      required: [id, purchaseOrderId, orderNumber, supplierId, supplierCode, supplierName, purchaseOrderLineId, lineNumber, materialId, materialCode, materialName, unit, receivedQuantity, invoicedQuantity, accruedQuantity, unitPrice, netAmount]
+      properties:
+        id: { type: string, format: uuid }
+        purchaseOrderId: { type: string, format: uuid }
+        orderNumber: { type: string }
+        supplierId: { type: string, format: uuid }
+        supplierCode: { type: string }
+        supplierName: { type: string }
+        purchaseOrderLineId: { type: string, format: uuid }
+        lineNumber: { type: integer, minimum: 1 }
+        materialId: { type: string, format: uuid }
+        materialCode: { type: string }
+        materialName: { type: string }
+        materialSpecification: { type: [string, "null"] }
+        unit: { type: string }
+        receivedQuantity: { type: number, format: double, minimum: 0, description: 累计合格收货数量 }
+        invoicedQuantity: { type: number, format: double, minimum: 0, description: 累计已开票数量 }
+        accruedQuantity: { type: number, format: double, minimum: 0, description: 暂估数量 = 收货 − 已开票 }
+        unitPrice: { type: number, format: double, minimum: 0, description: 订单单价快照 }
+        netAmount: { type: number, format: double, minimum: 0, description: 暂估净额 = 暂估数量 × 单价 }
+    GrirAccrualPage:
+      allOf:
+        - $ref: "#/components/schemas/PageMetadata"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/GrirAccrual" }
+    GrirAccrualPreview:
+      type: object
+      required: [fiscalYear, fiscalPeriod, totalNetAmount, lines]
+      properties:
+        fiscalYear: { type: integer }
+        fiscalPeriod: { type: integer }
+        priorAccrualId: { type: [string, "null"], format: uuid, description: 上期暂估单 ID（若有） }
+        priorAccrualNumber: { type: [string, "null"] }
+        priorAccrualAmount: { type: number, format: double, minimum: 0 }
+        totalNetAmount: { type: number, format: double, minimum: 0 }
+        lines:
+          type: array
+          items: { $ref: "#/components/schemas/GrirAccrualPreviewLine" }
+    GrirAccrualPreviewLine:
+      type: object
+      required: [purchaseOrderId, orderNumber, supplierId, supplierCode, supplierName, purchaseOrderLineId, lineNumber, materialId, materialCode, materialName, unit, receivedQuantity, invoicedQuantity, accruedQuantity, unitPrice, netAmount]
+      properties:
+        purchaseOrderId: { type: string, format: uuid }
+        orderNumber: { type: string }
+        supplierId: { type: string, format: uuid }
+        supplierCode: { type: string }
+        supplierName: { type: string }
+        purchaseOrderLineId: { type: string, format: uuid }
+        lineNumber: { type: integer }
+        materialId: { type: string, format: uuid }
+        materialCode: { type: string }
+        materialName: { type: string }
+        materialSpecification: { type: [string, "null"] }
+        unit: { type: string }
+        receivedQuantity: { type: number, format: double }
+        invoicedQuantity: { type: number, format: double }
+        accruedQuantity: { type: number, format: double }
+        unitPrice: { type: number, format: double }
+        netAmount: { type: number, format: double }
+    RunGrirAccrualRequest:
+      type: object
+      required: [fiscalYear, fiscalPeriod]
+      properties:
+        fiscalYear: { type: integer, minimum: 2000, maximum: 2100 }
+        fiscalPeriod: { type: integer, minimum: 1, maximum: 12 }
+        accrualDate: { type: [string, "null"], format: date, description: 暂估入账日期，默认月末 }
+        note: { type: [string, "null"], maxLength: 500 }
+    ReverseGrirAccrualRequest:
+      type: object
+      required: [reversalDate, reason]
+      properties:
+        reversalDate: { type: string, format: date }
+        reason: { type: string, minLength: 4, maxLength: 500 }
     IndependentDemandPage:
       allOf:
         - $ref: "#/components/schemas/PageMetadata"
