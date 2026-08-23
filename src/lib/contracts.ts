@@ -915,6 +915,32 @@ export const materialIssueReferenceDataSchema = z.object({
   locations: z.array(z.object({ id: z.string().uuid(), warehouseId: z.string().uuid(), code: z.string(), name: z.string(), locationType: z.string() })),
 });
 
+export const accountingPeriodSchema = z.object({
+  id: z.string().uuid(),
+  fiscalYear: z.number().int().min(2020).max(2099),
+  fiscalPeriod: z.number().int().min(1).max(12),
+  periodLabel: z.string(),
+  status: z.enum(["OPEN", "CLOSED"]),
+  closedAt: z.string().datetime().nullable(),
+  closedByName: z.string().nullable(),
+  reopenedAt: z.string().datetime().nullable(),
+  reopenedByName: z.string().nullable(),
+  reopenReason: z.string().nullable(),
+  version: z.number().int().nonnegative(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+
+export const createAccountingPeriodSchema = z.object({
+  fiscalYear: z.number().int().min(2020).max(2099),
+  fiscalPeriod: z.number().int().min(1).max(12),
+});
+
+export const reopenAccountingPeriodSchema = z.object({
+  reason: z.string().min(4).max(500),
+  expectedVersion: z.number().int().nonnegative().optional(),
+});
+
 export type ManufacturingSnapshot = z.infer<typeof manufacturingSnapshotSchema>;
 export type FlowStage = z.infer<typeof flowStageSchema>;
 export type WorkOrder = z.infer<typeof workOrderSchema>;
@@ -1077,4 +1103,7 @@ export type OperationTaskRecord = z.infer<typeof operationTaskRecordSchema>;
 export type OperationLaborStatus = z.infer<typeof operationLaborStatusSchema>;
 export type OperationLaborEvent = z.infer<typeof operationLaborEventSchema>;
 export type OperationLaborEntry = z.infer<typeof operationLaborEntrySchema>;
+
+export type AccountingPeriod = z.infer<typeof accountingPeriodSchema>;
+export type CreateAccountingPeriodPayload = z.infer<typeof createAccountingPeriodSchema>;
 

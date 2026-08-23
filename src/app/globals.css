@@ -2390,3 +2390,36 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, a:focus-visib
     display: inline-flex !important;
   }
 }
+
+/* 会计期间卡片网格 */
+.periodGrid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  padding: 18px 20px 22px;
+}
+.periodCard {
+  background: white;
+  border: 1px solid var(--gs-line);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 184px;
+  padding: 15px 16px 14px;
+  transition: border-color .16s ease, box-shadow .16s ease;
+}
+.periodCard:hover { border-color: var(--gs-line-strong); box-shadow: 0 6px 14px -10px rgb(17 44 73 / 35%); }
+.periodCardOpen { border-top: 3px solid #2f8f5e; }
+.periodCardClosed { border-top: 3px solid #c68a2a; background: #fcf8f1; }
+.periodCard > header { align-items: flex-start; display: flex; justify-content: space-between; gap: 8px; }
+.periodCard > header strong { display: block; font-size: 14px; font-weight: 650; }
+.periodCard > header span { color: var(--gs-ink-muted); display: block; font: 11px ui-monospace, monospace; margin-top: 2px; }
+.periodCard dl { display: grid; gap: 4px; grid-template-columns: 72px 1fr; margin: 0; }
+.periodCard dt { color: var(--gs-ink-muted); font-size: 11px; }
+.periodCard dd { font-size: 12px; margin: 0; word-break: break-word; }
+.periodCard dd.periodReason { grid-column: 2; color: var(--gs-ink); }
+.periodCard > footer { display: flex; justify-content: flex-end; margin-top: auto; }
+.periodCard footer .primaryButton,
+.periodCard footer .secondaryButton { min-height: 32px; padding: 5px 14px; }
+.toastWarn { background: #fcf2e3 !important; border-color: #d9a45a !important; color: #7a4d10 !important; }

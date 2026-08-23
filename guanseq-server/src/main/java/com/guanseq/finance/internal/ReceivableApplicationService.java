@@ -49,12 +49,13 @@ public class ReceivableApplicationService {
 	private final ReceivableCreditNoteRepository creditNoteRepository;
 	private final ReceivableReversalRepository reversalRepository;
 	private final ReceivableEventRepository eventRepository;
+	private final AccountingPeriodGuard periodGuard;
 	private final JdbcTemplate jdbcTemplate;
 
 	ReceivableApplicationService(CurrentWorkspaceProvider workspaceProvider, SalesReceivableQueryProvider salesProvider,
 			ReceivableInvoiceRepository invoiceRepository, ReceivableReceiptRepository receiptRepository,
 			ReceivableCreditNoteRepository creditNoteRepository, ReceivableReversalRepository reversalRepository,
-			ReceivableEventRepository eventRepository, JdbcTemplate jdbcTemplate) {
+			ReceivableEventRepository eventRepository, AccountingPeriodGuard periodGuard, JdbcTemplate jdbcTemplate) {
 		this.workspaceProvider = workspaceProvider;
 		this.salesProvider = salesProvider;
 		this.invoiceRepository = invoiceRepository;
@@ -62,6 +63,7 @@ public class ReceivableApplicationService {
 		this.creditNoteRepository = creditNoteRepository;
 		this.reversalRepository = reversalRepository;
 		this.eventRepository = eventRepository;
+		this.periodGuard = periodGuard;
 		this.jdbcTemplate = jdbcTemplate;
 	}
 
@@ -99,6 +101,7 @@ public class ReceivableApplicationService {
 			ReceivableInvoiceRecord.CreateRequest request) {
 		CurrentWorkspaceAccess access = workspaceProvider.resolve(username);
 		requireWriteRole(access, "开具应收发票");
+		periodGuard.requireOpen(access.tenantOrganizationId(), access.workspaceId(), access.userId(), request.invoiceDate());
 		String requestId = normalizeRequestId(requestIdHeader, "receivable-invoice");
 		ReceivableInvoiceEntity duplicate = invoiceRepository
 				.findByTenantOrganizationIdAndRequestId(access.tenantOrganizationId(), requestId).orElse(null);
@@ -148,6 +151,7 @@ public class ReceivableApplicationService {
 			ReceivableInvoiceRecord.ReceiptRequest request) {
 		CurrentWorkspaceAccess access = workspaceProvider.resolve(username);
 		requireWriteRole(access, "登记并核销收款");
+		periodGuard.requireOpen(access.tenantOrganizationId(), access.workspaceId(), access.userId(), request.receiptDate());
 		String requestId = normalizeRequestId(requestIdHeader, "receivable-receipt");
 		lockBusinessKey("receivable-receipt:" + invoiceId);
 		ReceivableReceiptEntity duplicate = receiptRepository
@@ -204,6 +208,7 @@ public class ReceivableApplicationService {
 			ReceivableCreditNoteRecord.CreateRequest request) {
 		CurrentWorkspaceAccess access = workspaceProvider.resolve(username);
 		requireWriteRole(access, "开具应收红字发票");
+		periodGuard.requireOpen(access.tenantOrganizationId(), access.workspaceId(), access.userId(), request.creditNoteDate());
 		String requestId = normalizeRequestId(requestIdHeader, "receivable-credit-note");
 		ReceivableCreditNoteEntity duplicate = creditNoteRepository
 				.findByTenantOrganizationIdAndRequestId(access.tenantOrganizationId(), requestId).orElse(null);
@@ -256,6 +261,7 @@ public class ReceivableApplicationService {
 			ReceivableCreditNoteRecord.RefundRequest request) {
 		CurrentWorkspaceAccess access = workspaceProvider.resolve(username);
 		requireWriteRole(access, "登记应收退款");
+		periodGuard.requireOpen(access.tenantOrganizationId(), access.workspaceId(), access.userId(), request.refundDate());
 		String requestId = normalizeRequestId(requestIdHeader, "receivable-refund");
 		lockBusinessKey("receivable-refund:" + invoiceId);
 		ReceivableReceiptEntity duplicate = receiptRepository
@@ -293,6 +299,7 @@ public class ReceivableApplicationService {
 			ReceivableCreditNoteRecord.ReverseRequest request) {
 		CurrentWorkspaceAccess access = workspaceProvider.resolve(username);
 		requireWriteRole(access, "反核销应收收款或退款");
+		periodGuard.requireOpen(access.tenantOrganizationId(), access.workspaceId(), access.userId(), request.reversalDate());
 		String requestId = normalizeRequestId(requestIdHeader, "receivable-reversal");
 		ReceivableReversalEntity duplicate = reversalRepository
 				.findByTenantOrganizationIdAndRequestId(access.tenantOrganizationId(), requestId).orElse(null);

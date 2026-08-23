@@ -524,7 +524,11 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/ReceivableInvoice" }
         "403": { description: 当前角色无权开票 }
-        "409": { description: 请求编号或并发冲突 }
+        "409":
+          description: 请求编号/并发冲突，或会计期间已关账（X-Error-Code: PERIOD_CLOSED）
+          headers:
+            X-Period-Label: { description: 已关账期间标签, schema: { type: string } }
+            X-Error-Code: { description: 业务错误码, schema: { type: string, enum: [PERIOD_CLOSED] } }
         "422": { description: 日期、订单状态或可开票数量不满足约束 }
   /api/v1/finance/receivable-invoices/{id}:
     get:
@@ -564,7 +568,11 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/ReceivableInvoice" }
         "403": { description: 当前角色无权登记收款 }
-        "409": { description: 发票版本、请求编号或并发冲突 }
+        "409":
+          description: 发票版本/请求编号/并发冲突，或会计期间已关账（X-Error-Code: PERIOD_CLOSED）
+          headers:
+            X-Period-Label: { description: 已关账期间标签, schema: { type: string } }
+            X-Error-Code: { description: 业务错误码, schema: { type: string, enum: [PERIOD_CLOSED] } }
         "422": { description: 收款日期或金额不满足约束 }
   /api/v1/finance/receivable-reference-data:
     get:
@@ -616,7 +624,11 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/ReceivableCreditNote" }
         "403": { description: 当前角色无权开具红字发票 }
-        "409": { description: 请求编号或并发冲突 }
+        "409":
+          description: 请求编号/并发冲突，或会计期间已关账（X-Error-Code: PERIOD_CLOSED）
+          headers:
+            X-Period-Label: { description: 已关账期间标签, schema: { type: string } }
+            X-Error-Code: { description: 业务错误码, schema: { type: string, enum: [PERIOD_CLOSED] } }
         "422": { description: 日期、数量或原发票状态不满足约束 }
   /api/v1/finance/receivable-credit-notes/{id}:
     get:
@@ -656,7 +668,11 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/ReceivableInvoice" }
         "403": { description: 当前角色无权登记退款 }
-        "409": { description: 发票版本、请求编号或并发冲突 }
+        "409":
+          description: 发票版本/请求编号/并发冲突，或会计期间已关账（X-Error-Code: PERIOD_CLOSED）
+          headers:
+            X-Period-Label: { description: 已关账期间标签, schema: { type: string } }
+            X-Error-Code: { description: 业务错误码, schema: { type: string, enum: [PERIOD_CLOSED] } }
         "422": { description: 退款日期、金额或待退余额不满足约束 }
   /api/v1/finance/receivables/receipts/{id}/reverse:
     post:
@@ -682,7 +698,11 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/ReceivableInvoice" }
         "403": { description: 当前角色无权反核销 }
-        "409": { description: 请求编号、重复反核销或并发冲突 }
+        "409":
+          description: 请求编号/重复反核销/并发冲突，或会计期间已关账（X-Error-Code: PERIOD_CLOSED）
+          headers:
+            X-Period-Label: { description: 已关账期间标签, schema: { type: string } }
+            X-Error-Code: { description: 业务错误码, schema: { type: string, enum: [PERIOD_CLOSED] } }
         "422": { description: 日期或原因不满足约束 }
         "404": { description: 收款记录不存在或不可见 }
   /api/v1/finance/payable-invoices:
@@ -726,7 +746,11 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/PayableInvoice" }
         "403": { description: 当前角色无权登记应付发票 }
-        "409": { description: 请求编号、供应商发票号或并发冲突 }
+        "409":
+          description: 请求编号/供应商发票号/并发冲突，或会计期间已关账（X-Error-Code: PERIOD_CLOSED）
+          headers:
+            X-Period-Label: { description: 已关账期间标签, schema: { type: string } }
+            X-Error-Code: { description: 业务错误码, schema: { type: string, enum: [PERIOD_CLOSED] } }
         "422": { description: 日期、合格收货数量或订单归属不满足约束 }
   /api/v1/finance/payable-invoices/{id}:
     get:
@@ -766,7 +790,11 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/PayableInvoice" }
         "403": { description: 当前角色无权登记付款 }
-        "409": { description: 发票版本、请求编号或并发冲突 }
+        "409":
+          description: 发票版本/请求编号/并发冲突，或会计期间已关账（X-Error-Code: PERIOD_CLOSED）
+          headers:
+            X-Period-Label: { description: 已关账期间标签, schema: { type: string } }
+            X-Error-Code: { description: 业务错误码, schema: { type: string, enum: [PERIOD_CLOSED] } }
         "422": { description: 付款日期或金额不满足约束 }
   /api/v1/finance/payable-reference-data:
     get:
@@ -818,7 +846,11 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/PayableCreditNote" }
         "403": { description: 当前角色无权开具红字发票 }
-        "409": { description: 请求编号或并发冲突 }
+        "409":
+          description: 请求编号/并发冲突，或会计期间已关账（X-Error-Code: PERIOD_CLOSED）
+          headers:
+            X-Period-Label: { description: 已关账期间标签, schema: { type: string } }
+            X-Error-Code: { description: 业务错误码, schema: { type: string, enum: [PERIOD_CLOSED] } }
         "422": { description: 日期、数量或原发票状态不满足约束 }
   /api/v1/finance/payable-credit-notes/{id}:
     get:
@@ -858,7 +890,11 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/PayableInvoice" }
         "403": { description: 当前角色无权登记退款 }
-        "409": { description: 发票版本、请求编号或并发冲突 }
+        "409":
+          description: 发票版本/请求编号/并发冲突，或会计期间已关账（X-Error-Code: PERIOD_CLOSED）
+          headers:
+            X-Period-Label: { description: 已关账期间标签, schema: { type: string } }
+            X-Error-Code: { description: 业务错误码, schema: { type: string, enum: [PERIOD_CLOSED] } }
         "422": { description: 退款日期、金额或待退余额不满足约束 }
   /api/v1/finance/payables/payments/{id}/reverse:
     post:
@@ -884,7 +920,11 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/PayableInvoice" }
         "403": { description: 当前角色无权反核销 }
-        "409": { description: 请求编号、重复反核销或并发冲突 }
+        "409":
+          description: 请求编号/重复反核销/并发冲突，或会计期间已关账（X-Error-Code: PERIOD_CLOSED）
+          headers:
+            X-Period-Label: { description: 已关账期间标签, schema: { type: string } }
+            X-Error-Code: { description: 业务错误码, schema: { type: string, enum: [PERIOD_CLOSED] } }
         "422": { description: 日期或原因不满足约束 }
         "404": { description: 付款记录不存在或不可见 }
   /api/v1/finance/order-profit-reference-data:
@@ -936,8 +976,124 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/OrderProfit" }
         "403": { description: 当前角色无权结算订单利润 }
-        "409": { description: 请求编号或结算并发冲突 }
+        "409":
+          description: 请求编号/结算并发冲突，或当前会计期间已关账（X-Error-Code: PERIOD_CLOSED）
+          headers:
+            X-Period-Label:
+              description: 已关账的期间标签（如 2026-08），PERIOD_CLOSED 时返回
+              schema: { type: string }
+            X-Error-Code:
+              description: 业务错误码，PERIOD_CLOSED 表示期间已关账
+              schema: { type: string, enum: [PERIOD_CLOSED] }
         "422": { description: 订单未发货或暂不能结算 }
+  /api/v1/finance/accounting-periods:
+    get:
+      operationId: listAccountingPeriods
+      summary: 按年度列示会计期间
+      tags: [Finance]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - name: year
+          in: query
+          required: false
+          description: 会计年度，不传则返回当前年度
+          schema: { type: integer, minimum: 2020, maximum: 2099 }
+      responses:
+        "200":
+          description: 该年度 12 个会计期间列表（自动补建缺失期间）
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/AccountingPeriod" }
+    post:
+      operationId: createAccountingPeriod
+      summary: 手动创建会计期间（补录历史期间）
+      tags: [Finance]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - name: X-Request-Id
+          in: header
+          required: false
+          schema: { type: string, maxLength: 120 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateAccountingPeriodRequest" }
+      responses:
+        "200":
+          description: 已创建或幂等返回会计期间
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AccountingPeriod" }
+        "403": { description: 当前角色无权维护会计期间 }
+        "409": { description: 该期间已存在 }
+        "422": { description: 年度或月份超出支持范围 }
+  /api/v1/finance/accounting-periods/{id}:
+    get:
+      operationId: getAccountingPeriod
+      summary: 获取单个会计期间详情
+      tags: [Finance]
+      security: [{ basicAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/EntityId" }]
+      responses:
+        "200":
+          description: 会计期间详情
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AccountingPeriod" }
+        "404": { description: 会计期间不存在或不在当前租户范围 }
+  /api/v1/finance/accounting-periods/{id}/close:
+    post:
+      operationId: closeAccountingPeriod
+      summary: 关账（关闭指定会计期间）
+      description: 需要 ADMIN 或 FINANCE_MANAGER 角色。关账后该期间的所有财务写操作将被拒绝（409 PERIOD_CLOSED）。
+      tags: [Finance]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/EntityId"
+        - name: X-Request-Id
+          in: header
+          required: false
+          schema: { type: string, maxLength: 120 }
+      responses:
+        "200":
+          description: 已关账或幂等返回（期间已是 CLOSED 状态时直接返回当前状态）
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AccountingPeriod" }
+        "403": { description: 当前角色无权关账 }
+        "404": { description: 会计期间不存在或不在当前租户范围 }
+        "409": { description: 期间版本冲突，请刷新后重试 }
+  /api/v1/finance/accounting-periods/{id}/reopen:
+    post:
+      operationId: reopenAccountingPeriod
+      summary: 重开会计期间（仅 ADMIN）
+      description: 重开已关账期间。仅 ADMIN 角色可执行，必须填写重开原因（至少 4 字符）。
+      tags: [Finance]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/EntityId"
+        - name: X-Request-Id
+          in: header
+          required: false
+          schema: { type: string, maxLength: 120 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ReopenAccountingPeriodRequest" }
+      responses:
+        "200":
+          description: 已重开会计期间
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AccountingPeriod" }
+        "403": { description: 当前角色无权重开会计期间（仅 ADMIN） }
+        "404": { description: 会计期间不存在或不在当前租户范围 }
+        "409": { description: 期间版本冲突或期间未关账 }
+        "422": { description: 重开原因不满足要求 }
   /api/v1/planning/independent-demands:
     get:
       operationId: listIndependentDemands
@@ -3392,6 +3548,35 @@ components:
               settlementId: { type: [string, "null"], format: uuid }
               settlementNumber: { type: [string, "null"] }
               costStatus: { type: [string, "null"], enum: [COMPLETE, MISSING_COST] }
+    AccountingPeriod:
+      type: object
+      required: [id, fiscalYear, fiscalPeriod, periodLabel, status, version, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        fiscalYear: { type: integer, minimum: 2020, maximum: 2099 }
+        fiscalPeriod: { type: integer, minimum: 1, maximum: 12 }
+        periodLabel: { type: string, example: "2026-08", description: 年-月标签，格式 yyyy-MM }
+        status: { type: string, enum: [OPEN, CLOSED] }
+        closedAt: { type: [string, "null"], format: date-time }
+        closedByName: { type: [string, "null"] }
+        reopenedAt: { type: [string, "null"], format: date-time }
+        reopenedByName: { type: [string, "null"] }
+        reopenReason: { type: [string, "null"] }
+        version: { type: integer, format: int64, minimum: 0 }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    CreateAccountingPeriodRequest:
+      type: object
+      required: [fiscalYear, fiscalPeriod]
+      properties:
+        fiscalYear: { type: integer, minimum: 2020, maximum: 2099 }
+        fiscalPeriod: { type: integer, minimum: 1, maximum: 12 }
+    ReopenAccountingPeriodRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason: { type: string, minLength: 4, maxLength: 500, description: 重开原因（至少 4 字符） }
+        expectedVersion: { type: [integer, "null"], format: int64, description: 乐观锁版本号，传入则校验 }
     IndependentDemandPage:
       allOf:
         - $ref: "#/components/schemas/PageMetadata"

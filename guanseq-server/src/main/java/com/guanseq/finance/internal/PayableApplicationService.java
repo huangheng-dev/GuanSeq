@@ -49,12 +49,13 @@ public class PayableApplicationService {
 	private final PayableCreditNoteRepository creditNoteRepository;
 	private final PayableReversalRepository reversalRepository;
 	private final PayableEventRepository eventRepository;
+	private final AccountingPeriodGuard periodGuard;
 	private final JdbcTemplate jdbcTemplate;
 
 	PayableApplicationService(CurrentWorkspaceProvider workspaceProvider, ProcurementPayableQueryProvider procurementProvider,
 			PayableInvoiceRepository invoiceRepository, PayablePaymentRepository paymentRepository,
 			PayableCreditNoteRepository creditNoteRepository, PayableReversalRepository reversalRepository,
-			PayableEventRepository eventRepository, JdbcTemplate jdbcTemplate) {
+			PayableEventRepository eventRepository, AccountingPeriodGuard periodGuard, JdbcTemplate jdbcTemplate) {
 		this.workspaceProvider = workspaceProvider;
 		this.procurementProvider = procurementProvider;
 		this.invoiceRepository = invoiceRepository;
@@ -62,6 +63,7 @@ public class PayableApplicationService {
 		this.creditNoteRepository = creditNoteRepository;
 		this.reversalRepository = reversalRepository;
 		this.eventRepository = eventRepository;
+		this.periodGuard = periodGuard;
 		this.jdbcTemplate = jdbcTemplate;
 	}
 
@@ -99,6 +101,7 @@ public class PayableApplicationService {
 			PayableInvoiceRecord.CreateRequest request) {
 		CurrentWorkspaceAccess access = workspaceProvider.resolve(username);
 		requireWriteRole(access, "登记采购应付发票");
+		periodGuard.requireOpen(access.tenantOrganizationId(), access.workspaceId(), access.userId(), request.invoiceDate());
 		String requestId = normalizeRequestId(requestIdHeader, "payable-invoice");
 		PayableInvoiceEntity duplicate = invoiceRepository
 				.findByTenantOrganizationIdAndRequestId(access.tenantOrganizationId(), requestId).orElse(null);
@@ -152,6 +155,7 @@ public class PayableApplicationService {
 			PayableInvoiceRecord.PaymentRequest request) {
 		CurrentWorkspaceAccess access = workspaceProvider.resolve(username);
 		requireWriteRole(access, "登记并核销付款");
+		periodGuard.requireOpen(access.tenantOrganizationId(), access.workspaceId(), access.userId(), request.paymentDate());
 		String requestId = normalizeRequestId(requestIdHeader, "payable-payment");
 		lockBusinessKey("payable-payment:" + invoiceId);
 		PayablePaymentEntity duplicate = paymentRepository
@@ -208,6 +212,7 @@ public class PayableApplicationService {
 			PayableCreditNoteRecord.CreateRequest request) {
 		CurrentWorkspaceAccess access = workspaceProvider.resolve(username);
 		requireWriteRole(access, "登记应付红字发票");
+		periodGuard.requireOpen(access.tenantOrganizationId(), access.workspaceId(), access.userId(), request.creditNoteDate());
 		String requestId = normalizeRequestId(requestIdHeader, "payable-credit-note");
 		PayableCreditNoteEntity duplicate = creditNoteRepository
 				.findByTenantOrganizationIdAndRequestId(access.tenantOrganizationId(), requestId).orElse(null);
@@ -260,6 +265,7 @@ public class PayableApplicationService {
 			PayableCreditNoteRecord.RefundRequest request) {
 		CurrentWorkspaceAccess access = workspaceProvider.resolve(username);
 		requireWriteRole(access, "登记应付退款");
+		periodGuard.requireOpen(access.tenantOrganizationId(), access.workspaceId(), access.userId(), request.refundDate());
 		String requestId = normalizeRequestId(requestIdHeader, "payable-refund");
 		lockBusinessKey("payable-refund:" + invoiceId);
 		PayablePaymentEntity duplicate = paymentRepository
@@ -297,6 +303,7 @@ public class PayableApplicationService {
 			PayableCreditNoteRecord.ReverseRequest request) {
 		CurrentWorkspaceAccess access = workspaceProvider.resolve(username);
 		requireWriteRole(access, "反核销应付付款或退款");
+		periodGuard.requireOpen(access.tenantOrganizationId(), access.workspaceId(), access.userId(), request.reversalDate());
 		String requestId = normalizeRequestId(requestIdHeader, "payable-reversal");
 		PayableReversalEntity duplicate = reversalRepository
 				.findByTenantOrganizationIdAndRequestId(access.tenantOrganizationId(), requestId).orElse(null);

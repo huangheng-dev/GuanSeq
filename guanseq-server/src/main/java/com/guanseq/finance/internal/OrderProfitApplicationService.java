@@ -52,12 +52,13 @@ public class OrderProfitApplicationService {
 	private final ItemStandardCostRepository standardCostRepository;
 	private final WorkCenterCostRateRepository workCenterCostRateRepository;
 	private final OrderProfitEventRepository eventRepository;
+	private final AccountingPeriodGuard periodGuard;
 	private final JdbcTemplate jdbcTemplate;
 
 	OrderProfitApplicationService(CurrentWorkspaceProvider workspaceProvider, SalesProfitQueryProvider salesProfitQueryProvider,
 			ProductionCostQueryProvider productionCostQueryProvider, OrderProfitSettlementRepository settlementRepository,
 			ItemStandardCostRepository standardCostRepository, WorkCenterCostRateRepository workCenterCostRateRepository,
-			OrderProfitEventRepository eventRepository,
+			OrderProfitEventRepository eventRepository, AccountingPeriodGuard periodGuard,
 			JdbcTemplate jdbcTemplate) {
 		this.workspaceProvider = workspaceProvider;
 		this.salesProfitQueryProvider = salesProfitQueryProvider;
@@ -66,6 +67,7 @@ public class OrderProfitApplicationService {
 		this.standardCostRepository = standardCostRepository;
 		this.workCenterCostRateRepository = workCenterCostRateRepository;
 		this.eventRepository = eventRepository;
+		this.periodGuard = periodGuard;
 		this.jdbcTemplate = jdbcTemplate;
 	}
 
@@ -116,6 +118,7 @@ public class OrderProfitApplicationService {
 	public OrderProfitRecord settle(String username, UUID salesOrderId, String requestIdHeader) {
 		CurrentWorkspaceAccess access = workspaceProvider.resolve(username);
 		requireSettleRole(access);
+		periodGuard.requireOpen(access.tenantOrganizationId(), access.workspaceId(), access.userId(), LocalDate.now());
 		String requestId = normalizeRequestId(requestIdHeader);
 		OrderProfitSettlementEntity duplicateRequest = settlementRepository.findByTenantOrganizationIdAndRequestId(access.tenantOrganizationId(), requestId).orElse(null);
 		if (duplicateRequest != null) return toRecord(duplicateRequest, findOrderStatus(access, duplicateRequest.getSalesOrderId()));
