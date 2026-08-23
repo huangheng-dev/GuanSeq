@@ -50,12 +50,14 @@ public class ReceivableApplicationService {
 	private final ReceivableReversalRepository reversalRepository;
 	private final ReceivableEventRepository eventRepository;
 	private final AccountingPeriodGuard periodGuard;
+	private final OrderProfitApplicationService orderProfitService;
 	private final JdbcTemplate jdbcTemplate;
 
 	ReceivableApplicationService(CurrentWorkspaceProvider workspaceProvider, SalesReceivableQueryProvider salesProvider,
 			ReceivableInvoiceRepository invoiceRepository, ReceivableReceiptRepository receiptRepository,
 			ReceivableCreditNoteRepository creditNoteRepository, ReceivableReversalRepository reversalRepository,
-			ReceivableEventRepository eventRepository, AccountingPeriodGuard periodGuard, JdbcTemplate jdbcTemplate) {
+			ReceivableEventRepository eventRepository, AccountingPeriodGuard periodGuard,
+			OrderProfitApplicationService orderProfitService, JdbcTemplate jdbcTemplate) {
 		this.workspaceProvider = workspaceProvider;
 		this.salesProvider = salesProvider;
 		this.invoiceRepository = invoiceRepository;
@@ -64,6 +66,7 @@ public class ReceivableApplicationService {
 		this.reversalRepository = reversalRepository;
 		this.eventRepository = eventRepository;
 		this.periodGuard = periodGuard;
+		this.orderProfitService = orderProfitService;
 		this.jdbcTemplate = jdbcTemplate;
 	}
 
@@ -253,6 +256,7 @@ public class ReceivableApplicationService {
 		} catch (DataIntegrityViolationException exception) {
 			throw new ResponseStatusException(HttpStatus.CONFLICT, "红字发票请求与已有业务事实冲突，请刷新后确认", exception);
 		}
+		orderProfitService.markImpactedIfSettled(username, original.getSalesOrderId(), "RECEIVABLE_CREDIT_NOTE", creditNote.getCreditNoteNumber());
 		return toCreditNoteRecord(creditNote);
 	}
 
@@ -291,6 +295,7 @@ public class ReceivableApplicationService {
 		} catch (DataIntegrityViolationException exception) {
 			throw new ResponseStatusException(HttpStatus.CONFLICT, "退款请求与已有业务事实冲突，请刷新后确认", exception);
 		}
+		orderProfitService.markImpactedIfSettled(username, invoice.getSalesOrderId(), "RECEIVABLE_REFUND", refund.getReceiptNumber());
 		return toRecord(invoice);
 	}
 
@@ -330,6 +335,7 @@ public class ReceivableApplicationService {
 		} catch (DataIntegrityViolationException exception) {
 			throw new ResponseStatusException(HttpStatus.CONFLICT, "反核销请求与已有业务事实冲突，请刷新后确认", exception);
 		}
+		orderProfitService.markImpactedIfSettled(username, invoice.getSalesOrderId(), "RECEIVABLE_REVERSAL", reversal.getReversalNumber());
 		return toRecord(invoice);
 	}
 

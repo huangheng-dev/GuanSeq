@@ -2423,3 +2423,84 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, a:focus-visib
 .periodCard footer .primaryButton,
 .periodCard footer .secondaryButton { min-height: 32px; padding: 5px 14px; }
 .toastWarn { background: #fcf2e3 !important; border-color: #d9a45a !important; color: #7a4d10 !important; }
+
+/* 订单利润冲销与恢复 */
+.salesOrderTableRowWarn { background: #fcf8f1; }
+.salesOrderTableRowWarn > strong:first-child { border-left: 3px solid #c68a2a; padding-left: 10px; }
+.rowWarnHint { color: #8a5a18; display: block; font-size: 11px; margin-top: 3px; max-width: 220px; }
+.rowActions { align-items: center; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+.rowActions .primaryButton, .rowActions .secondaryButton { min-height: 30px; padding: 4px 12px; }
+.dialogCardWide { max-width: 720px; width: min(720px, calc(100vw - 32px)); }
+.dialogSubtle { color: var(--gs-ink-muted); font-size: 13px; margin: 4px 0 12px; }
+.dialogWarn {
+  align-items: center;
+  background: #fcf2e3;
+  border: 1px solid #e2bf86;
+  border-radius: 8px;
+  color: #7a4d10;
+  display: flex;
+  gap: 8px;
+  margin: 8px 0 14px;
+  padding: 8px 12px;
+  font-size: 12.5px;
+}
+.dialogGrid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 4px 0 14px;
+}
+.dialogGrid span {
+  background: var(--gs-bg-muted, #f6f7f9);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 10px;
+}
+.dialogGrid small { color: var(--gs-ink-muted); font-size: 11px; }
+.dialogGrid strong { font-size: 13.5px; font-weight: 650; }
+.fieldLabel { display: block; font-size: 12.5px; font-weight: 600; margin: 6px 0 6px; }
+.fieldLabel span { color: var(--gs-ink-muted); font-weight: 400; }
+.fieldHint { color: var(--gs-ink-muted); font-size: 11.5px; margin: 6px 0 4px; }
+.dialogActions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+
+.historyList { display: flex; flex-direction: column; gap: 10px; max-height: 56vh; overflow: auto; padding: 2px 2px 8px; }
+.historyItem {
+  background: white;
+  border: 1px solid var(--gs-line);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+}
+.historyItemCurrent { border-color: #2f8f5e; box-shadow: 0 0 0 2px rgba(47, 143, 94, .08); }
+.historyItem > header { align-items: center; display: flex; justify-content: space-between; gap: 8px; }
+.historyItem > header strong { display: block; font-size: 13.5px; font-weight: 650; }
+.historyItem > header small { color: var(--gs-ink-muted); display: block; font: 11px ui-monospace, monospace; margin-top: 2px; }
+.historyGrid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.historyGrid span { display: flex; flex-direction: column; gap: 2px; }
+.historyGrid small { color: var(--gs-ink-muted); font-size: 10.5px; }
+.historyGrid strong { font-size: 12.5px; font-weight: 650; }
+.historyReason {
+  align-items: center;
+  background: #fcf2e3;
+  border-radius: 6px;
+  color: #7a4d10;
+  display: flex;
+  font-size: 12px;
+  gap: 6px;
+  margin: 0;
+  padding: 6px 10px;
+}
+.historyHint { color: var(--gs-ink-muted); font: 11px ui-monospace, monospace; margin: 0; }
+.historyMissing { color: #a04545; font-size: 11.5px; margin: 0; padding-left: 18px; }
+.historyMissing li { margin: 2px 0; }
+@media (max-width: 720px) {
+  .dialogGrid, .historyGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

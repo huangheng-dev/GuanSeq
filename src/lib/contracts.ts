@@ -246,7 +246,7 @@ export const orderProfitRecordSchema = z.object({
   orderStatus: z.string().nullable(),
   orderedQuantity: z.number().positive(),
   shippedQuantity: z.number().positive(),
-  revenue: z.number().nonnegative(),
+  revenue: z.number(),
   materialCost: z.number().nonnegative(),
   processingCost: z.number().nonnegative(),
   totalCost: z.number().nonnegative(),
@@ -254,11 +254,20 @@ export const orderProfitRecordSchema = z.object({
   grossMargin: z.number().nullable(),
   costBasis: z.string(),
   costStatus: z.enum(["COMPLETE", "MISSING_COST"]),
-  status: z.literal("SETTLED"),
+  status: z.enum(["SETTLED", "IMPACTED", "SUPERSEDED"]),
+  settlementVersion: z.number().int().min(1),
+  supersedesId: z.string().uuid().nullable(),
+  impactReason: z.string().nullable(),
   missingItems: z.array(z.string()),
   version: z.number().int().nonnegative(),
   settledAt: z.string().datetime(),
   lines: z.array(orderProfitLineSchema).min(1),
+});
+
+export const orderProfitResettleRequestSchema = z.object({
+  reason: z.string().min(4).max(500),
+  settlementDate: z.string().nullable().optional(),
+  expectedVersion: z.number().int().nonnegative().nullable().optional(),
 });
 
 export const orderProfitPageSchema = pageEnvelope(orderProfitRecordSchema);

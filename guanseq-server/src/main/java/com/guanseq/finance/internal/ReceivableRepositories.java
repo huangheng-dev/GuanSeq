@@ -49,6 +49,7 @@ interface ReceivableCreditNoteRepository extends JpaRepository<ReceivableCreditN
 	Optional<ReceivableCreditNoteEntity> findByIdAndTenantOrganizationId(UUID id, UUID tenantOrganizationId);
 	Optional<ReceivableCreditNoteEntity> findByTenantOrganizationIdAndRequestId(UUID tenantOrganizationId, String requestId);
 	List<ReceivableCreditNoteEntity> findByTenantOrganizationIdAndOriginalInvoiceId(UUID tenantOrganizationId, UUID originalInvoiceId);
+	List<ReceivableCreditNoteEntity> findByTenantOrganizationIdAndSalesOrderId(UUID tenantOrganizationId, UUID salesOrderId);
 }
 
 interface ReceivableReversalRepository extends JpaRepository<ReceivableReversalEntity, UUID> {

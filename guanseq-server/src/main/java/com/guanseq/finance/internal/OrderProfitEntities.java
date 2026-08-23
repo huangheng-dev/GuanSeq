@@ -71,6 +71,9 @@ class OrderProfitSettlementEntity {
 	@Column(name = "cost_basis") private String costBasis;
 	@Column(name = "cost_status") private String costStatus;
 	private String status;
+	@Column(name = "settlement_version") private int settlementVersion;
+	@Column(name = "supersedes_id") private UUID supersedesId;
+	@Column(name = "impact_reason") private String impactReason;
 	@JdbcTypeCode(SqlTypes.JSON)
 	@Column(name = "missing_items") private List<String> missingItems = new ArrayList<>();
 	@Column(name = "request_id") private String requestId;
@@ -112,6 +115,7 @@ class OrderProfitSettlementEntity {
 		this.costBasis = "ACTUAL_MATERIAL_ISSUE_WITH_STANDARD_COST;STANDARD_OPERATION_TIME_WITH_EFFECTIVE_WORK_CENTER_RATE";
 		this.costStatus = costStatus;
 		this.status = "SETTLED";
+		this.settlementVersion = 1;
 		this.missingItems = new ArrayList<>(missingItems);
 		this.requestId = requestId;
 		this.createdBy = actorUserId;
@@ -119,6 +123,18 @@ class OrderProfitSettlementEntity {
 		this.updatedBy = actorUserId;
 		this.updatedAt = createdAt;
 		this.settledAt = createdAt;
+	}
+
+	/** 重算时创建新版本快照，supersedesId 指向被替代的旧版本，version 为旧版本+1。 */
+	OrderProfitSettlementEntity(UUID tenantOrganizationId, UUID owningOrganizationId, UUID workspaceId,
+			String settlementNumber, SalesOrderSnapshot order, BigDecimal shippedQuantity, BigDecimal revenue,
+			BigDecimal materialCost, BigDecimal laborCost, BigDecimal overheadCost, String costStatus, List<String> missingItems,
+			String requestId, UUID actorUserId, int settlementVersion, UUID supersedesId) {
+		this(tenantOrganizationId, owningOrganizationId, workspaceId, settlementNumber, order, shippedQuantity,
+				revenue, materialCost, laborCost, overheadCost, costStatus, missingItems, requestId, actorUserId);
+		this.settlementVersion = settlementVersion;
+		this.supersedesId = supersedesId;
+		this.status = "SETTLED";
 	}
 
 	void addLine(OrderProfitSettlementLineEntity line) { this.lines.add(line); }
@@ -144,6 +160,19 @@ class OrderProfitSettlementEntity {
 	String getCostBasis() { return costBasis; }
 	String getCostStatus() { return costStatus; }
 	String getStatus() { return status; }
+	int getSettlementVersion() { return settlementVersion; }
+	UUID getSupersedesId() { return supersedesId; }
+	String getImpactReason() { return impactReason; }
+	void markImpacted(String reason) {
+		this.status = "IMPACTED";
+		this.impactReason = reason;
+		this.updatedAt = Instant.now();
+	}
+	void markSuperseded(UUID actorUserId) {
+		this.status = "SUPERSEDED";
+		this.updatedBy = actorUserId;
+		this.updatedAt = Instant.now();
+	}
 	List<String> getMissingItems() { return missingItems; }
 	String getRequestId() { return requestId; }
 	long getVersion() { return version; }

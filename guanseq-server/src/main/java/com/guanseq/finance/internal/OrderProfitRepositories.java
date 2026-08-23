@@ -15,6 +15,7 @@ interface OrderProfitSettlementRepository extends JpaRepository<OrderProfitSettl
 	@Query("""
 			select s from OrderProfitSettlementEntity s
 			where s.tenantOrganizationId = :tenantId
+			and s.status <> 'SUPERSEDED'
 			and (:costStatus = '' or s.costStatus = :costStatus)
 			and (:query = ''
 				or lower(s.settlementNumber) like lower(concat('%', :query, '%'))
@@ -26,9 +27,27 @@ interface OrderProfitSettlementRepository extends JpaRepository<OrderProfitSettl
 			@Param("costStatus") String costStatus, Pageable pageable);
 
 	Optional<OrderProfitSettlementEntity> findByIdAndTenantOrganizationId(UUID id, UUID tenantOrganizationId);
-	Optional<OrderProfitSettlementEntity> findByTenantOrganizationIdAndSalesOrderId(UUID tenantOrganizationId, UUID salesOrderId);
+
+	@Query("""
+			select s from OrderProfitSettlementEntity s
+			where s.tenantOrganizationId = :tenantId and s.salesOrderId = :salesOrderId
+			and s.status in ('SETTLED', 'IMPACTED')
+			""")
+	Optional<OrderProfitSettlementEntity> findCurrentByTenantAndSalesOrderId(
+			@Param("tenantId") UUID tenantId, @Param("salesOrderId") UUID salesOrderId);
+
+	@Query("""
+			select s from OrderProfitSettlementEntity s
+			where s.tenantOrganizationId = :tenantId and s.salesOrderId = :salesOrderId
+			order by s.settlementVersion desc
+			""")
+	List<OrderProfitSettlementEntity> findHistoryByTenantAndSalesOrderId(
+			@Param("tenantId") UUID tenantId, @Param("salesOrderId") UUID salesOrderId);
+
 	Optional<OrderProfitSettlementEntity> findByTenantOrganizationIdAndRequestId(UUID tenantOrganizationId, String requestId);
 	List<OrderProfitSettlementEntity> findByTenantOrganizationIdOrderBySettledAtDesc(UUID tenantOrganizationId);
+
+	long countByTenantOrganizationIdAndStatus(UUID tenantOrganizationId, String status);
 }
 
 interface ItemStandardCostRepository extends JpaRepository<ItemStandardCostEntity, UUID> {

@@ -28,6 +28,7 @@ import org.springframework.web.server.ResponseStatusException;
 import com.guanseq.finance.api.OrderProfitPage;
 import com.guanseq.finance.api.OrderProfitRecord;
 import com.guanseq.finance.api.OrderProfitReferenceData;
+import com.guanseq.finance.api.OrderProfitResettleRequest;
 import com.guanseq.identity.api.CurrentWorkspaceAccess;
 import com.guanseq.identity.api.CurrentWorkspaceProvider;
 import com.guanseq.production.api.ProductionCostQueryProvider;
@@ -52,13 +53,16 @@ public class OrderProfitApplicationService {
 	private final ItemStandardCostRepository standardCostRepository;
 	private final WorkCenterCostRateRepository workCenterCostRateRepository;
 	private final OrderProfitEventRepository eventRepository;
+	private final ReceivableInvoiceRepository receivableInvoiceRepository;
+	private final ReceivableCreditNoteRepository receivableCreditNoteRepository;
 	private final AccountingPeriodGuard periodGuard;
 	private final JdbcTemplate jdbcTemplate;
 
 	OrderProfitApplicationService(CurrentWorkspaceProvider workspaceProvider, SalesProfitQueryProvider salesProfitQueryProvider,
 			ProductionCostQueryProvider productionCostQueryProvider, OrderProfitSettlementRepository settlementRepository,
 			ItemStandardCostRepository standardCostRepository, WorkCenterCostRateRepository workCenterCostRateRepository,
-			OrderProfitEventRepository eventRepository, AccountingPeriodGuard periodGuard,
+			OrderProfitEventRepository eventRepository, ReceivableInvoiceRepository receivableInvoiceRepository,
+			ReceivableCreditNoteRepository receivableCreditNoteRepository, AccountingPeriodGuard periodGuard,
 			JdbcTemplate jdbcTemplate) {
 		this.workspaceProvider = workspaceProvider;
 		this.salesProfitQueryProvider = salesProfitQueryProvider;
@@ -67,6 +71,8 @@ public class OrderProfitApplicationService {
 		this.standardCostRepository = standardCostRepository;
 		this.workCenterCostRateRepository = workCenterCostRateRepository;
 		this.eventRepository = eventRepository;
+		this.receivableInvoiceRepository = receivableInvoiceRepository;
+		this.receivableCreditNoteRepository = receivableCreditNoteRepository;
 		this.periodGuard = periodGuard;
 		this.jdbcTemplate = jdbcTemplate;
 	}
@@ -81,6 +87,14 @@ public class OrderProfitApplicationService {
 						Sort.by(Sort.Direction.DESC, "settledAt")));
 		return new OrderProfitPage(result.getContent().stream().map(item -> toRecord(item, orderStatuses.get(item.getSalesOrderId()))).toList(),
 				result.getTotalElements(), result.getNumber(), result.getSize(), result.getTotalPages());
+	}
+
+	@Transactional(readOnly = true)
+	public List<OrderProfitRecord> history(String username, UUID salesOrderId) {
+		CurrentWorkspaceAccess access = workspaceProvider.resolve(username);
+		return settlementRepository.findHistoryByTenantAndSalesOrderId(access.tenantOrganizationId(), salesOrderId).stream()
+				.map(item -> toRecord(item, findOrderStatus(access, salesOrderId)))
+				.toList();
 	}
 
 	@Transactional(readOnly = true)
@@ -122,16 +136,139 @@ public class OrderProfitApplicationService {
 		String requestId = normalizeRequestId(requestIdHeader);
 		OrderProfitSettlementEntity duplicateRequest = settlementRepository.findByTenantOrganizationIdAndRequestId(access.tenantOrganizationId(), requestId).orElse(null);
 		if (duplicateRequest != null) return toRecord(duplicateRequest, findOrderStatus(access, duplicateRequest.getSalesOrderId()));
-		OrderProfitSettlementEntity existing = settlementRepository.findByTenantOrganizationIdAndSalesOrderId(access.tenantOrganizationId(), salesOrderId).orElse(null);
+		OrderProfitSettlementEntity existing = settlementRepository.findCurrentByTenantAndSalesOrderId(access.tenantOrganizationId(), salesOrderId).orElse(null);
 		if (existing != null) return toRecord(existing, findOrderStatus(access, existing.getSalesOrderId()));
 
 		ProfitOrder order = salesProfitQueryProvider.findShippedOrder(access.tenantOrganizationId(), salesOrderId)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "只有已部分发货或全部发货的销售订单可以结算利润"));
-		List<ProductionCostData> productionCosts = productionCostQueryProvider.findCostsForSalesOrder(access.tenantOrganizationId(), salesOrderId);
+		CalculationResult calculation = calculateSettlement(access, order, null);
+
+		String costStatus = calculation.missingItems().isEmpty() ? "COMPLETE" : "MISSING_COST";
+		OrderProfitSettlementEntity settlement;
+		try {
+			settlement = new OrderProfitSettlementEntity(access.tenantOrganizationId(), access.operatingOrganizationId(), access.workspaceId(),
+					nextSettlementNumber(), calculation.orderSnapshot(), calculation.shippedQuantity(), calculation.revenue(),
+					calculation.materialCost(), calculation.laborCost(), calculation.overheadCost(), costStatus,
+					calculation.missingItems(), requestId, access.userId());
+			for (LineCalculation line : calculation.lines()) settlement.addLine(line.toEntity(settlement));
+			settlementRepository.saveAndFlush(settlement);
+			eventRepository.saveAndFlush(new OrderProfitEventEntity(access.tenantOrganizationId(), access.workspaceId(), access.userId(),
+					settlement.getId(), "SETTLE", "SETTLED", costStatus, requestId,
+					Map.of("salesOrderId", salesOrderId, "orderNumber", order.orderNumber(), "revenue", calculation.revenue(),
+							"materialCost", calculation.materialCost(), "laborCost", calculation.laborCost(),
+							"overheadCost", calculation.overheadCost(), "processingCost", calculation.processingCost(),
+							"grossProfit", settlement.getGrossProfit())));
+		} catch (ObjectOptimisticLockingFailureException exception) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "订单利润结算被其他事务更新，请刷新后重试", exception);
+		} catch (DataIntegrityViolationException exception) {
+			var duplicateAfterConflict = settlementRepository.findByTenantOrganizationIdAndRequestId(access.tenantOrganizationId(), requestId);
+			if (duplicateAfterConflict.isPresent()) return toRecord(duplicateAfterConflict.get(), order.status());
+			var existingAfterConflict = settlementRepository.findCurrentByTenantAndSalesOrderId(access.tenantOrganizationId(), salesOrderId);
+			if (existingAfterConflict.isPresent()) return toRecord(existingAfterConflict.get(), order.status());
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "订单利润结算请求冲突，请刷新确认结果", exception);
+		}
+		return toRecord(settlement, order.status());
+	}
+
+	@Transactional
+	public OrderProfitRecord resettle(String username, UUID salesOrderId, String requestIdHeader, OrderProfitResettleRequest request) {
+		CurrentWorkspaceAccess access = workspaceProvider.resolve(username);
+		requireSettleRole(access);
+		if (request == null || request.reason() == null || request.reason().trim().length() < 4) {
+			throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "重算原因至少需要 4 个字符");
+		}
+		if (request.reason().trim().length() > 500) {
+			throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "重算原因不能超过 500 个字符");
+		}
+		LocalDate settlementDate = request.settlementDate() != null ? request.settlementDate() : LocalDate.now();
+		periodGuard.requireOpen(access.tenantOrganizationId(), access.workspaceId(), access.userId(), settlementDate);
+		String requestId = normalizeRequestId(requestIdHeader);
+		OrderProfitSettlementEntity duplicateRequest = settlementRepository.findByTenantOrganizationIdAndRequestId(access.tenantOrganizationId(), requestId).orElse(null);
+		if (duplicateRequest != null) return toRecord(duplicateRequest, findOrderStatus(access, duplicateRequest.getSalesOrderId()));
+		OrderProfitSettlementEntity previous = settlementRepository.findCurrentByTenantAndSalesOrderId(access.tenantOrganizationId(), salesOrderId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "该销售订单尚无可重算的利润快照，请先完成首次结算"));
+		if (request.expectedVersion() != null && previous.getVersion() != request.expectedVersion()) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "利润快照已被其他操作更新，请刷新后重试");
+		}
+		ProfitOrder order = salesProfitQueryProvider.findShippedOrder(access.tenantOrganizationId(), salesOrderId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "销售订单已无可结算的发货事实，无法重算"));
+		CalculationResult calculation = calculateSettlement(access, order, previous);
+
+		String costStatus = calculation.missingItems().isEmpty() ? "COMPLETE" : "MISSING_COST";
+		previous.markSuperseded(access.userId());
+		OrderProfitSettlementEntity next;
+		try {
+			next = new OrderProfitSettlementEntity(access.tenantOrganizationId(), access.operatingOrganizationId(), access.workspaceId(),
+					nextSettlementNumber(), calculation.orderSnapshot(), calculation.shippedQuantity(), calculation.revenue(),
+					calculation.materialCost(), calculation.laborCost(), calculation.overheadCost(), costStatus,
+					calculation.missingItems(), requestId, access.userId(),
+					previous.getSettlementVersion() + 1, previous.getId());
+			for (LineCalculation line : calculation.lines()) next.addLine(line.toEntity(next));
+			settlementRepository.saveAndFlush(previous);
+			settlementRepository.saveAndFlush(next);
+			Map<String, Object> details = new LinkedHashMap<>();
+			details.put("salesOrderId", salesOrderId);
+			details.put("orderNumber", order.orderNumber());
+			details.put("supersedesId", previous.getId());
+			details.put("supersedesNumber", previous.getSettlementNumber());
+			details.put("reason", request.reason().trim());
+			details.put("revenue", calculation.revenue());
+			details.put("materialCost", calculation.materialCost());
+			details.put("laborCost", calculation.laborCost());
+			details.put("overheadCost", calculation.overheadCost());
+			details.put("processingCost", calculation.processingCost());
+			details.put("grossProfit", next.getGrossProfit());
+			eventRepository.saveAndFlush(new OrderProfitEventEntity(access.tenantOrganizationId(), access.workspaceId(), access.userId(),
+					next.getId(), "RESETTLE", "SETTLED", costStatus, requestId, details));
+		} catch (ObjectOptimisticLockingFailureException exception) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "利润快照已被其他操作更新，请刷新后重试", exception);
+		} catch (DataIntegrityViolationException exception) {
+			var duplicateAfterConflict = settlementRepository.findByTenantOrganizationIdAndRequestId(access.tenantOrganizationId(), requestId);
+			if (duplicateAfterConflict.isPresent()) return toRecord(duplicateAfterConflict.get(), order.status());
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "重算请求与已有业务事实冲突，请刷新确认结果", exception);
+		}
+		return toRecord(next, order.status());
+	}
+
+	/**
+	 * 红字发票/退款/反核销过账后调用：若该销售订单已有当前利润快照（SETTLED 或 IMPACTED），
+	 * 则把它标记为 IMPACTED 并写入事件。不抛异常、不阻塞调用方主流程。
+	 */
+	@Transactional
+	public void markImpactedIfSettled(String username, UUID salesOrderId, String triggerType, String triggerNumber) {
+		if (salesOrderId == null) return;
+		CurrentWorkspaceAccess access;
+		try {
+			access = workspaceProvider.resolve(username);
+		} catch (RuntimeException ignored) {
+			return;
+		}
+		OrderProfitSettlementEntity current = settlementRepository
+				.findCurrentByTenantAndSalesOrderId(access.tenantOrganizationId(), salesOrderId).orElse(null);
+		if (current == null || "SUPERSEDED".equals(current.getStatus())) return;
+		String reason = (triggerType == null ? "后续单据" : triggerType)
+				+ (triggerNumber == null || triggerNumber.isBlank() ? " 过账" : " " + triggerNumber + " 过账")
+				+ "，利润快照需重算";
+		if (reason.length() > 500) reason = reason.substring(0, 500);
+		current.markImpacted(reason);
+		try {
+			settlementRepository.saveAndFlush(current);
+			eventRepository.saveAndFlush(new OrderProfitEventEntity(access.tenantOrganizationId(), access.workspaceId(), access.userId(),
+					current.getId(), "MARK_IMPACTED", "IMPACTED", current.getCostStatus(), null,
+					Map.of("salesOrderId", salesOrderId, "triggerType", triggerType == null ? "" : triggerType,
+							"triggerNumber", triggerNumber == null ? "" : triggerNumber, "reason", reason)));
+		} catch (RuntimeException ignored) {
+			// 打标记失败不阻塞红字/退款/反核销主流程
+		}
+	}
+
+	private CalculationResult calculateSettlement(CurrentWorkspaceAccess access, ProfitOrder order,
+			OrderProfitSettlementEntity previous) {
+		List<ProductionCostData> productionCosts = productionCostQueryProvider.findCostsForSalesOrder(access.tenantOrganizationId(), order.id());
 		Map<UUID, ProductionCostSnapshot> productionByMaterial = aggregateProductionCosts(access.tenantOrganizationId(), productionCosts);
 
 		BigDecimal shippedQuantity = BigDecimal.ZERO;
-		BigDecimal revenue = BigDecimal.ZERO.setScale(MONEY_SCALE);
+		BigDecimal lineRevenueSum = BigDecimal.ZERO.setScale(MONEY_SCALE);
 		BigDecimal materialCost = BigDecimal.ZERO.setScale(MONEY_SCALE);
 		BigDecimal laborCost = BigDecimal.ZERO.setScale(MONEY_SCALE);
 		BigDecimal overheadCost = BigDecimal.ZERO.setScale(MONEY_SCALE);
@@ -143,44 +280,58 @@ public class OrderProfitApplicationService {
 			LineCalculation calculation = calculateLine(access, order.currency(), line, productionByMaterial.get(line.materialId()));
 			calculations.add(calculation);
 			shippedQuantity = shippedQuantity.add(calculation.line().shippedQuantity());
-			revenue = revenue.add(calculation.revenue());
+			lineRevenueSum = lineRevenueSum.add(calculation.revenue());
 			materialCost = materialCost.add(calculation.materialCost());
 			laborCost = laborCost.add(calculation.laborCost());
 			overheadCost = overheadCost.add(calculation.overheadCost());
 			processingCost = processingCost.add(calculation.processingCost());
 			missingItems.addAll(calculation.missingItems());
 		}
-		if (shippedQuantity.signum() <= 0) throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "销售订单没有可结算的已发数量");
-
-		String costStatus = missingItems.isEmpty() ? "COMPLETE" : "MISSING_COST";
-		SalesOrderSnapshot orderSnapshot = new SalesOrderSnapshot(order.id(), order.orderNumber(), order.customerId(), order.customerCode(),
-				order.customerName(), order.currency(), order.status(), order.lines().stream()
-						.map(line -> new SalesOrderLineSnapshot(line.id(), line.lineNumber(), line.materialId(), line.materialCode(),
-								line.materialName(), line.materialSpecification(), line.unit(), line.orderedQuantity(),
-								line.deliveredQuantity(), line.unitPrice())).toList());
-		OrderProfitSettlementEntity settlement;
-		try {
-			settlement = new OrderProfitSettlementEntity(access.tenantOrganizationId(), access.operatingOrganizationId(), access.workspaceId(),
-					nextSettlementNumber(), orderSnapshot, shippedQuantity, revenue, materialCost, laborCost, overheadCost, costStatus,
-					missingItems.stream().distinct().toList(), requestId, access.userId());
-			for (LineCalculation calculation : calculations) settlement.addLine(calculation.toEntity(settlement));
-			settlementRepository.saveAndFlush(settlement);
-			eventRepository.saveAndFlush(new OrderProfitEventEntity(access.tenantOrganizationId(), access.workspaceId(), access.userId(),
-					settlement.getId(), "SETTLE", "SETTLED", costStatus, requestId,
-					Map.of("salesOrderId", salesOrderId, "orderNumber", order.orderNumber(), "revenue", revenue,
-							"materialCost", materialCost, "laborCost", laborCost, "overheadCost", overheadCost,
-							"processingCost", processingCost, "grossProfit", settlement.getGrossProfit())));
-		} catch (ObjectOptimisticLockingFailureException exception) {
-			throw new ResponseStatusException(HttpStatus.CONFLICT, "订单利润结算被其他事务更新，请刷新后重试", exception);
-		} catch (DataIntegrityViolationException exception) {
-			var duplicateAfterConflict = settlementRepository.findByTenantOrganizationIdAndRequestId(access.tenantOrganizationId(), requestId);
-			if (duplicateAfterConflict.isPresent()) return toRecord(duplicateAfterConflict.get(), order.status());
-			var existingAfterConflict = settlementRepository.findByTenantOrganizationIdAndSalesOrderId(access.tenantOrganizationId(), salesOrderId);
-			if (existingAfterConflict.isPresent()) return toRecord(existingAfterConflict.get(), order.status());
-			throw new ResponseStatusException(HttpStatus.CONFLICT, "订单利润结算请求冲突，请刷新确认结果", exception);
+		if (shippedQuantity.signum() <= 0) {
+			throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "销售订单没有可结算的已发数量");
 		}
-		return toRecord(settlement, order.status());
+
+		// 收入口径：存在任何蓝字或红字发票时，以 蓝字发票未税净额 + 红字发票未税净额（红字为负）为准；
+		// 折让类红字不改变发货量，只减收入；退货类红字因仓库已收货会减少发货量从而同步减成本。
+		// 没有任何发票时回退到 发货数量 × 单价，兼容尚未开票即结算的场景。
+		boolean hasInvoices = !receivableInvoiceRepository.findByTenantOrganizationIdAndSalesOrderId(access.tenantOrganizationId(), order.id()).isEmpty()
+				|| !receivableCreditNoteRepository.findByTenantOrganizationIdAndSalesOrderId(access.tenantOrganizationId(), order.id()).isEmpty();
+		BigDecimal revenue;
+		if (hasInvoices) {
+			revenue = sumInvoiceNetRevenue(access.tenantOrganizationId(), order.id()).setScale(MONEY_SCALE, RoundingMode.HALF_UP);
+		} else {
+			revenue = lineRevenueSum;
+		}
+
+		SalesOrderSnapshot orderSnapshot = new SalesOrderSnapshot(order.id(), order.orderNumber(), order.customerId(),
+				order.customerCode(), order.customerName(), order.currency(), order.status(), order.lines().stream()
+						.map(line -> new SalesOrderLineSnapshot(line.id(), line.lineNumber(), line.materialId(),
+								line.materialCode(), line.materialName(), line.materialSpecification(), line.unit(),
+								line.orderedQuantity(), line.deliveredQuantity(), line.unitPrice())).toList());
+		return new CalculationResult(orderSnapshot, shippedQuantity, revenue, materialCost, laborCost, overheadCost,
+				processingCost, missingItems.stream().distinct().toList(), calculations);
 	}
+
+	private BigDecimal sumInvoiceNetRevenue(UUID tenantId, UUID salesOrderId) {
+		BigDecimal blue = receivableInvoiceRepository.findByTenantOrganizationIdAndSalesOrderId(tenantId, salesOrderId).stream()
+				.map(ReceivableInvoiceEntity::getNetAmount).filter(java.util.Objects::nonNull)
+				.reduce(BigDecimal.ZERO, BigDecimal::add);
+		BigDecimal red = receivableCreditNoteRepository.findByTenantOrganizationIdAndSalesOrderId(tenantId, salesOrderId).stream()
+				.map(ReceivableCreditNoteEntity::getNetAmount).filter(java.util.Objects::nonNull)
+				.reduce(BigDecimal.ZERO, BigDecimal::add);
+		return blue.add(red);
+	}
+
+	private record CalculationResult(
+			SalesOrderSnapshot orderSnapshot,
+			BigDecimal shippedQuantity,
+			BigDecimal revenue,
+			BigDecimal materialCost,
+			BigDecimal laborCost,
+			BigDecimal overheadCost,
+			BigDecimal processingCost,
+			List<String> missingItems,
+			List<LineCalculation> lines) { }
 
 	private Map<UUID, ProductionCostSnapshot> aggregateProductionCosts(UUID tenantId, List<ProductionCostData> productionCosts) {
 		Map<UUID, ProductionCostSnapshot> result = new LinkedHashMap<>();
@@ -373,6 +524,7 @@ public class OrderProfitApplicationService {
 				settlement.getMaterialCost(), settlement.getLaborCost(), settlement.getOverheadCost(), settlement.getProcessingCost(),
 				settlement.getTotalCost(), settlement.getGrossProfit(),
 				settlement.getGrossMargin(), settlement.getCostBasis(), settlement.getCostStatus(), settlement.getStatus(),
+				settlement.getSettlementVersion(), settlement.getSupersedesId(), settlement.getImpactReason(),
 				settlement.getMissingItems(), settlement.getVersion(), settlement.getSettledAt(),
 				settlement.getLines().stream().sorted(java.util.Comparator.comparingInt(OrderProfitSettlementLineEntity::getLineNumber))
 						.map(this::toLineRecord).toList());
