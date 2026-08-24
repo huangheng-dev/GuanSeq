@@ -21,8 +21,14 @@ class OpenApiContractTest {
 			assertThat(parsed).containsKey("openapi");
 			assertThat(parsed.get("openapi")).isEqualTo("3.1.0");
 			Map<String, Object> components = (Map<String, Object>) parsed.get("components");
+			Map<String, Object> securitySchemes = (Map<String, Object>) components.get("securitySchemes");
 			Map<String, Object> responses = (Map<String, Object>) components.get("responses");
 			Map<String, Object> schemas = (Map<String, Object>) components.get("schemas");
+			assertThat(securitySchemes).containsKey("bearerAuth").doesNotContainKey("basicAuth");
+			assertThat((Map<String, Object>) securitySchemes.get("bearerAuth"))
+					.containsEntry("type", "http")
+					.containsEntry("scheme", "bearer")
+					.containsEntry("bearerFormat", "JWT");
 			assertThat(responses).containsKeys("ValidationFailed", "AuthenticationRequired", "AccessDenied",
 					"ResourceNotFound", "BusinessConflict", "BusinessRuleViolation", "InternalError");
 			assertThat(schemas).containsKeys("ApiError", "FieldViolation");

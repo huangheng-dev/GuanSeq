@@ -33,7 +33,9 @@ GuanSeq 制造业务核心后端。组织与工作区、客户与物料主数据
 - 订单利润按已发数量生成收入快照，按生产实际领退料净用量和有效标准成本结转直接材料；人工按已审核实际分钟、制造费用按已完工工序标准分钟和完工日有效工作中心费率归集，缺少证据时明确标记为缺成本。
 - 应收发票按销售订单已发数量分批开具，累计开票不得超过实际已发；收款按具体发票核销，支持部分收款、全部收清、请求幂等、乐观并发和审计事件。
 - 应付发票按采购订单合格收货数量分批登记，待检和不合格数量不可开票；付款按具体发票核销，并验证供应商发票号唯一、请求幂等、乐观并发和审计事件。
-- 仅在 `local` Profile 启用的开发身份和示例组织数据，正式迁移不写入示例数据。
+- 三态身份适配器：`local` Profile 使用开发 Basic 身份，`oidc` Profile 验证正式 Bearer JWT；两种方式互斥。
+- OIDC 用户声明必须精确映射到启用的贯序内部账号；外部角色不替代工作区和业务权限事实。
+- 仅在 `local` Profile 写入示例组织数据，正式迁移不写入示例数据。
 - 模块边界测试、契约测试和真实 PostgreSQL 权限/迁移/API 集成测试。
 
 ## 本地运行
@@ -78,11 +80,25 @@ docker compose down
 | `GUANSEQ_DB_PASSWORD` | `guanseq_dev` | 仅用于本地开发的默认密码 |
 | `GUANSEQ_BUILD_VERSION` | `0.1.0-SNAPSHOT` | 状态接口返回的构建版本 |
 | `GUANSEQ_DB_PORT` | `5432` | Compose 暴露的本地端口 |
-| `GUANSEQ_DEV_IDENTITY_ENABLED` | `true` | 是否启用本地开发身份，只在 `local` Profile 读取 |
+| `GUANSEQ_SECURITY_MODE` | `development` | 安全模式：`disabled`、`development` 或 `oidc`；本地 Profile 默认开发模式 |
 | `GUANSEQ_DEV_USERNAME` | `lin.hao` | 本地开发用户名 |
 | `GUANSEQ_DEV_PASSWORD` | `guanseq_dev` | 本地开发密码 |
+| `GUANSEQ_OIDC_ISSUER_URI` | 无 | 正式 JWT 的 OIDC 签发者，`oidc` Profile 必填 |
+| `GUANSEQ_OIDC_JWK_SET_URI` | 无 | 身份提供者 JWK 集地址，`oidc` Profile 必填 |
+| `GUANSEQ_OIDC_AUDIENCE` | 无 | 后端要求的访问令牌受众，`oidc` Profile 必填 |
+| `GUANSEQ_OIDC_USERNAME_CLAIM` | `preferred_username` | 精确映射内部启用用户名的 JWT 声明 |
 
-正式环境必须显式注入数据库凭据，不使用本地默认密码。应用不再默认激活 `local` Profile；未接入正式身份提供方时，受保护接口保持关闭。
+正式环境必须显式注入数据库凭据，不使用本地默认密码。应用不再默认激活 `local` Profile；未接入正式身份提供方时，受保护接口保持关闭。正式启动示例：
+
+```powershell
+$env:SPRING_PROFILES_ACTIVE = "oidc"
+$env:GUANSEQ_OIDC_ISSUER_URI = "https://identity.example.com/realms/guanseq"
+$env:GUANSEQ_OIDC_JWK_SET_URI = "https://identity.example.com/realms/guanseq/protocol/openid-connect/certs"
+$env:GUANSEQ_OIDC_AUDIENCE = "guanseq-api"
+.\mvnw.cmd spring-boot:run
+```
+
+后端会校验签名、签发者、受众和令牌时间，并在认证阶段拒绝未知或停用的贯序用户。OpenAPI 只把 Bearer JWT 作为正式安全契约；Basic 仅是本地实现细节。
 
 ## 测试
 

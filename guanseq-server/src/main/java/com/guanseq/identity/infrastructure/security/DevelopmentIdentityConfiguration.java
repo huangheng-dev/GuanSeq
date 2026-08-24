@@ -10,8 +10,8 @@ import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnProperty(
-		name = "guanseq.security.development-identity-enabled",
-		havingValue = "true",
+		name = "guanseq.security.mode",
+		havingValue = "development",
 		matchIfMissing = false)
 class DevelopmentIdentityConfiguration {
 

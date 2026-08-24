@@ -3,6 +3,7 @@ package com.guanseq.identity.internal;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.slf4j.MDC;
@@ -11,13 +12,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.guanseq.identity.api.WorkspaceSession;
-import com.guanseq.identity.api.WorkspaceSession.WorkspaceSummary;
+import com.guanseq.identity.api.ActiveIdentityProvider;
 import com.guanseq.identity.api.CurrentWorkspaceAccess;
 import com.guanseq.identity.api.CurrentWorkspaceProvider;
+import com.guanseq.identity.api.WorkspaceSession;
+import com.guanseq.identity.api.WorkspaceSession.WorkspaceSummary;
 
 @Service
-public class WorkspaceApplicationService implements CurrentWorkspaceProvider {
+public class WorkspaceApplicationService implements CurrentWorkspaceProvider, ActiveIdentityProvider {
 
 	private static final String ACTIVE = "ACTIVE";
 
@@ -63,6 +65,15 @@ public class WorkspaceApplicationService implements CurrentWorkspaceProvider {
 				workspace.getTenantOrganization().getId(),
 				workspace.getOperatingOrganization().getId(),
 				roleCode);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public Optional<String> findActiveUsername(String username) {
+		if (username == null || username.isBlank()) {
+			return Optional.empty();
+		}
+		return userRepository.findByUsernameAndStatus(username, ACTIVE).map(IdentityUserEntity::getUsername);
 	}
 
 	@Transactional

@@ -26,6 +26,7 @@
     "antd": "^6.6.1",
     "material-symbols": "0.45.10",
     "next": "16.3.0",
+    "openid-client": "^6.8.7",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-hook-form": "7.62.0",

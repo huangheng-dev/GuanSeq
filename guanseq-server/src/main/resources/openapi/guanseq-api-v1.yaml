@@ -29,7 +29,7 @@ paths:
       tags:
         - Identity
       security:
-        - basicAuth: []
+        - bearerAuth: []
       responses:
         "200":
           description: 当前用户、工作区选择版本和可访问工作区
@@ -49,7 +49,7 @@ paths:
       tags:
         - Identity
       security:
-        - basicAuth: []
+        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -75,7 +75,7 @@ paths:
       operationId: listCustomers
       summary: 分页查询当前工作区可见的客户
       tags: [MasterData]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/Query"
         - $ref: "#/components/parameters/Status"
@@ -92,7 +92,7 @@ paths:
       operationId: createCustomer
       summary: 新建客户
       tags: [MasterData]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       requestBody:
         required: true
         content:
@@ -110,7 +110,7 @@ paths:
       operationId: updateCustomer
       summary: 更新客户
       tags: [MasterData]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/EntityId"
       requestBody:
@@ -131,7 +131,7 @@ paths:
       operationId: batchUpdateCustomers
       summary: 批量更新客户状态或负责人
       tags: [MasterData]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       requestBody:
         required: true
         content:
@@ -151,7 +151,7 @@ paths:
       operationId: listMaterials
       summary: 分页查询当前工作区可见的物料
       tags: [MasterData]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/Query"
         - $ref: "#/components/parameters/Status"
@@ -168,7 +168,7 @@ paths:
       operationId: createMaterial
       summary: 新建物料
       tags: [MasterData]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       requestBody:
         required: true
         content:
@@ -186,7 +186,7 @@ paths:
       operationId: updateMaterial
       summary: 更新物料
       tags: [MasterData]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/EntityId"
       requestBody:
@@ -207,7 +207,7 @@ paths:
       operationId: batchUpdateMaterials
       summary: 批量更新物料状态或负责人
       tags: [MasterData]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       requestBody:
         required: true
         content:
@@ -227,7 +227,7 @@ paths:
       operationId: listSalesOrders
       summary: 分页查询当前租户销售订单
       tags: [Sales]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/Query"
         - $ref: "#/components/parameters/Status"
@@ -244,7 +244,7 @@ paths:
       operationId: createSalesOrder
       summary: 创建销售订单草稿
       tags: [Sales]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       requestBody:
         required: true
         content:
@@ -262,7 +262,7 @@ paths:
       operationId: getSalesOrder
       summary: 获取销售订单详情
       tags: [Sales]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters: [{ $ref: "#/components/parameters/EntityId" }]
       responses:
         "200":
@@ -275,7 +275,7 @@ paths:
       operationId: updateSalesOrder
       summary: 编辑草稿或已驳回销售订单
       tags: [Sales]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters: [{ $ref: "#/components/parameters/EntityId" }]
       requestBody:
         required: true
@@ -295,7 +295,7 @@ paths:
       operationId: actOnSalesOrder
       summary: 提交、审核、驳回或下达销售订单
       tags: [Sales]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters: [{ $ref: "#/components/parameters/EntityId" }]
       requestBody:
         required: true
@@ -316,7 +316,7 @@ paths:
       operationId: getSalesOrderReferenceData
       summary: 获取当前租户可用于订单的客户和物料
       tags: [Sales]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       responses:
         "200":
           description: 启用中的客户和物料选项
@@ -328,7 +328,7 @@ paths:
       operationId: listSalesShipments
       summary: 分页查询销售发货单
       tags: [Sales]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/Query"
         - $ref: "#/components/parameters/Status"
@@ -345,7 +345,7 @@ paths:
       operationId: createSalesShipment
       summary: 登记销售发货并扣减合格成品库存
       tags: [Sales]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       requestBody:
         required: true
         content:
@@ -366,7 +366,7 @@ paths:
       operationId: getSalesShipment
       summary: 获取销售发货单详情
       tags: [Sales]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters: [{ $ref: "#/components/parameters/EntityId" }]
       responses:
         "200":
@@ -380,7 +380,7 @@ paths:
       operationId: getSalesShipmentReferenceData
       summary: 获取可发货订单和发货仓库
       tags: [Sales]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       responses:
         "200":
           description: 可发货订单与仓库
@@ -392,7 +392,7 @@ paths:
       operationId: listOrderProfits
       summary: 分页查询订单利润结算
       tags: [Finance]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/Query"
         - name: costStatus
@@ -412,7 +412,7 @@ paths:
       operationId: listWorkCenterCostRates
       summary: 分页查询当前经营组织的工作中心成本费率
       tags: [Finance]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/Query"
         - name: status
@@ -430,7 +430,7 @@ paths:
       operationId: createWorkCenterCostRate
       summary: 发布工作中心人工与制造费用小时费率
       tags: [Finance]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - name: X-Request-Id
           in: header
@@ -455,7 +455,7 @@ paths:
       operationId: changeWorkCenterCostRateStatus
       summary: 启用或停用工作中心成本费率
       tags: [Finance]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/EntityId"
         - name: X-Request-Id
@@ -482,7 +482,7 @@ paths:
       operationId: listReceivableInvoices
       summary: 分页查询销售应收发票
       tags: [Finance]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/Query"
         - name: status
@@ -500,7 +500,7 @@ paths:
       operationId: createReceivableInvoice
       summary: 按已发货销售订单开具应收发票
       tags: [Finance]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - name: X-Request-Id
           in: header
@@ -529,7 +529,7 @@ paths:
       operationId: getReceivableInvoice
       summary: 获取应收发票详情及收款记录
       tags: [Finance]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters: [{ $ref: "#/components/parameters/EntityId" }]
       responses:
         "200":
@@ -543,7 +543,7 @@ paths:
       operationId: postReceivableReceipt
       summary: 登记收款并核销指定应收发票
       tags: [Finance]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/EntityId"
         - name: X-Request-Id
@@ -573,7 +573,7 @@ paths:
       operationId: getReceivableReferenceData
       summary: 获取已发货订单及其剩余可开票数量
       tags: [Finance]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       responses:
         "200":
           description: 可开票销售订单
@@ -585,7 +585,7 @@ paths:
       operationId: listReceivableCreditNotes
       summary: 分页查询应收红字发票
       tags: [Finance]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/Query"
         - $ref: "#/components/parameters/Page"
@@ -600,7 +600,7 @@ paths:
       operationId: createReceivableCreditNote
       summary: 对已过账应收发票开具红字发票
       tags: [Finance]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - name: X-Request-Id
           in: header
@@ -629,7 +629,7 @@ paths:
       operationId: getReceivableCreditNote
       summary: 获取应收红字发票详情
       tags: [Finance]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters: [{ $ref: "#/components/parameters/EntityId" }]
       responses:
         "200":
@@ -643,7 +643,7 @@ paths:
       operationId: postReceivableRefund
       summary: 对存在待退余额的应收发票登记退款
       tags: [Finance]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/EntityId"
         - name: X-Request-Id
@@ -673,7 +673,7 @@ paths:
       operationId: reverseReceivableReceipt
       summary: 反核销一笔应收收款或退款
       tags: [Finance]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/EntityId"
         - name: X-Request-Id
@@ -704,7 +704,7 @@ paths:
       operationId: listPayableInvoices
       summary: 分页查询采购应付发票
       tags: [Finance]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/Query"
         - name: status
@@ -722,7 +722,7 @@ paths:
       operationId: createPayableInvoice
       summary: 按采购订单合格收货数量登记应付发票
       tags: [Finance]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - name: X-Request-Id
           in: header
@@ -751,7 +751,7 @@ paths:
       operationId: getPayableInvoice
       summary: 获取应付发票详情及付款记录
       tags: [Finance]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters: [{ $ref: "#/components/parameters/EntityId" }]
       responses:
         "200":
@@ -765,7 +765,7 @@ paths:
       operationId: postPayablePayment
       summary: 登记付款并核销指定应付发票
       tags: [Finance]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/EntityId"
         - name: X-Request-Id
@@ -795,7 +795,7 @@ paths:
       operationId: getPayableReferenceData
       summary: 获取采购订单合格收货及其剩余可开票数量
       tags: [Finance]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       responses:
         "200":
           description: 可登记应付发票的采购订单
@@ -807,7 +807,7 @@ paths:
       operationId: listPayableCreditNotes
       summary: 分页查询应付红字发票
       tags: [Finance]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/Query"
         - $ref: "#/components/parameters/Page"
@@ -822,7 +822,7 @@ paths:
       operationId: createPayableCreditNote
       summary: 对已过账应付发票开具红字发票
       tags: [Finance]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - name: X-Request-Id
           in: header
@@ -851,7 +851,7 @@ paths:
       operationId: getPayableCreditNote
       summary: 获取应付红字发票详情
       tags: [Finance]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters: [{ $ref: "#/components/parameters/EntityId" }]
       responses:
         "200":
@@ -865,7 +865,7 @@ paths:
       operationId: postPayableRefund
       summary: 对存在待退余额的应付发票登记从供应商收回的退款
       tags: [Finance]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/EntityId"
         - name: X-Request-Id
@@ -895,7 +895,7 @@ paths:
       operationId: reversePayablePayment
       summary: 反核销一笔应付付款或退款
       tags: [Finance]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/EntityId"
         - name: X-Request-Id
@@ -926,7 +926,7 @@ paths:
       operationId: getOrderProfitReferenceData
       summary: 获取可结算订单利润的销售订单
       tags: [Finance]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       responses:
         "200":
           description: 可结算订单列表
@@ -938,7 +938,7 @@ paths:
       operationId: getOrderProfit
       summary: 获取订单利润结算详情
       tags: [Finance]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters: [{ $ref: "#/components/parameters/EntityId" }]
       responses:
         "200":
@@ -952,7 +952,7 @@ paths:
       operationId: settleOrderProfit
       summary: 按销售订单生成订单利润结算快照
       tags: [Finance]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - name: salesOrderId
           in: path
@@ -985,7 +985,7 @@ paths:
       operationId: listOrderProfitHistory
       summary: 按销售订单列出全部利润结算版本（含已被替代的历史版本，按版本号倒序）
       tags: [Finance]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - name: salesOrderId
           in: path
@@ -1004,7 +1004,7 @@ paths:
       operationId: resettleOrderProfit
       summary: 按最新事实（红字发票/退款/反核销/补录成本）重算订单利润，生成新版本快照
       tags: [Finance]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - name: salesOrderId
           in: path
@@ -1043,7 +1043,7 @@ paths:
       operationId: listAccountingPeriods
       summary: 按年度列示会计期间
       tags: [Finance]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - name: year
           in: query
@@ -1062,7 +1062,7 @@ paths:
       operationId: createAccountingPeriod
       summary: 手动创建会计期间（补录历史期间）
       tags: [Finance]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - name: X-Request-Id
           in: header
@@ -1087,7 +1087,7 @@ paths:
       operationId: getAccountingPeriod
       summary: 获取单个会计期间详情
       tags: [Finance]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters: [{ $ref: "#/components/parameters/EntityId" }]
       responses:
         "200":
@@ -1102,7 +1102,7 @@ paths:
       summary: 关账（关闭指定会计期间）
       description: 需要 ADMIN 或 FINANCE_MANAGER 角色。关账后该期间的所有财务写操作将被拒绝（409 PERIOD_CLOSED）。
       tags: [Finance]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/EntityId"
         - name: X-Request-Id
@@ -1124,7 +1124,7 @@ paths:
       summary: 重开会计期间（仅 ADMIN）
       description: 重开已关账期间。仅 ADMIN 角色可执行，必须填写重开原因（至少 4 字符）。
       tags: [Finance]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/EntityId"
         - name: X-Request-Id
@@ -1151,7 +1151,7 @@ paths:
       operationId: listGrirAccruals
       summary: 分页查询暂估应付单
       tags: [Finance]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - name: year
           in: query
@@ -1174,7 +1174,7 @@ paths:
       operationId: previewGrirAccrual
       summary: 预览指定年月将暂估的明细（不落库）
       tags: [Finance]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - name: year
           in: query
@@ -1198,7 +1198,7 @@ paths:
         按会计年月运行暂估。同一租户同一年月若已有 POSTED 暂估单，直接返回已有单（幂等）。
         若存在更早的 POSTED 暂估单，在同一事务中标记为 REVERSED。
       tags: [Finance]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - name: X-Request-Id
           in: header
@@ -1227,7 +1227,7 @@ paths:
       operationId: getGrirAccrual
       summary: 暂估应付详情（含行）
       tags: [Finance]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/EntityId"
       responses:
@@ -1242,7 +1242,7 @@ paths:
       operationId: reverseGrirAccrual
       summary: 手动冲回暂估单
       tags: [Finance]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/EntityId"
         - name: X-Request-Id
@@ -1273,7 +1273,7 @@ paths:
       operationId: listIndependentDemands
       summary: 分页查询当前租户独立需求
       tags: [Planning]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/Query"
         - $ref: "#/components/parameters/Status"
@@ -1292,7 +1292,7 @@ paths:
       operationId: createIndependentDemand
       summary: 创建人工独立需求草稿
       tags: [Planning]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       requestBody:
         required: true
         content:
@@ -1311,7 +1311,7 @@ paths:
       operationId: getIndependentDemand
       summary: 获取独立需求详情
       tags: [Planning]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters: [{ $ref: "#/components/parameters/EntityId" }]
       responses:
         "200":
@@ -1324,7 +1324,7 @@ paths:
       operationId: updateIndependentDemand
       summary: 编辑人工独立需求草稿
       tags: [Planning]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters: [{ $ref: "#/components/parameters/EntityId" }]
       requestBody:
         required: true
@@ -1343,7 +1343,7 @@ paths:
       operationId: actOnIndependentDemand
       summary: 激活或取消人工独立需求
       tags: [Planning]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters: [{ $ref: "#/components/parameters/EntityId" }]
       requestBody:
         required: true
@@ -1363,7 +1363,7 @@ paths:
       operationId: listBoms
       summary: 分页查询当前租户的受控 BOM 版本
       tags: [Product]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/Query"
         - name: status
@@ -1381,7 +1381,7 @@ paths:
       operationId: createBom
       summary: 新建草稿 BOM 版本
       tags: [Product]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       requestBody:
         required: true
         content:
@@ -1401,7 +1401,7 @@ paths:
       operationId: getBom
       summary: 获取 BOM 表头、组件与审计证据
       tags: [Product]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters: [{ $ref: "#/components/parameters/EntityId" }]
       responses:
         "200":
@@ -1414,7 +1414,7 @@ paths:
       operationId: updateBom
       summary: 更新草稿 BOM 版本
       tags: [Product]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters: [{ $ref: "#/components/parameters/EntityId" }]
       requestBody:
         required: true
@@ -1435,7 +1435,7 @@ paths:
       operationId: actOnBom
       summary: 发布或停用 BOM 版本
       tags: [Product]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters: [{ $ref: "#/components/parameters/EntityId" }]
       requestBody:
         required: true
@@ -1456,7 +1456,7 @@ paths:
       operationId: getBomReferenceData
       summary: 获取当前租户可用于 BOM 的启用物料
       tags: [Product]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       responses:
         "200":
           description: BOM 父项和组件物料选项
@@ -1468,7 +1468,7 @@ paths:
       operationId: listRoutings
       summary: 分页查询当前租户的受控工艺路线版本
       tags: [Product]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/Query"
         - name: status
@@ -1486,7 +1486,7 @@ paths:
       operationId: createRouting
       summary: 新建草稿工艺路线版本
       tags: [Product]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       requestBody:
         required: true
         content:
@@ -1506,7 +1506,7 @@ paths:
       operationId: getRouting
       summary: 获取工艺路线表头、工序与审计证据
       tags: [Product]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters: [{ $ref: "#/components/parameters/EntityId" }]
       responses:
         "200":
@@ -1519,7 +1519,7 @@ paths:
       operationId: updateRouting
       summary: 更新草稿工艺路线版本
       tags: [Product]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters: [{ $ref: "#/components/parameters/EntityId" }]
       requestBody:
         required: true
@@ -1540,7 +1540,7 @@ paths:
       operationId: actOnRouting
       summary: 发布或停用工艺路线版本
       tags: [Product]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters: [{ $ref: "#/components/parameters/EntityId" }]
       requestBody:
         required: true
@@ -1561,7 +1561,7 @@ paths:
       operationId: getRoutingReferenceData
       summary: 获取当前租户可用于工艺路线的自制物料
       tags: [Product]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       responses:
         "200":
           description: 工艺路线物料选项
@@ -1573,7 +1573,7 @@ paths:
       operationId: getPlanningDemandReferenceData
       summary: 获取当前租户可用于计划需求的物料
       tags: [Planning]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       responses:
         "200":
           description: 启用中的物料选项
@@ -1585,7 +1585,7 @@ paths:
       operationId: listMrpInputs
       summary: 查询当前租户可供 MRP 使用的有效独立需求
       tags: [Planning]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/Page"
         - $ref: "#/components/parameters/Size"
@@ -1600,7 +1600,7 @@ paths:
       operationId: listMrpRuns
       summary: 分页查询当前租户的 MRP 运算记录
       tags: [Planning]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/Query"
         - name: status
@@ -1619,7 +1619,7 @@ paths:
       summary: 冻结供需事实并执行 MRP 净需求运算
       description: 按需求日期消费可用库存和计划接收，生成采购、生产或委外建议；关键事实缺失时返回可追溯的 BLOCKED 记录。
       tags: [Planning]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       requestBody:
         required: true
         content:
@@ -1638,7 +1638,7 @@ paths:
       operationId: getMrpRun
       summary: 获取 MRP 运算记录、供需快照、净需求结果与阻断项
       tags: [Planning]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters: [{ $ref: "#/components/parameters/EntityId" }]
       responses:
         "200":
@@ -1652,7 +1652,7 @@ paths:
       operationId: listMrpSuggestions
       summary: 分页查询可审核的 MRP 采购、委外和生产建议
       tags: [Planning]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/Query"
         - name: status
@@ -1672,7 +1672,7 @@ paths:
       operationId: getMrpSuggestion
       summary: 查询 MRP 建议、审核和转单证据
       tags: [Planning]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters: [{ $ref: "#/components/parameters/EntityId" }]
       responses:
         "200":
@@ -1684,7 +1684,7 @@ paths:
       operationId: actOnMrpSuggestion
       summary: 审核通过或驳回 MRP 建议
       tags: [Planning]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters: [{ $ref: "#/components/parameters/EntityId" }]
       requestBody:
         required: true
@@ -1700,7 +1700,7 @@ paths:
       operationId: convertMrpSuggestion
       summary: 将已审核建议转为采购或生产草稿
       tags: [Planning]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters: [{ $ref: "#/components/parameters/EntityId" }]
       requestBody:
         required: true
@@ -1717,7 +1717,7 @@ paths:
       operationId: listInventoryBalances
       summary: 分页查询当前工作区库存余额
       tags: [Warehouse]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/Query"
         - name: qualityStatus
@@ -1739,7 +1739,7 @@ paths:
       operationId: getInventoryBalance
       summary: 获取库存余额及不可变流水
       tags: [Warehouse]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters: [{ $ref: "#/components/parameters/EntityId" }]
       responses:
         "200":
@@ -1754,7 +1754,7 @@ paths:
       summary: 通过不可变库存流水调整余额
       description: 请求编号用于幂等控制；库存余额不提供直接覆盖接口。
       tags: [Warehouse]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters: [{ $ref: "#/components/parameters/EntityId" }]
       requestBody:
         required: true
@@ -1775,7 +1775,7 @@ paths:
       operationId: getInventoryReferenceData
       summary: 获取当前租户可见的仓库与库位
       tags: [Warehouse]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       responses:
         "200":
           description: 库存筛选参考数据
@@ -1787,7 +1787,7 @@ paths:
       operationId: listPurchaseOrders
       summary: 分页查询采购订单
       tags: [Procurement]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/Query"
         - $ref: "#/components/parameters/Status"
@@ -1801,7 +1801,7 @@ paths:
       operationId: createPurchaseOrder
       summary: 新建采购订单草稿
       tags: [Procurement]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: "#/components/schemas/PurchaseOrderWriteRequest" } } }
@@ -1820,7 +1820,7 @@ paths:
       operationId: getPurchaseOrder
       summary: 查询采购订单详情
       tags: [Procurement]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       responses:
         "200":
           description: 采购订单详情
@@ -1830,7 +1830,7 @@ paths:
       operationId: updatePurchaseOrder
       summary: 更新草稿或已驳回采购订单
       tags: [Procurement]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: "#/components/schemas/PurchaseOrderUpdateRequest" } } }
@@ -1844,7 +1844,7 @@ paths:
       operationId: actOnPurchaseOrder
       summary: 提交、审核、驳回或下达采购订单
       tags: [Procurement]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - name: id
           in: path
@@ -1864,7 +1864,7 @@ paths:
       operationId: getPurchaseOrderReferenceData
       summary: 获取启用供应商和可采购物料
       tags: [Procurement]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       responses:
         "200":
           description: 采购订单引用数据
@@ -1874,7 +1874,7 @@ paths:
       operationId: listPurchaseReceipts
       summary: 分页查询采购收货单
       tags: [Procurement]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/Query"
         - $ref: "#/components/parameters/Status"
@@ -1888,7 +1888,7 @@ paths:
       operationId: createPurchaseReceipt
       summary: 登记采购到货并触发免检入库或来料检验
       tags: [Procurement]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: "#/components/schemas/CreatePurchaseReceiptRequest" } } }
@@ -1904,7 +1904,7 @@ paths:
       operationId: getPurchaseReceipt
       summary: 获取采购收货单详情
       tags: [Procurement]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters: [{ $ref: "#/components/parameters/EntityId" }]
       responses:
         "200":
@@ -1916,7 +1916,7 @@ paths:
       operationId: getPurchaseReceiptReferenceData
       summary: 获取已下达采购订单、仓库和库位引用
       tags: [Procurement]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       responses:
         "200":
           description: 采购收货引用数据
@@ -1926,7 +1926,7 @@ paths:
       operationId: listProductionOrders
       summary: 分页查询生产订单
       tags: [Production]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/Query"
         - $ref: "#/components/parameters/Status"
@@ -1940,7 +1940,7 @@ paths:
       operationId: createProductionOrder
       summary: 新建生产订单草稿
       tags: [Production]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: "#/components/schemas/ProductionOrderWriteRequest" } } }
@@ -1959,7 +1959,7 @@ paths:
       operationId: getProductionOrder
       summary: 查询生产订单详情
       tags: [Production]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       responses:
         "200":
           description: 生产订单详情
@@ -1969,7 +1969,7 @@ paths:
       operationId: updateProductionOrder
       summary: 更新草稿生产订单
       tags: [Production]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: "#/components/schemas/ProductionOrderUpdateRequest" } } }
@@ -1983,7 +1983,7 @@ paths:
       operationId: actOnProductionOrder
       summary: 下达、开工或取消生产订单
       tags: [Production]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - name: id
           in: path
@@ -2003,7 +2003,7 @@ paths:
       operationId: listOperationTasks
       summary: 分页查询车间工序任务
       tags: [Production]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/Query"
         - name: status
@@ -2026,7 +2026,7 @@ paths:
       operationId: getOperationTask
       summary: 查询工序任务详情与审计事件
       tags: [Production]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       responses:
         "200":
           description: 工序任务详情
@@ -2037,7 +2037,7 @@ paths:
       operationId: listProductionOrderOperationTasks
       summary: 按生产订单查询工序任务快照
       tags: [Production]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - name: orderId
           in: path
@@ -2056,7 +2056,7 @@ paths:
       operationId: actOnOperationTask
       summary: 开工或完工登记工序任务
       tags: [Production]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - name: id
           in: path
@@ -2079,7 +2079,7 @@ paths:
       operationId: listOperationLaborEntries
       summary: 分页查询实际人工工时
       tags: [Production]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/Query"
         - name: status
@@ -2099,7 +2099,7 @@ paths:
       operationId: createOperationLaborEntry
       summary: 为工序登记实际人工工时
       tags: [Production]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: "#/components/schemas/CreateOperationLaborEntryRequest" } } }
@@ -2116,7 +2116,7 @@ paths:
       operationId: getOperationLaborEntry
       summary: 查询实际人工工时详情与审计事件
       tags: [Production]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - name: id
           in: path
@@ -2132,7 +2132,7 @@ paths:
       operationId: actOnOperationLaborEntry
       summary: 审核或冲销实际人工工时
       tags: [Production]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - name: id
           in: path
@@ -2154,7 +2154,7 @@ paths:
       operationId: getProductionOrderReferenceData
       summary: 获取可用于生产订单的自制物料
       tags: [Production]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       responses:
         "200":
           description: 生产订单引用数据
@@ -2164,7 +2164,7 @@ paths:
       operationId: listProductionWorkReports
       summary: 分页查询生产报工及检验、入库状态
       tags: [Production]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/Query"
         - name: status
@@ -2180,7 +2180,7 @@ paths:
       operationId: createProductionWorkReport
       summary: 为执行中生产订单提交完工报工并自动建立完工检验任务
       tags: [Production]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: "#/components/schemas/CreateProductionWorkReportRequest" } } }
@@ -2195,7 +2195,7 @@ paths:
       operationId: getProductionWorkReport
       summary: 查询生产报工、质量判定和入库证据
       tags: [Production]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters: [{ $ref: "#/components/parameters/EntityId" }]
       responses:
         "200":
@@ -2207,7 +2207,7 @@ paths:
       operationId: settleProductionWorkReport
       summary: 按完工检验判定结算报工并将合格数量入库
       tags: [Production]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters: [{ $ref: "#/components/parameters/EntityId" }]
       requestBody:
         required: true
@@ -2223,7 +2223,7 @@ paths:
       operationId: listFinalInspections
       summary: 分页查询生产完工检验任务
       tags: [Quality]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/Query"
         - name: status
@@ -2240,7 +2240,7 @@ paths:
       operationId: getFinalInspection
       summary: 查询完工检验任务和判定证据
       tags: [Quality]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters: [{ $ref: "#/components/parameters/EntityId" }]
       responses:
         "200":
@@ -2252,7 +2252,7 @@ paths:
       operationId: completeFinalInspection
       summary: 提交一次性完工检验判定
       tags: [Quality]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters: [{ $ref: "#/components/parameters/EntityId" }]
       requestBody:
         required: true
@@ -2268,7 +2268,7 @@ paths:
       operationId: listIncomingInspections
       summary: 分页查询来料检验任务
       tags: [Quality]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/Query"
         - $ref: "#/components/parameters/Status"
@@ -2283,7 +2283,7 @@ paths:
       operationId: getIncomingInspection
       summary: 获取来料检验任务详情
       tags: [Quality]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters: [{ $ref: "#/components/parameters/EntityId" }]
       responses:
         "200":
@@ -2295,7 +2295,7 @@ paths:
       operationId: completeIncomingInspection
       summary: 提交来料检验结论并自动结算库存
       tags: [Quality]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters: [{ $ref: "#/components/parameters/EntityId" }]
       requestBody:
         required: true
@@ -2312,7 +2312,7 @@ paths:
       operationId: listMaterialPlanningParameters
       summary: 分页查询物料计划参数
       tags: [Planning]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/Query"
         - $ref: "#/components/parameters/Page"
@@ -2326,7 +2326,7 @@ paths:
       operationId: updateMaterialPlanningParameter
       summary: 创建或修改受控提前期
       tags: [Planning]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - name: materialId
           in: path
@@ -2345,7 +2345,7 @@ paths:
       operationId: listMaterialIssues
       summary: 分页查询生产领料单
       tags: [Production]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/Query"
         - $ref: "#/components/parameters/Status"
@@ -2359,7 +2359,7 @@ paths:
       operationId: createMaterialIssue
       summary: 根据生产订单和生效 BOM 生成生产领料单
       tags: [Production]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: "#/components/schemas/CreateMaterialIssueRequest" } } }
@@ -2379,7 +2379,7 @@ paths:
       operationId: getMaterialIssue
       summary: 查询生产领料单详情
       tags: [Production]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       responses:
         "200":
           description: 生产领料单详情
@@ -2390,7 +2390,7 @@ paths:
       operationId: actOnMaterialIssue
       summary: 发料或取消生产领料单
       tags: [Production]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters: [{ $ref: "#/components/parameters/EntityId" }]
       requestBody:
         required: true
@@ -2406,7 +2406,7 @@ paths:
       operationId: createMaterialReturn
       summary: 将已领组件退回仓库
       tags: [Production]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters: [{ $ref: "#/components/parameters/EntityId" }]
       requestBody:
         required: true
@@ -2422,7 +2422,7 @@ paths:
       operationId: getMaterialIssueReferenceData
       summary: 获取可备料订单、仓库和库位
       tags: [Production]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       responses:
         "200":
           description: 生产领料参考数据
@@ -2432,7 +2432,7 @@ paths:
       operationId: listAdvances
       summary: 分页查询预收预付
       tags: [Finance]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - { name: type, in: query, schema: { type: string, enum: [RECEIVABLE, PAYABLE] } }
         - { name: status, in: query, schema: { type: string, default: ALL } }
@@ -2451,7 +2451,7 @@ paths:
       operationId: registerAdvance
       summary: 登记预收或预付款
       tags: [Finance]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/RequestIdHeader"
       requestBody:
@@ -2477,7 +2477,7 @@ paths:
       operationId: getAdvance
       summary: 获取预收预付详情（含抵扣和退款记录）
       tags: [Finance]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/EntityId"
       responses:
@@ -2492,7 +2492,7 @@ paths:
       operationId: refundAdvance
       summary: 预收预付退款
       tags: [Finance]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/EntityId"
         - $ref: "#/components/parameters/RequestIdHeader"
@@ -2518,7 +2518,7 @@ paths:
       operationId: listSuppliers
       summary: 分页查询当前租户可见供应商
       tags: [Procurement]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - { $ref: "#/components/parameters/Query" }
         - { name: status, in: query, schema: { type: string, default: ALL } }
@@ -2534,7 +2534,7 @@ paths:
       operationId: createSupplier
       summary: 新建供应商
       tags: [Procurement]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       requestBody:
         required: true
         content:
@@ -2553,7 +2553,7 @@ paths:
       operationId: updateSupplier
       summary: 更新供应商
       tags: [Procurement]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/EntityId"
       requestBody:
@@ -2574,7 +2574,7 @@ paths:
       operationId: changeSupplierStatus
       summary: 启用或停用供应商
       tags: [Procurement]
-      security: [{ basicAuth: [] }]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/EntityId"
       requestBody:
@@ -2594,10 +2594,11 @@ paths:
 
 components:
   securitySchemes:
-    basicAuth:
+    bearerAuth:
       type: http
-      scheme: basic
-      description: 仅用于当前本地开发身份适配器，正式身份接入后替换。
+      scheme: bearer
+      bearerFormat: JWT
+      description: 正式环境使用的 OAuth 2.0 Bearer JWT；本地 Basic 适配器不属于生产契约。
   responses:
     ValidationFailed:
       description: 请求格式、字段或参数校验失败

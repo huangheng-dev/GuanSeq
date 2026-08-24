@@ -11,7 +11,7 @@ import type { PlanningDemandPageData } from "@/services/planning-demand-server-s
 import { areaPath, childPath, modulePath, productAreas, resolveProductRoute, } from "@/lib/product-navigation";
 import { defaultUserProfile, readUserProfile } from "@/services/front-end-product-service";
 import { loadWorkspaceSession, selectWorkspace } from "@/services/workspace-client-service";
-import { ProfileDialog, SessionExitDialog, SignedOutScreen } from "./account-center";
+import { ProfileDialog, SessionExitDialog } from "./account-center";
 import { GsButton, GsDrawerHost, GsInput } from "./ui";
 import { MaterialIcon } from "./material-icon";
 import { AiAssistant } from "./ai-assistant";
@@ -268,7 +268,6 @@ function ManufacturingWorkspaceContent({ backendPageUnavailable, initialSnapshot
     const [userProfile, setUserProfile] = useState(defaultUserProfile);
     const [profileDialogOpen, setProfileDialogOpen] = useState(false);
     const [sessionExitOpen, setSessionExitOpen] = useState(false);
-    const [sessionActive, setSessionActive] = useState(true);
     const userMenuRef = useRef<HTMLDivElement>(null);
     const notificationRef = useRef<HTMLDivElement>(null);
     const quickAccessRef = useRef<HTMLDivElement>(null);
@@ -645,8 +644,7 @@ function ManufacturingWorkspaceContent({ backendPageUnavailable, initialSnapshot
 
       <AiAssistant open={aiAssistantOpen} context={aiContext} userName={userProfile.name} onClose={() => setAiAssistantOpen(false)}/>
       {profileDialogOpen ? <ProfileDialog profile={userProfile} onClose={() => setProfileDialogOpen(false)} onSaved={(profile) => { setUserProfile(profile); setProfileDialogOpen(false); setPlatformToast("个人资料与通知偏好已保存"); }}/> : null}
-      {sessionExitOpen ? <SessionExitDialog onClose={() => setSessionExitOpen(false)} onConfirm={() => { setSessionExitOpen(false); setSessionActive(false); }}/> : null}
-      {!sessionActive ? <SignedOutScreen onEnter={() => { setSessionActive(true); setPlatformToast("已重新进入前端演示工作台"); }}/> : null}
+      {sessionExitOpen ? <SessionExitDialog onClose={() => setSessionExitOpen(false)}/> : null}
       {selectedOrder ? <OrderDetail order={selectedOrder} onClose={() => setSelectedOrder(null)}/> : null}
       {showSearch ? (<div className="searchBackdrop" onMouseDown={() => setShowSearch(false)}>
           <section ref={searchPanelRef} className="searchPanel" role="dialog" aria-modal="true" aria-label="全局搜索" onMouseDown={(event) => event.stopPropagation()}>

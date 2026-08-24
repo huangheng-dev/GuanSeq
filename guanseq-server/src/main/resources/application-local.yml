@@ -6,6 +6,6 @@ spring:
 
 guanseq:
   security:
-    development-identity-enabled: ${GUANSEQ_DEV_IDENTITY_ENABLED:true}
+    mode: ${GUANSEQ_SECURITY_MODE:development}
     development-username: ${GUANSEQ_DEV_USERNAME:lin.hao}
     development-password: ${GUANSEQ_DEV_PASSWORD:guanseq_dev}

@@ -20,6 +20,7 @@ guanseq:
   build:
     version: ${GUANSEQ_BUILD_VERSION:0.1.0-SNAPSHOT}
   security:
-    development-identity-enabled: false
+    mode: disabled
     development-username: disabled
     development-password: disabled
+    oidc-username-claim: preferred_username

@@ -36,7 +36,17 @@ $env:SPRING_PROFILES_ACTIVE = "local"
 .\mvnw.cmd spring-boot:run
 ```
 
-后端运行在 `http://localhost:8080`，当前真实接口覆盖平台状态、工作区、主数据、BOM 与工艺路线、销售订单、独立需求、采购/生产订单、库存余额与流水、MRP 净需求、采购收货与来料检验、生产备料与领退料、车间工序执行、实际人工工时、生产报工和完工检验、销售发货与成品出库、销售应收开票与收款核销、采购应付发票与付款核销、订单利润结算。前端通过同源 BFF 路由代理访问后端，开发身份凭据不会进入浏览器代码。`local` Profile 和开发身份必须显式开启；未配置正式身份提供方时，非本地环境会关闭受保护接口而不是退回开发账号。首次运行 Maven Wrapper 和 PostgreSQL 容器会下载对应的官方发行包。
+后端运行在 `http://localhost:8080`，当前真实接口覆盖平台状态、工作区、主数据、BOM 与工艺路线、销售订单、独立需求、采购/生产订单、库存余额与流水、MRP 净需求、采购收货与来料检验、生产备料与领退料、车间工序执行、实际人工工时、生产报工和完工检验、销售发货与成品出库、销售应收开票与收款核销、采购应付发票与付款核销、订单利润结算。前端通过同源 BFF 路由代理访问后端；本地开发凭据和正式访问令牌都不会进入浏览器代码。`local` Profile 默认使用互斥的开发身份；正式环境使用 `oidc` Profile，Next.js 通过授权码 + PKCE 建立加密 HttpOnly 会话，Spring Boot 独立验证 Bearer JWT 并映射贯序内部启用账号。缺少正式配置时受保护能力会关闭，不会退回开发账号。首次运行 Maven Wrapper 和 PostgreSQL 容器会下载对应的官方发行包。
+
+## 正式身份配置
+
+正式部署需要在身份提供者注册保密客户端和回调地址，并让访问令牌包含后端配置的受众，以及可映射到贯序内部用户名的声明（默认 `preferred_username`）。前端设置 `GUANSEQ_SECURITY_MODE=oidc`，后端激活 `oidc` Profile；完整变量见 [.env.example](./.env.example) 和 [后端配置说明](./guanseq-server/README.md)。会话密钥必须由密钥管理系统提供，可用以下 PowerShell 命令生成初始值：
+
+```powershell
+[Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
+```
+
+外部账号不会自动创建贯序用户，也不会把外部组或角色直接当作业务权限。管理员必须先维护同名且启用的内部用户、工作区成员关系和角色。
 
 后端完整说明见 [guanseq-server/README.md](./guanseq-server/README.md)。
 
@@ -44,6 +54,7 @@ $env:SPRING_PROFILES_ACTIVE = "local"
 
 - [开发规范与交付流程](./docs/开发规范与交付流程.md)
 - [架构决策记录（ADR）](./docs/adr/README.md)
+- [OIDC 正式身份接入决策](./docs/adr/0003-OIDC正式身份接入.md)
 - [系统总体架构与开发蓝图](./docs/系统总体架构.md)
 - [总体架构审计](./docs/架构审计.md)
 - [前端产品完整性审计](./docs/前端产品审计.md)

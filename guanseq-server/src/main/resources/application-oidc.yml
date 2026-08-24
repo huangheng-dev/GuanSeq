@@ -1,0 +1,14 @@
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${GUANSEQ_OIDC_ISSUER_URI}
+          jwk-set-uri: ${GUANSEQ_OIDC_JWK_SET_URI}
+          audiences:
+            - ${GUANSEQ_OIDC_AUDIENCE}
+
+guanseq:
+  security:
+    mode: oidc
+    oidc-username-claim: ${GUANSEQ_OIDC_USERNAME_CLAIM:preferred_username}

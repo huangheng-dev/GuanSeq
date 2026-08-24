@@ -55,21 +55,13 @@ export function ProfileDialog({ profile, onClose, onSaved }: { profile: UserProf
   );
 }
 
-export function SessionExitDialog({ onClose, onConfirm }: { onClose: () => void; onConfirm: () => void }) {
+export function SessionExitDialog({ onClose }: { onClose: () => void }) {
   return (
     <GsModalHost onClose={onClose}>
       <section className="sessionExitDialog" role="alertdialog" aria-modal="true" aria-labelledby="session-exit-title">
-        <span><MaterialIcon name="logout" size={24} /></span><div><h2 id="session-exit-title">确认退出当前工作台？</h2><p>这只结束当前页面会话，不会删除收藏、最近访问和业务 Mock 数据。</p></div>
-        <footer><GsButton onClick={onClose}>取消</GsButton><GsButton intent="danger" data-session-exit="true" onClick={onConfirm}>退出演示会话</GsButton></footer>
+        <span><MaterialIcon name="logout" size={24} /></span><div><h2 id="session-exit-title">确认退出当前工作台？</h2><p>系统将结束当前受保护会话；收藏和最近访问仍保留在本机。</p></div>
+        <footer><GsButton onClick={onClose}>取消</GsButton><form action="/api/auth/logout" method="post"><GsButton intent="danger" data-session-exit="true" htmlType="submit">退出登录</GsButton></form></footer>
       </section>
     </GsModalHost>
-  );
-}
-
-export function SignedOutScreen({ onEnter }: { onEnter: () => void }) {
-  return (
-    <div className="signedOutScreen" role="dialog" aria-modal="true" aria-labelledby="signed-out-title">
-      <section><span><MaterialIcon name="lock" size={26} /></span><h1 id="signed-out-title">当前演示会话已退出</h1><p>正式产品将由统一身份认证、组织权限和服务端会话接管。</p><GsButton intent="primary" onClick={onEnter}><MaterialIcon name="login" size={18} />重新进入工作台</GsButton></section>
-    </div>
   );
 }
