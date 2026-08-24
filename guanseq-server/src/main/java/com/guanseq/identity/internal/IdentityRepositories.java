@@ -5,8 +5,14 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+
+import jakarta.persistence.LockModeType;
+
+interface OrganizationUnitRepository extends JpaRepository<OrganizationUnitEntity, UUID> {
+}
 
 interface IdentityUserRepository extends JpaRepository<IdentityUserEntity, UUID> {
 
@@ -53,4 +59,11 @@ interface UserWorkspacePreferenceRepository extends JpaRepository<UserWorkspaceP
 }
 
 interface AuditEventRepository extends JpaRepository<AuditEventEntity, UUID> {
+}
+
+interface SystemBootstrapRepository extends JpaRepository<SystemBootstrapEntity, Boolean> {
+
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	@Query("select state from SystemBootstrapEntity state where state.singletonKey = true")
+	Optional<SystemBootstrapEntity> lockSingleton();
 }

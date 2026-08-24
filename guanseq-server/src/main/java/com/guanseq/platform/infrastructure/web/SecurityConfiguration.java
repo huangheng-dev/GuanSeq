@@ -28,6 +28,7 @@ public class SecurityConfiguration {
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authorizeHttpRequests(authorize -> authorize
 						.requestMatchers(HttpMethod.GET, "/api/v1/platform/status").permitAll()
+						.requestMatchers(HttpMethod.POST, "/api/v1/bootstrap/initial-workspace").permitAll()
 						.anyRequest().authenticated())
 				.exceptionHandling(errors -> errors
 						.authenticationEntryPoint((request, response, exception) -> errorWriter.write(

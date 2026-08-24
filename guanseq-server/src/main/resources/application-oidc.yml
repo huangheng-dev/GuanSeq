@@ -9,6 +9,9 @@ spring:
             - ${GUANSEQ_OIDC_AUDIENCE}
 
 guanseq:
+  bootstrap:
+    enabled: ${GUANSEQ_BOOTSTRAP_ENABLED:false}
+    token: ${GUANSEQ_BOOTSTRAP_TOKEN:disabled}
   security:
     mode: oidc
     oidc-username-claim: ${GUANSEQ_OIDC_USERNAME_CLAIM:preferred_username}

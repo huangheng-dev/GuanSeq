@@ -13,6 +13,8 @@
     "dev": "next dev",
     "build": "next build --webpack",
     "start": "next start",
+    "pilot:preflight": "node scripts/pilot-preflight.mjs",
+    "pilot:smoke": "node scripts/pilot-smoke.mjs",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

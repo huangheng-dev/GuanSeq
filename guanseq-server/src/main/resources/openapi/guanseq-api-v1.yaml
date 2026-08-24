@@ -22,6 +22,42 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PlatformStatus"
+  /api/v1/bootstrap/initial-workspace:
+    post:
+      operationId: bootstrapInitialWorkspace
+      summary: 一次性创建首个租户、工厂、工作区和管理员
+      description: 仅在部署显式开启且系统尚未初始化时可成功一次；初始化令牌不会写入业务事实。
+      tags:
+        - Identity
+      security: []
+      parameters:
+        - name: X-GuanSeq-Bootstrap-Token
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 32
+            writeOnly: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InitialWorkspaceBootstrapRequest"
+      responses:
+        "201":
+          description: 首个身份与工作区事实已经在同一事务内建立
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InitialWorkspaceBootstrapResponse"
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "401": { $ref: "#/components/responses/AuthenticationRequired" }
+        "404": { $ref: "#/components/responses/ResourceNotFound" }
+        "409": { $ref: "#/components/responses/BusinessConflict" }
   /api/v1/me/workspaces:
     get:
       operationId: getMyWorkspaces
@@ -2713,6 +2749,30 @@ components:
             - UP
         version:
           type: string
+    InitialWorkspaceBootstrapRequest:
+      type: object
+      additionalProperties: false
+      required: [tenantCode, tenantName, plantCode, plantName, workspaceCode, workspaceName, externalUsername, displayName]
+      properties:
+        tenantCode: { type: string, pattern: "^[A-Z0-9][A-Z0-9_-]*$", maxLength: 40 }
+        tenantName: { type: string, minLength: 1, maxLength: 120 }
+        plantCode: { type: string, pattern: "^[A-Z0-9][A-Z0-9_-]*$", maxLength: 40 }
+        plantName: { type: string, minLength: 1, maxLength: 120 }
+        workspaceCode: { type: string, pattern: "^[A-Z0-9][A-Z0-9_-]*$", maxLength: 40 }
+        workspaceName: { type: string, minLength: 1, maxLength: 120 }
+        externalUsername: { type: string, pattern: "^\\S+$", maxLength: 80 }
+        displayName: { type: string, minLength: 1, maxLength: 80 }
+    InitialWorkspaceBootstrapResponse:
+      type: object
+      additionalProperties: false
+      required: [status, tenantOrganizationId, operatingOrganizationId, workspaceId, userId, username]
+      properties:
+        status: { type: string, const: COMPLETED }
+        tenantOrganizationId: { type: string, format: uuid }
+        operatingOrganizationId: { type: string, format: uuid }
+        workspaceId: { type: string, format: uuid }
+        userId: { type: string, format: uuid }
+        username: { type: string }
     WorkspaceSession:
       type: object
       additionalProperties: false

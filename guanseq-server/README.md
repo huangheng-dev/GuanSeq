@@ -35,6 +35,7 @@ GuanSeq 制造业务核心后端。组织与工作区、客户与物料主数据
 - 应付发票按采购订单合格收货数量分批登记，待检和不合格数量不可开票；付款按具体发票核销，并验证供应商发票号唯一、请求幂等、乐观并发和审计事件。
 - 三态身份适配器：`local` Profile 使用开发 Basic 身份，`oidc` Profile 验证正式 Bearer JWT；两种方式互斥。
 - OIDC 用户声明必须精确映射到启用的贯序内部账号；外部角色不替代工作区和业务权限事实。
+- 空正式库可通过显式开启、令牌保护且数据库只允许成功一次的初始化 API，原子创建首个公司、工厂、工作区和 `ADMIN` 用户；入口默认不存在。
 - 仅在 `local` Profile 写入示例组织数据，正式迁移不写入示例数据。
 - 模块边界测试、契约测试和真实 PostgreSQL 权限/迁移/API 集成测试。
 
@@ -87,6 +88,8 @@ docker compose down
 | `GUANSEQ_OIDC_JWK_SET_URI` | 无 | 身份提供者 JWK 集地址，`oidc` Profile 必填 |
 | `GUANSEQ_OIDC_AUDIENCE` | 无 | 后端要求的访问令牌受众，`oidc` Profile 必填 |
 | `GUANSEQ_OIDC_USERNAME_CLAIM` | `preferred_username` | 精确映射内部启用用户名的 JWT 声明 |
+| `GUANSEQ_BOOTSTRAP_ENABLED` | `false` | 是否临时注册首次初始化入口；仅空正式库首次开通时设为 `true` |
+| `GUANSEQ_BOOTSTRAP_TOKEN` | `disabled` | 首次初始化独立高熵令牌，至少 32 字符；成功后必须删除 |
 
 正式环境必须显式注入数据库凭据，不使用本地默认密码。应用不再默认激活 `local` Profile；未接入正式身份提供方时，受保护接口保持关闭。正式启动示例：
 
@@ -99,6 +102,8 @@ $env:GUANSEQ_OIDC_AUDIENCE = "guanseq-api"
 ```
 
 后端会校验签名、签发者、受众和令牌时间，并在认证阶段拒绝未知或停用的贯序用户。OpenAPI 只把 Bearer JWT 作为正式安全契约；Basic 仅是本地实现细节。
+
+空正式库不能预置客户身份数据。首次上线应按 [试点上线运行手册](../docs/试点上线运行手册.md) 临时开启 `POST /api/v1/bootstrap/initial-workspace`，以已核实的 OIDC 用户名创建首个内部管理员。数据库悲观锁保证并发请求只有一个成功；成功后即使保留原令牌也不能再次初始化，但仍须立即关闭入口并删除令牌。不要用人工 SQL 绕过初始化事务与审计。该入口不承担后续用户管理；正式的用户与组织管理用例仍未建设。
 
 ## 测试
 

@@ -46,7 +46,7 @@ $env:SPRING_PROFILES_ACTIVE = "local"
 [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
 ```
 
-外部账号不会自动创建贯序用户，也不会把外部组或角色直接当作业务权限。管理员必须先维护同名且启用的内部用户、工作区成员关系和角色。
+外部账号不会自动创建贯序用户，也不会把外部组或角色直接当作业务权限。空正式库通过默认关闭、只允许成功一次的初始化 API 建立首个公司、工厂、工作区和内部管理员；后续用户开通不得复用该入口，正式的用户与组织管理能力仍待建设。上线前可运行 `pnpm pilot:preflight` 检查 OIDC 配置与公开签名密钥，上线后可运行 `pnpm pilot:smoke` 对十二个只读主链路接口做带请求编号的验收。完整步骤、证据和回退边界见 [试点上线运行手册](./docs/试点上线运行手册.md)。
 
 后端完整说明见 [guanseq-server/README.md](./guanseq-server/README.md)。
 
@@ -55,6 +55,8 @@ $env:SPRING_PROFILES_ACTIVE = "local"
 - [开发规范与交付流程](./docs/开发规范与交付流程.md)
 - [架构决策记录（ADR）](./docs/adr/README.md)
 - [OIDC 正式身份接入决策](./docs/adr/0003-OIDC正式身份接入.md)
+- [生产环境首次初始化决策](./docs/adr/0004-生产环境首次初始化.md)
+- [试点上线运行手册](./docs/试点上线运行手册.md)
 - [系统总体架构与开发蓝图](./docs/系统总体架构.md)
 - [总体架构审计](./docs/架构审计.md)
 - [前端产品完整性审计](./docs/前端产品审计.md)

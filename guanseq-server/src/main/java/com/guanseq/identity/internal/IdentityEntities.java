@@ -29,9 +29,21 @@ class OrganizationUnitEntity {
 	@Column(name = "unit_type")
 	private String unitType;
 
+	@Column(name = "parent_id")
+	private UUID parentId;
+
 	private String status;
 
 	protected OrganizationUnitEntity() {
+	}
+
+	OrganizationUnitEntity(UUID id, String code, String name, String unitType, UUID parentId) {
+		this.id = id;
+		this.code = code;
+		this.name = name;
+		this.unitType = unitType;
+		this.parentId = parentId;
+		this.status = "ACTIVE";
 	}
 
 	UUID getId() {
@@ -65,6 +77,20 @@ class WorkspaceEntity {
 	private String status;
 
 	protected WorkspaceEntity() {
+	}
+
+	WorkspaceEntity(
+			UUID id,
+			String code,
+			String name,
+			OrganizationUnitEntity tenantOrganization,
+			OrganizationUnitEntity operatingOrganization) {
+		this.id = id;
+		this.code = code;
+		this.name = name;
+		this.tenantOrganization = tenantOrganization;
+		this.operatingOrganization = operatingOrganization;
+		this.status = "ACTIVE";
 	}
 
 	UUID getId() {
@@ -109,6 +135,13 @@ class IdentityUserEntity {
 	protected IdentityUserEntity() {
 	}
 
+	IdentityUserEntity(UUID id, String username, String displayName) {
+		this.id = id;
+		this.username = username;
+		this.displayName = displayName;
+		this.status = "ACTIVE";
+	}
+
 	UUID getId() {
 		return id;
 	}
@@ -141,6 +174,14 @@ class WorkspaceMembershipEntity {
 	private String status;
 
 	protected WorkspaceMembershipEntity() {
+	}
+
+	WorkspaceMembershipEntity(UUID id, UUID userId, UUID workspaceId, String roleCode) {
+		this.id = id;
+		this.userId = userId;
+		this.workspaceId = workspaceId;
+		this.roleCode = roleCode;
+		this.status = "ACTIVE";
 	}
 }
 

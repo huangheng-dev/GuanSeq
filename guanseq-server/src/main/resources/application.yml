@@ -19,6 +19,9 @@ server:
 guanseq:
   build:
     version: ${GUANSEQ_BUILD_VERSION:0.1.0-SNAPSHOT}
+  bootstrap:
+    enabled: false
+    token: disabled
   security:
     mode: disabled
     development-username: disabled

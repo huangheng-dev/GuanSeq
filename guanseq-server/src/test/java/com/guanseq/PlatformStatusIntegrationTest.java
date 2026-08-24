@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -56,6 +57,14 @@ class PlatformStatusIntegrationTest {
 
 	@Test
 	void returnsStableTrackedErrorsForAuthenticationAndValidation() throws Exception {
+		mockMvc.perform(post("/api/v1/bootstrap/initial-workspace")
+					.header("X-Request-Id", "bootstrap-disabled-0001")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("{}"))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("RESOURCE_NOT_FOUND"))
+				.andExpect(jsonPath("$.requestId").value("bootstrap-disabled-0001"));
+
 		mockMvc.perform(get("/api/v1/me/workspaces").header("X-Request-Id", "error-auth-0001"))
 				.andExpect(status().isUnauthorized())
 				.andExpect(header().string("X-Request-Id", "error-auth-0001"))

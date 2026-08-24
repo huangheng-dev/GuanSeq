@@ -13,6 +13,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.guanseq.platform.api.ApiErrorResponse;
@@ -59,6 +60,14 @@ class ApiExceptionHandler {
 				HttpStatus.BAD_REQUEST,
 				"请求格式或参数无效",
 				"VALIDATION_FAILED"));
+	}
+
+	@ExceptionHandler(NoResourceFoundException.class)
+	ResponseEntity<ApiErrorResponse> handleNoResource(NoResourceFoundException exception) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiErrorSupport.response(
+				HttpStatus.NOT_FOUND,
+				"请求的资源不存在",
+				"RESOURCE_NOT_FOUND"));
 	}
 
 	@ExceptionHandler(Exception.class)
