@@ -125,6 +125,9 @@ class IdentityUserEntity {
 	@Id
 	private UUID id;
 
+	@Column(name = "tenant_organization_id")
+	private UUID tenantOrganizationId;
+
 	private String username;
 
 	@Column(name = "display_name")
@@ -132,14 +135,26 @@ class IdentityUserEntity {
 
 	private String status;
 
+	@Version
+	private long version;
+
+	@Column(name = "created_at")
+	private Instant createdAt;
+
+	@Column(name = "updated_at")
+	private Instant updatedAt;
+
 	protected IdentityUserEntity() {
 	}
 
-	IdentityUserEntity(UUID id, String username, String displayName) {
+	IdentityUserEntity(UUID id, UUID tenantOrganizationId, String username, String displayName) {
 		this.id = id;
+		this.tenantOrganizationId = tenantOrganizationId;
 		this.username = username;
 		this.displayName = displayName;
 		this.status = "ACTIVE";
+		this.createdAt = Instant.now();
+		this.updatedAt = this.createdAt;
 	}
 
 	UUID getId() {
@@ -152,6 +167,31 @@ class IdentityUserEntity {
 
 	String getDisplayName() {
 		return displayName;
+	}
+
+	UUID getTenantOrganizationId() {
+		return tenantOrganizationId;
+	}
+
+	String getStatus() {
+		return status;
+	}
+
+	long getVersion() {
+		return version;
+	}
+
+	Instant getCreatedAt() {
+		return createdAt;
+	}
+
+	Instant getUpdatedAt() {
+		return updatedAt;
+	}
+
+	void updateDisplayName(String nextDisplayName) {
+		this.displayName = nextDisplayName;
+		this.updatedAt = Instant.now();
 	}
 }
 
@@ -173,6 +213,15 @@ class WorkspaceMembershipEntity {
 
 	private String status;
 
+	@Version
+	private long version;
+
+	@Column(name = "created_at")
+	private Instant createdAt;
+
+	@Column(name = "updated_at")
+	private Instant updatedAt;
+
 	protected WorkspaceMembershipEntity() {
 	}
 
@@ -182,6 +231,50 @@ class WorkspaceMembershipEntity {
 		this.workspaceId = workspaceId;
 		this.roleCode = roleCode;
 		this.status = "ACTIVE";
+		this.createdAt = Instant.now();
+		this.updatedAt = this.createdAt;
+	}
+
+	UUID getId() {
+		return id;
+	}
+
+	UUID getUserId() {
+		return userId;
+	}
+
+	UUID getWorkspaceId() {
+		return workspaceId;
+	}
+
+	String getRoleCode() {
+		return roleCode;
+	}
+
+	String getStatus() {
+		return status;
+	}
+
+	long getVersion() {
+		return version;
+	}
+
+	Instant getCreatedAt() {
+		return createdAt;
+	}
+
+	Instant getUpdatedAt() {
+		return updatedAt;
+	}
+
+	void updateRole(String nextRoleCode) {
+		this.roleCode = nextRoleCode;
+		this.updatedAt = Instant.now();
+	}
+
+	void changeStatus(String nextStatus) {
+		this.status = nextStatus;
+		this.updatedAt = Instant.now();
 	}
 }
 

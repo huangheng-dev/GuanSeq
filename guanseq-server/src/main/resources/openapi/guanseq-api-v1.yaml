@@ -106,6 +106,104 @@ paths:
         "401": { $ref: "#/components/responses/AuthenticationRequired" }
         "403": { $ref: "#/components/responses/AccessDenied" }
         "409": { $ref: "#/components/responses/BusinessConflict" }
+  /api/v1/identity/workspace-users:
+    get:
+      operationId: listCurrentWorkspaceUsers
+      summary: 分页查询当前工作区成员与受控角色目录
+      tags: [Identity]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/Query"
+        - name: status
+          in: query
+          schema: { type: string, enum: [ALL, ACTIVE, INACTIVE], default: ALL }
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+      responses:
+        "200":
+          description: 当前工作区成员分页和可分配角色
+          headers: { X-Request-Id: { $ref: "#/components/headers/RequestId" } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WorkspaceUserPage" }
+        "401": { $ref: "#/components/responses/AuthenticationRequired" }
+        "403": { $ref: "#/components/responses/AccessDenied" }
+    post:
+      operationId: createCurrentWorkspaceUser
+      summary: 创建租户内部账号并加入当前工作区
+      tags: [Identity]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateWorkspaceUserRequest" }
+      responses:
+        "201":
+          description: 用户和启用成员关系已经创建
+          headers: { X-Request-Id: { $ref: "#/components/headers/RequestId" } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WorkspaceUser" }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "401": { $ref: "#/components/responses/AuthenticationRequired" }
+        "403": { $ref: "#/components/responses/AccessDenied" }
+        "409": { $ref: "#/components/responses/BusinessConflict" }
+  /api/v1/identity/workspace-users/{userId}:
+    put:
+      operationId: updateCurrentWorkspaceUser
+      summary: 更新当前工作区成员显示名和角色
+      tags: [Identity]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateWorkspaceUserRequest" }
+      responses:
+        "200":
+          description: 用户和成员角色已经更新
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WorkspaceUser" }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "401": { $ref: "#/components/responses/AuthenticationRequired" }
+        "403": { $ref: "#/components/responses/AccessDenied" }
+        "404": { $ref: "#/components/responses/ResourceNotFound" }
+        "409": { $ref: "#/components/responses/BusinessConflict" }
+  /api/v1/identity/workspace-users/{userId}/actions:
+    post:
+      operationId: changeCurrentWorkspaceUserStatus
+      summary: 停用或恢复当前工作区成员访问
+      tags: [Identity]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/WorkspaceUserActionRequest" }
+      responses:
+        "200":
+          description: 成员状态已经更新或目标状态已经满足
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WorkspaceUser" }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "401": { $ref: "#/components/responses/AuthenticationRequired" }
+        "403": { $ref: "#/components/responses/AccessDenied" }
+        "404": { $ref: "#/components/responses/ResourceNotFound" }
+        "409": { $ref: "#/components/responses/BusinessConflict" }
+        "422": { $ref: "#/components/responses/BusinessRuleViolation" }
   /api/v1/masterdata/customers:
     get:
       operationId: listCustomers
@@ -2773,6 +2871,78 @@ components:
         workspaceId: { type: string, format: uuid }
         userId: { type: string, format: uuid }
         username: { type: string }
+    WorkspaceRole:
+      type: object
+      additionalProperties: false
+      required: [code, name, description]
+      properties:
+        code: { $ref: "#/components/schemas/WorkspaceRoleCode" }
+        name: { type: string }
+        description: { type: string }
+    WorkspaceRoleCode:
+      type: string
+      enum: [ADMIN, SALES_MANAGER, PLANNING_MANAGER, PROCUREMENT_MANAGER, PRODUCT_ENGINEER, PRODUCTION_MANAGER, PRODUCTION_OPERATOR, QUALITY_MANAGER, QUALITY_INSPECTOR, WAREHOUSE_MANAGER, INVENTORY_CONTROLLER, FINANCE_MANAGER]
+    WorkspaceUser:
+      type: object
+      additionalProperties: false
+      required: [userId, username, displayName, accountStatus, membershipId, membershipStatus, roleCode, userVersion, membershipVersion, createdAt, updatedAt]
+      properties:
+        userId: { type: string, format: uuid }
+        username: { type: string }
+        displayName: { type: string }
+        accountStatus: { type: string, enum: [ACTIVE, LOCKED, INACTIVE] }
+        membershipId: { type: string, format: uuid }
+        membershipStatus: { type: string, enum: [ACTIVE, INACTIVE] }
+        roleCode: { $ref: "#/components/schemas/WorkspaceRoleCode" }
+        userVersion: { type: integer, format: int64, minimum: 0 }
+        membershipVersion: { type: integer, format: int64, minimum: 0 }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    WorkspaceUserPage:
+      type: object
+      additionalProperties: false
+      required: [currentUserId, workspaceId, workspaceCode, workspaceName, companyName, availableRoles, items, totalElements, page, size, totalPages]
+      properties:
+        currentUserId: { type: string, format: uuid }
+        workspaceId: { type: string, format: uuid }
+        workspaceCode: { type: string }
+        workspaceName: { type: string }
+        companyName: { type: string }
+        availableRoles:
+          type: array
+          items: { $ref: "#/components/schemas/WorkspaceRole" }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/WorkspaceUser" }
+        totalElements: { type: integer, format: int64, minimum: 0 }
+        page: { type: integer, minimum: 0 }
+        size: { type: integer, minimum: 1 }
+        totalPages: { type: integer, minimum: 0 }
+    CreateWorkspaceUserRequest:
+      type: object
+      additionalProperties: false
+      required: [username, displayName, roleCode]
+      properties:
+        username: { type: string, pattern: "^\\S+$", maxLength: 80 }
+        displayName: { type: string, minLength: 1, maxLength: 80 }
+        roleCode: { $ref: "#/components/schemas/WorkspaceRoleCode" }
+    UpdateWorkspaceUserRequest:
+      type: object
+      additionalProperties: false
+      required: [displayName, roleCode, expectedUserVersion, expectedMembershipVersion]
+      properties:
+        displayName: { type: string, minLength: 1, maxLength: 80 }
+        roleCode: { $ref: "#/components/schemas/WorkspaceRoleCode" }
+        expectedUserVersion: { type: integer, format: int64, minimum: 0 }
+        expectedMembershipVersion: { type: integer, format: int64, minimum: 0 }
+    WorkspaceUserActionRequest:
+      type: object
+      additionalProperties: false
+      required: [action, expectedMembershipVersion, reason]
+      properties:
+        action: { type: string, enum: [ACTIVATE, DEACTIVATE] }
+        expectedMembershipVersion: { type: integer, format: int64, minimum: 0 }
+        reason: { type: string, minLength: 4, maxLength: 300 }
     WorkspaceSession:
       type: object
       additionalProperties: false

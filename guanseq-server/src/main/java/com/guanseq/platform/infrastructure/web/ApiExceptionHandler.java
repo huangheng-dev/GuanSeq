@@ -9,6 +9,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -68,6 +69,14 @@ class ApiExceptionHandler {
 				HttpStatus.NOT_FOUND,
 				"请求的资源不存在",
 				"RESOURCE_NOT_FOUND"));
+	}
+
+	@ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+	ResponseEntity<ApiErrorResponse> handleOptimisticLock(ObjectOptimisticLockingFailureException exception) {
+		return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiErrorSupport.response(
+				HttpStatus.CONFLICT,
+				"数据已经被其他用户修改，请刷新后重试",
+				"BUSINESS_CONFLICT"));
 	}
 
 	@ExceptionHandler(Exception.class)

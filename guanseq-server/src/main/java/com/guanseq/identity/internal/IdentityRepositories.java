@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -17,6 +19,10 @@ interface OrganizationUnitRepository extends JpaRepository<OrganizationUnitEntit
 interface IdentityUserRepository extends JpaRepository<IdentityUserEntity, UUID> {
 
 	Optional<IdentityUserEntity> findByUsernameAndStatus(String username, String status);
+
+	Optional<IdentityUserEntity> findByUsername(String username);
+
+	Optional<IdentityUserEntity> findByIdAndTenantOrganizationId(UUID id, UUID tenantOrganizationId);
 }
 
 interface WorkspaceRepository extends JpaRepository<WorkspaceEntity, UUID> {
@@ -53,6 +59,33 @@ interface WorkspaceMembershipRepository extends JpaRepository<WorkspaceMembershi
 	Optional<String> findRoleCode(
 			@Param("userId") UUID userId,
 			@Param("workspaceId") UUID workspaceId);
+
+	Optional<WorkspaceMembershipEntity> findByUserIdAndWorkspaceId(UUID userId, UUID workspaceId);
+
+	@Query(value = """
+			select membership from WorkspaceMembershipEntity membership, IdentityUserEntity identityUser
+			where identityUser.id = membership.userId
+			and membership.workspaceId = :workspaceId
+			and (:status = 'ALL' or membership.status = :status)
+			and (:query = '' or lower(identityUser.username) like lower(concat('%', :query, '%'))
+				or lower(identityUser.displayName) like lower(concat('%', :query, '%')))
+			order by identityUser.displayName, identityUser.username
+			""",
+			countQuery = """
+			select count(membership) from WorkspaceMembershipEntity membership, IdentityUserEntity identityUser
+			where identityUser.id = membership.userId
+			and membership.workspaceId = :workspaceId
+			and (:status = 'ALL' or membership.status = :status)
+			and (:query = '' or lower(identityUser.username) like lower(concat('%', :query, '%'))
+				or lower(identityUser.displayName) like lower(concat('%', :query, '%')))
+			""")
+	Page<WorkspaceMembershipEntity> findWorkspacePage(
+			@Param("workspaceId") UUID workspaceId,
+			@Param("query") String query,
+			@Param("status") String status,
+			Pageable pageable);
+
+	long countByWorkspaceIdAndRoleCodeAndStatus(UUID workspaceId, String roleCode, String status);
 }
 
 interface UserWorkspacePreferenceRepository extends JpaRepository<UserWorkspacePreferenceEntity, UUID> {

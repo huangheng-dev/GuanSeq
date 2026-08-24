@@ -66,6 +66,55 @@ export const workspaceSessionEnvelopeSchema = z.object({
   session: workspaceSessionSchema,
 });
 
+export const workspaceRoleCodeSchema = z.enum([
+  "ADMIN",
+  "SALES_MANAGER",
+  "PLANNING_MANAGER",
+  "PROCUREMENT_MANAGER",
+  "PRODUCT_ENGINEER",
+  "PRODUCTION_MANAGER",
+  "PRODUCTION_OPERATOR",
+  "QUALITY_MANAGER",
+  "QUALITY_INSPECTOR",
+  "WAREHOUSE_MANAGER",
+  "INVENTORY_CONTROLLER",
+  "FINANCE_MANAGER",
+]);
+
+export const workspaceRoleSchema = z.object({
+  code: workspaceRoleCodeSchema,
+  name: z.string(),
+  description: z.string(),
+});
+
+export const workspaceUserSchema = z.object({
+  userId: z.string().uuid(),
+  username: z.string(),
+  displayName: z.string(),
+  accountStatus: z.enum(["ACTIVE", "LOCKED", "INACTIVE"]),
+  membershipId: z.string().uuid(),
+  membershipStatus: z.enum(["ACTIVE", "INACTIVE"]),
+  roleCode: workspaceRoleCodeSchema,
+  userVersion: z.number().int().nonnegative(),
+  membershipVersion: z.number().int().nonnegative(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+
+export const workspaceUserPageSchema = z.object({
+  currentUserId: z.string().uuid(),
+  workspaceId: z.string().uuid(),
+  workspaceCode: z.string(),
+  workspaceName: z.string(),
+  companyName: z.string(),
+  availableRoles: z.array(workspaceRoleSchema),
+  items: z.array(workspaceUserSchema),
+  totalElements: z.number().int().nonnegative(),
+  page: z.number().int().nonnegative(),
+  size: z.number().int().positive(),
+  totalPages: z.number().int().nonnegative(),
+});
+
 const masterDataBaseSchema = z.object({
   id: z.string().uuid(),
   code: z.string(),
@@ -1052,6 +1101,10 @@ export type GlobalSearchItem = z.infer<typeof globalSearchItemSchema>;
 export type WorkspaceSummary = z.infer<typeof workspaceSummarySchema>;
 export type WorkspaceSession = z.infer<typeof workspaceSessionSchema>;
 export type WorkspaceSessionEnvelope = z.infer<typeof workspaceSessionEnvelopeSchema>;
+export type WorkspaceRoleCode = z.infer<typeof workspaceRoleCodeSchema>;
+export type WorkspaceRole = z.infer<typeof workspaceRoleSchema>;
+export type WorkspaceUser = z.infer<typeof workspaceUserSchema>;
+export type WorkspaceUserPage = z.infer<typeof workspaceUserPageSchema>;
 export type CustomerRecord = z.infer<typeof customerRecordSchema>;
 export type MaterialRecord = z.infer<typeof materialRecordSchema>;
 export type SupplierRecord = z.infer<typeof supplierRecordSchema>;
@@ -1286,4 +1339,3 @@ export type AdvanceRefund = z.infer<typeof advanceRefundSchema>;
 export type AdvancePage = z.infer<typeof advancePageSchema>;
 export type CreateAdvancePayload = z.infer<typeof createAdvanceSchema>;
 export type RefundAdvancePayload = z.infer<typeof refundAdvanceSchema>;
-

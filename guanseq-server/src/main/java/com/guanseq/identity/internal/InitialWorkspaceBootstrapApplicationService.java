@@ -92,6 +92,7 @@ public class InitialWorkspaceBootstrapApplicationService {
 				plant));
 		IdentityUserEntity user = userRepository.saveAndFlush(new IdentityUserEntity(
 				userId,
+				tenantId,
 				request.externalUsername(),
 				request.displayName()));
 		membershipRepository.save(new WorkspaceMembershipEntity(

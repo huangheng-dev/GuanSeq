@@ -2517,3 +2517,66 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, a:focus-visib
   padding: 10px 14px;
 }
 .grirPreview .rowWarnHint { max-width: none; margin-top: 0; }
+
+/* 当前工作区成员与角色治理 */
+.workspaceUserTable { overflow-x: auto; }
+.workspaceUserTableHeader,
+.workspaceUserTableRow {
+  align-items: center;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(190px, 1.25fr) minmax(150px, 1fr) minmax(155px, 1fr) minmax(165px, .95fr) 76px;
+  min-width: 850px;
+  padding: 0 18px;
+}
+.workspaceUserTableHeader {
+  background: var(--gs-surface-subtle);
+  border-bottom: 1px solid var(--gs-line);
+  color: var(--gs-ink-muted);
+  font-size: 11px;
+  min-height: 38px;
+}
+.workspaceUserTableRow {
+  border-bottom: 1px solid var(--gs-line);
+  min-height: 68px;
+  transition: background .14s ease, box-shadow .14s ease;
+}
+.workspaceUserTableRow:hover { background: #f8fafb; box-shadow: inset 3px 0 var(--gs-info); }
+.workspaceUserTableRow > span:not(.businessRowActions) { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.workspaceUserTableRow strong { color: #27435c; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.workspaceUserTableRow small { color: var(--gs-ink-muted); font-size: 10.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.workspaceUserTableRow .businessStatus { align-self: flex-start; font-style: normal; }
+.workspaceUserTableRow .businessRowActions { gap: 4px; }
+.workspaceUserTableRow .businessRowActions button:disabled { box-shadow: none; cursor: not-allowed; opacity: .35; transform: none; }
+.workspaceRoleBoundary {
+  align-items: flex-start;
+  background: #f5f8fa;
+  border: 1px solid #d8e2e9;
+  border-left: 3px solid var(--gs-info);
+  display: flex;
+  gap: 10px;
+  padding: 13px 16px;
+}
+.workspaceRoleBoundary > .material-symbols-rounded { color: var(--gs-info); margin-top: 1px; }
+.workspaceRoleBoundary strong { color: var(--gs-navy); display: block; font-size: 12.5px; }
+.workspaceRoleBoundary p { color: var(--gs-ink-muted); font-size: 11.5px; margin: 4px 0 0; }
+.workspaceUserStatusDialog { max-width: 620px; }
+
+@media (max-width: 720px) {
+  .workspaceUserPage .pageHeadingActions { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+  .workspaceUserPage .pageHeadingActions button { justify-content: center; }
+  .workspaceUserTable { overflow: visible; }
+  .workspaceUserTableHeader { display: none; }
+  .workspaceUserTableRow {
+    align-items: start;
+    gap: 10px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    min-width: 0;
+    padding: 14px;
+  }
+  .workspaceUserTableRow > span:not(.businessRowActions) { border-top: 1px solid #edf1f4; grid-column: 1 / -1; padding-top: 8px; }
+  .workspaceUserTableRow > span:first-child { border-top: 0; grid-column: 1; padding-top: 0; }
+  .workspaceUserTableRow > .businessRowActions { grid-column: 2; grid-row: 1; }
+  .workspaceUserTableRow .businessRowActions button { height: 44px; width: 44px; }
+  .workspaceRoleBoundary { order: 4; }
+}

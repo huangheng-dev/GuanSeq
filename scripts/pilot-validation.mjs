@@ -165,6 +165,7 @@ export async function inspectOidcProvider(config, fetchImplementation = fetch) {
 export const PILOT_SMOKE_ENDPOINTS = [
   ["平台状态", "/api/v1/platform/status", false],
   ["当前工作区", "/api/v1/me/workspaces", true],
+  ["工作区成员", "/api/v1/identity/workspace-users?page=0&size=1&status=ALL", true],
   ["销售订单", "/api/v1/sales/orders?page=0&size=1&status=ALL", true],
   ["独立需求", "/api/v1/planning/independent-demands?page=0&size=1&status=ALL&sourceType=ALL", true],
   ["MRP 运算", "/api/v1/planning/mrp-runs?page=0&size=1&status=ALL", true],

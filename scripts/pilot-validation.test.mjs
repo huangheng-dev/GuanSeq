@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { inspectOidcProvider, runPilotSmoke, validatePilotEnvironment } from "./pilot-validation.mjs";
+import { inspectOidcProvider, PILOT_SMOKE_ENDPOINTS, runPilotSmoke, validatePilotEnvironment } from "./pilot-validation.mjs";
 
 const validEnvironment = {
   GUANSEQ_SECURITY_MODE: "oidc",
@@ -81,6 +81,12 @@ describe("pilot connectivity checks", () => {
     });
 
     expect(results.every((result) => result.passed)).toBe(true);
+    expect(PILOT_SMOKE_ENDPOINTS).toHaveLength(13);
+    expect(PILOT_SMOKE_ENDPOINTS).toContainEqual([
+      "工作区成员",
+      "/api/v1/identity/workspace-users?page=0&size=1&status=ALL",
+      true,
+    ]);
     expect(JSON.stringify(results)).not.toContain("sensitive-access-token");
   });
 });

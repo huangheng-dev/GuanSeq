@@ -61,8 +61,8 @@ INSERT INTO identity.workspaces (id, code, name, tenant_organization_id, operati
     ('10000000-0000-4000-8000-000000000104', 'WEST-PRECISION', '西部精密工厂', '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000104')
 ON CONFLICT (id) DO NOTHING;
 
-INSERT INTO identity.user_accounts (id, username, display_name) VALUES
-    ('20000000-0000-4000-8000-000000000001', 'lin.hao', '林浩')
+INSERT INTO identity.user_accounts (id, tenant_organization_id, username, display_name) VALUES
+    ('20000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000001', 'lin.hao', '林浩')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO identity.workspace_memberships (id, user_id, workspace_id, role_code) VALUES
