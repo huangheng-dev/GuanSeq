@@ -35,13 +35,51 @@ class SupplierEntity {
 	@Column(name = "created_at") private Instant createdAt;
 	@Column(name = "updated_by") private UUID updatedBy;
 	@Column(name = "updated_at") private Instant updatedAt;
+	@Version private long version;
 
 	protected SupplierEntity() { }
+
+	SupplierEntity(UUID id, UUID tenantOrganizationId, UUID owningOrganizationId, String code, String name,
+			String contactName, String contactPhone, UUID actor) {
+		this.id = id;
+		this.tenantOrganizationId = tenantOrganizationId;
+		this.owningOrganizationId = owningOrganizationId;
+		this.code = code;
+		this.name = name;
+		this.contactName = contactName;
+		this.contactPhone = contactPhone;
+		this.status = "ACTIVE";
+		this.createdBy = actor;
+		this.createdAt = Instant.now();
+		this.updatedBy = actor;
+		this.updatedAt = this.createdAt;
+	}
+
+	void update(String name, String contactName, String contactPhone, UUID actor) {
+		this.name = name;
+		this.contactName = contactName;
+		this.contactPhone = contactPhone;
+		this.updatedBy = actor;
+		this.updatedAt = Instant.now();
+	}
+
+	void toggleStatus(String status, UUID actor) {
+		this.status = status;
+		this.updatedBy = actor;
+		this.updatedAt = Instant.now();
+	}
+
 	UUID getId() { return id; }
+	UUID getTenantOrganizationId() { return tenantOrganizationId; }
+	UUID getOwningOrganizationId() { return owningOrganizationId; }
 	String getCode() { return code; }
 	String getName() { return name; }
 	String getContactName() { return contactName; }
 	String getContactPhone() { return contactPhone; }
+	String getStatus() { return status; }
+	Instant getCreatedAt() { return createdAt; }
+	Instant getUpdatedAt() { return updatedAt; }
+	long getVersion() { return version; }
 }
 
 @Entity

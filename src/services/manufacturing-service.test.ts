@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { allProductPaths } from "@/lib/product-navigation";
-import { getBusinessPage, getManufacturingSnapshot, submitBusinessMutation } from "./manufacturing-service";
+import { allProductPaths, resolveProductRoute } from "@/lib/product-navigation";
+import {
+  getBusinessPage,
+  getGlobalSearchIndex,
+  getManufacturingSnapshot,
+  submitBusinessMutation,
+} from "./manufacturing-service";
 
 describe("manufacturing service", () => {
   it("returns a contract-valid manufacturing snapshot", async () => {
@@ -9,6 +14,13 @@ describe("manufacturing service", () => {
     expect(result.flow).toHaveLength(6);
     expect(result.workOrders.some((order) => order.status === "有风险")).toBe(true);
     expect(result.capacity.every((item) => item.load >= 0 && item.load <= 100)).toBe(true);
+  });
+
+  it("keeps every global-search target inside the product navigation", async () => {
+    const items = await getGlobalSearchIndex();
+
+    expect(items.length).toBeGreaterThan(0);
+    for (const item of items) expect(resolveProductRoute(item.href), item.href).not.toBeNull();
   });
 
   it("builds distinct page layouts with enough records for pagination", async () => {
@@ -45,7 +57,7 @@ describe("manufacturing service", () => {
   it("covers every declared route with a professional page definition", async () => {
     const pages = await Promise.all(allProductPaths().map((pathname) => getBusinessPage(pathname)));
 
-    expect(pages).toHaveLength(232);
+    expect(pages).toHaveLength(234);
     expect(pages.every(Boolean)).toBe(true);
     expect(pages.every((page) => page?.definitionId !== "legacy-generic")).toBe(true);
     expect(new Set(pages.map((page) => page?.definitionId)).size).toBeGreaterThanOrEqual(20);

@@ -4,10 +4,10 @@ import { GuanSeqApiError } from "@/services/guanseq-api-server";
 import { mutateMasterData } from "@/services/master-data-server-service";
 
 const mutationSchema = z.object({
-  pathname: z.enum(["/sales/customers/list", "/product/materials/list"]),
+  pathname: z.enum(["/sales/customers/list", "/product/materials/list", "/procurement/suppliers/list"]),
   action: z.enum(["create", "update", "delete", "restore", "batch"]),
   values: z.record(z.string(), z.string()),
-  records: z.array(z.object({ id: z.string().uuid(), version: z.number().int().nonnegative() })).optional(),
+  records: z.array(z.object({ id: z.string().uuid(), version: z.number().int().nonnegative().optional() })).optional(),
 });
 
 export async function POST(request: Request) {
@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     return Response.json({ message: "主数据操作参数无效", requestId }, { status: 400, headers: { "X-Request-Id": requestId } });
   }
   try {
-    const result = await mutateMasterData(parsed.data, requestId);
+    const result = await mutateMasterData({ ...parsed.data, records: parsed.data.records?.map((r) => ({ id: r.id, version: r.version ?? 0 })) }, requestId);
     return Response.json(result, { headers: { "X-Request-Id": result.requestId } });
   } catch (error) {
     const status = error instanceof GuanSeqApiError ? error.status : 500;

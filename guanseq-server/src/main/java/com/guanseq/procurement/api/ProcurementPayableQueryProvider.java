@@ -12,6 +12,10 @@ public interface ProcurementPayableQueryProvider {
 
 	Optional<PayableOrder> findReceivedOrder(UUID tenantOrganizationId, UUID purchaseOrderId);
 
+	Optional<SupplierReference> findActiveSupplier(UUID tenantOrganizationId, UUID supplierId);
+
+	record SupplierReference(UUID id, String code, String name) { }
+
 	record PayableOrder(
 			UUID id,
 			String orderNumber,

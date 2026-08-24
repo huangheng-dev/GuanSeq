@@ -8,9 +8,11 @@ import {
   payableInvoiceRecordSchema,
   payableReferenceDataSchema,
   type PayableCreditNoteRecord,
+  type Advance,
   type PayableInvoiceRecord,
 } from "@/lib/contracts";
 import { GuanSeqApiError, readApiError, requestGuanSeqApi } from "@/services/guanseq-api-server";
+import { listAdvances } from "./advance-server-service";
 
 const paths = new Set(["/finance/payables", "/finance/purchase-settlement/invoices", "/finance/purchase-settlement/payments"]);
 
@@ -18,6 +20,7 @@ export type PayablePageData = {
   source: "backend";
   invoices: PayableInvoiceRecord[];
   references: ReturnType<typeof payableReferenceDataSchema.parse>;
+  advances: Advance[];
 };
 
 export type CreatePayableInvoicePayload = {
@@ -26,6 +29,7 @@ export type CreatePayableInvoicePayload = {
   invoiceDate: string;
   dueDate: string;
   lines: Array<{ purchaseOrderLineId: string; invoiceQuantity: number }>;
+  advanceId?: string | null;
 };
 
 export type PostPayablePaymentPayload = {
@@ -67,15 +71,20 @@ export type ReversePayablePaymentPayload = {
 export async function getPayablePageData(pathname: string): Promise<PayablePageData | null> {
   if (!paths.has(pathname)) return null;
   const requestId = `web-payable-list-${randomUUID()}`;
-  const [invoiceResponse, referenceResponse] = await Promise.all([
+  const [invoiceResponse, referenceResponse, advanceResponse] = await Promise.all([
     requestGuanSeqApi("/api/v1/finance/payable-invoices?page=0&size=100&status=ALL", requestId),
     requestGuanSeqApi("/api/v1/finance/payable-reference-data", requestId),
+    listAdvances({ type: "PAYABLE", status: "ALL", page: 0, size: 100 }),
   ]);
-  if (!invoiceResponse?.ok || !referenceResponse?.ok) return null;
+  if (!invoiceResponse) return null;
+  if (invoiceResponse && !invoiceResponse.ok) await readApiError(invoiceResponse, "应付发票台账加载失败");
+  if (!referenceResponse) return null;
+  if (referenceResponse && !referenceResponse.ok) await readApiError(referenceResponse, "应付参考数据加载失败");
   return {
     source: "backend",
     invoices: payableInvoicePageSchema.parse(await invoiceResponse.json()).items,
     references: payableReferenceDataSchema.parse(await referenceResponse.json()),
+    advances: advanceResponse.items.filter((item) => item.availableBalance > 0),
   };
 }
 
@@ -100,7 +109,8 @@ export async function postPayablePayment(payload: PostPayablePaymentPayload, req
 
 export async function listPayableCreditNotes(requestId: string) {
   const response = await requestGuanSeqApi("/api/v1/finance/payable-credit-notes?page=0&size=100", requestId);
-  if (!response?.ok) return [];
+  if (!response) return [];
+  if (!response.ok) await readApiError(response, "红字发票列表加载失败");
   return payableCreditNotePageSchema.parse(await response.json()).items;
 }
 

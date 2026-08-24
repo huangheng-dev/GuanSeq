@@ -12,6 +12,7 @@ const createSchema = z.object({
   purchaseOrderId: z.string().uuid(), supplierInvoiceNumber: z.string().min(1).max(80),
   invoiceDate: z.string(), dueDate: z.string(),
   lines: z.array(z.object({ purchaseOrderLineId: z.string().uuid(), invoiceQuantity: z.number().positive() })).min(1),
+  advanceId: z.string().uuid().nullable().optional(),
 });
 const paymentSchema = z.object({
   invoiceId: z.string().uuid(), expectedVersion: z.number().int().nonnegative(),

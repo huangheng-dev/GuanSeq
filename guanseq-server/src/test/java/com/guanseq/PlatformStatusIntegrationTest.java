@@ -1,8 +1,10 @@
 package com.guanseq;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -11,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -49,5 +52,28 @@ class PlatformStatusIntegrationTest {
 				.andExpect(header().string("X-Request-Id", "test-request-0001"))
 				.andExpect(jsonPath("$.service").value("guanseq-server"))
 				.andExpect(jsonPath("$.status").value("UP"));
+	}
+
+	@Test
+	void returnsStableTrackedErrorsForAuthenticationAndValidation() throws Exception {
+		mockMvc.perform(get("/api/v1/me/workspaces").header("X-Request-Id", "error-auth-0001"))
+				.andExpect(status().isUnauthorized())
+				.andExpect(header().string("X-Request-Id", "error-auth-0001"))
+				.andExpect(jsonPath("$.code").value("AUTHENTICATION_REQUIRED"))
+				.andExpect(jsonPath("$.message").value("请先完成身份认证"))
+				.andExpect(jsonPath("$.requestId").value("error-auth-0001"))
+				.andExpect(jsonPath("$.fieldErrors").isArray());
+
+		mockMvc.perform(put("/api/v1/me/current-workspace")
+					.with(httpBasic("lin.hao", "guanseq_dev"))
+					.header("X-Request-Id", "error-validation-0001")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("""
+							{"workspaceId":"10000000-0000-4000-8000-000000000101","expectedVersion":-1}
+							"""))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+				.andExpect(jsonPath("$.requestId").value("error-validation-0001"))
+				.andExpect(jsonPath("$.fieldErrors[0].field").value("expectedVersion"));
 	}
 }

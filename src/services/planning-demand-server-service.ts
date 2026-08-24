@@ -24,7 +24,10 @@ export async function getPlanningDemandPageData(pathname: string): Promise<Plann
     requestGuanSeqApi("/api/v1/planning/independent-demands?page=0&size=100&status=ALL&sourceType=ALL", requestId),
     requestGuanSeqApi("/api/v1/planning/demand-reference-data", requestId),
   ]);
-  if (!demandsResponse?.ok || !referencesResponse?.ok) return null;
+  if (!demandsResponse) return null;
+  if (demandsResponse && !demandsResponse.ok) await readApiError(demandsResponse, "独立需求台账加载失败");
+  if (!referencesResponse) return null;
+  if (referencesResponse && !referencesResponse.ok) await readApiError(referencesResponse, "计划参考数据加载失败");
   return {
     source: "backend",
     demands: independentDemandPageSchema.parse(await demandsResponse.json()).items,

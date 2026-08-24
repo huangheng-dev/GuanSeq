@@ -19,7 +19,8 @@ export async function getIncomingInspectionPageData(pathname: string): Promise<I
   if (pathname !== "/quality/incoming") return null;
   const requestId = `web-incoming-list-${randomUUID()}`;
   const response = await requestGuanSeqApi("/api/v1/quality/incoming-inspections?page=0&size=100&status=ALL", requestId);
-  if (!response?.ok) return null;
+  if (!response) return null;
+  if (!response.ok) await readApiError(response, "来料检验台账加载失败");
   return { source: "backend", inspections: incomingInspectionPageSchema.parse(await response.json()).items };
 }
 

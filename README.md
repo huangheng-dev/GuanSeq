@@ -9,7 +9,7 @@ MRP 当前会冻结需求、库存、采购/生产计划接收与提前期快照
 ## 当前范围
 
 - 制造业一级、二级及按需三级左侧树形工作台
-- 12 个一级栏目、119 个二级模块、97 个三级页面和 228 条独立产品路径
+- 12 个一级栏目、119 个二级模块、97 个三级页面和 234 条独立产品路径
 - 全路由专业页面目录、统一圆润表单/弹窗、分页、筛选、详情与业务状态
 - 工作区切换、收藏与最近访问、全局搜索、通知中心和首页业务下钻
 - 表单、刷新、查询、导出和规划反馈五类主操作语义
@@ -21,6 +21,7 @@ MRP 当前会冻结需求、库存、采购/生产计划接收与提前期快照
 
 ```bash
 pnpm install
+Copy-Item .env.example .env.local
 pnpm dev
 ```
 
@@ -31,10 +32,11 @@ pnpm dev
 ```powershell
 cd guanseq-server
 docker compose up -d --wait postgres
+$env:SPRING_PROFILES_ACTIVE = "local"
 .\mvnw.cmd spring-boot:run
 ```
 
-后端默认运行在 `http://localhost:8080`，当前真实接口覆盖平台状态、工作区、主数据、BOM 与工艺路线、销售订单、独立需求、采购/生产订单、库存余额与流水、MRP 净需求、采购收货与来料检验、生产备料与领退料、车间工序执行、实际人工工时、生产报工和完工检验、销售发货与成品出库、销售应收开票与收款核销、采购应付发票与付款核销、订单利润结算。前端通过同源 BFF 路由代理访问后端，开发身份凭据不会进入浏览器代码。首次运行 Maven Wrapper 和 PostgreSQL 容器会下载对应的官方发行包。
+后端运行在 `http://localhost:8080`，当前真实接口覆盖平台状态、工作区、主数据、BOM 与工艺路线、销售订单、独立需求、采购/生产订单、库存余额与流水、MRP 净需求、采购收货与来料检验、生产备料与领退料、车间工序执行、实际人工工时、生产报工和完工检验、销售发货与成品出库、销售应收开票与收款核销、采购应付发票与付款核销、订单利润结算。前端通过同源 BFF 路由代理访问后端，开发身份凭据不会进入浏览器代码。`local` Profile 和开发身份必须显式开启；未配置正式身份提供方时，非本地环境会关闭受保护接口而不是退回开发账号。首次运行 Maven Wrapper 和 PostgreSQL 容器会下载对应的官方发行包。
 
 后端完整说明见 [guanseq-server/README.md](./guanseq-server/README.md)。
 
@@ -71,4 +73,3 @@ docker compose up -d --wait postgres
 - Java 25 LTS
 - Spring Boot 4.1 / Spring Modulith 2.1
 - PostgreSQL 18 / Flyway
-

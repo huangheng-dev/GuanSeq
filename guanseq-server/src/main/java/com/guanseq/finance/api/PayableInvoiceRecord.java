@@ -72,7 +72,8 @@ public record PayableInvoiceRecord(
 			@NotBlank @Size(max = 80) String supplierInvoiceNumber,
 			@NotNull LocalDate invoiceDate,
 			@NotNull LocalDate dueDate,
-			@NotEmpty @Size(max = 100) List<@Valid LineInput> lines) { }
+			@NotEmpty @Size(max = 100) List<@Valid LineInput> lines,
+			UUID advanceId) { }
 
 	public record LineInput(
 			@NotNull UUID purchaseOrderLineId,

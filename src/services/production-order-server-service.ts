@@ -18,7 +18,10 @@ export async function getProductionOrderPageData(pathname: string): Promise<Prod
     requestGuanSeqApi("/api/v1/production/orders?page=0&size=100&status=ALL", requestId),
     requestGuanSeqApi("/api/v1/production/order-reference-data", requestId),
   ]);
-  if (!ordersResponse?.ok || !referencesResponse?.ok) return null;
+  if (!ordersResponse) return null;
+  if (ordersResponse && !ordersResponse.ok) await readApiError(ordersResponse, "生产订单台账加载失败");
+  if (!referencesResponse) return null;
+  if (referencesResponse && !referencesResponse.ok) await readApiError(referencesResponse, "生产订单参考数据加载失败");
   return { source: "backend", orders: productionOrderPageSchema.parse(await ordersResponse.json()).items, references: productionOrderReferenceDataSchema.parse(await referencesResponse.json()) };
 }
 

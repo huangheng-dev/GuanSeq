@@ -4,6 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
+
+import org.yaml.snakeyaml.Yaml;
 
 import org.junit.jupiter.api.Test;
 
@@ -14,6 +17,15 @@ class OpenApiContractTest {
 		try (var stream = getClass().getResourceAsStream("/openapi/guanseq-api-v1.yaml")) {
 			assertThat(stream).isNotNull();
 			String contract = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+			Map<String, Object> parsed = new Yaml().loadAs(contract, Map.class);
+			assertThat(parsed).containsKey("openapi");
+			assertThat(parsed.get("openapi")).isEqualTo("3.1.0");
+			Map<String, Object> components = (Map<String, Object>) parsed.get("components");
+			Map<String, Object> responses = (Map<String, Object>) components.get("responses");
+			Map<String, Object> schemas = (Map<String, Object>) components.get("schemas");
+			assertThat(responses).containsKeys("ValidationFailed", "AuthenticationRequired", "AccessDenied",
+					"ResourceNotFound", "BusinessConflict", "BusinessRuleViolation", "InternalError");
+			assertThat(schemas).containsKeys("ApiError", "FieldViolation");
 			assertThat(contract)
 					.contains("openapi: 3.1.0")
 					.contains("/api/v1/platform/status:")

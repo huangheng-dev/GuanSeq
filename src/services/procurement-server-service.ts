@@ -18,7 +18,10 @@ export async function getProcurementPageData(pathname: string): Promise<Procurem
     requestGuanSeqApi("/api/v1/procurement/orders?page=0&size=100&status=ALL", requestId),
     requestGuanSeqApi("/api/v1/procurement/order-reference-data", requestId),
   ]);
-  if (!ordersResponse?.ok || !referencesResponse?.ok) return null;
+  if (!ordersResponse) return null;
+  if (ordersResponse && !ordersResponse.ok) await readApiError(ordersResponse, "采购订单台账加载失败");
+  if (!referencesResponse) return null;
+  if (referencesResponse && !referencesResponse.ok) await readApiError(referencesResponse, "采购参考数据加载失败");
   return { source: "backend", orders: purchaseOrderPageSchema.parse(await ordersResponse.json()).items, references: purchaseOrderReferenceDataSchema.parse(await referencesResponse.json()) };
 }
 

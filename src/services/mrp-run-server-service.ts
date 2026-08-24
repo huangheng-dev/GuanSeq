@@ -14,7 +14,8 @@ export async function getMrpRunPageData(pathname: string): Promise<MrpRunPageDat
   if (pathname !== "/planning/mrp/runs") return null;
   const requestId = `web-mrp-runs-${randomUUID()}`;
   const response = await requestGuanSeqApi("/api/v1/planning/mrp-runs?page=0&size=100&status=ALL", requestId);
-  if (!response?.ok) return null;
+  if (!response) return null;
+  if (!response.ok) await readApiError(response, "MRP 运算记录加载失败");
   return { source: "backend", runs: mrpRunPageSchema.parse(await response.json()).items };
 }
 

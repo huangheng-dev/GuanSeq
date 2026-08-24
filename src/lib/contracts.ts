@@ -102,6 +102,19 @@ const pageEnvelope = <T extends z.ZodTypeAny>(item: T) => z.object({
 export const customerPageSchema = pageEnvelope(customerRecordSchema);
 export const materialPageSchema = pageEnvelope(materialRecordSchema);
 
+export const supplierRecordSchema = z.object({
+  id: z.string().uuid(),
+  code: z.string(),
+  name: z.string(),
+  contactName: z.string().nullable(),
+  contactPhone: z.string().nullable(),
+  status: z.enum(["ACTIVE", "INACTIVE"]),
+  version: z.number().int().nonnegative(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+export const supplierPageSchema = pageEnvelope(supplierRecordSchema);
+
 export const salesOrderLineSchema = z.object({
   id: z.string().uuid(),
   lineNumber: z.number().int().positive(),
@@ -1041,6 +1054,7 @@ export type WorkspaceSession = z.infer<typeof workspaceSessionSchema>;
 export type WorkspaceSessionEnvelope = z.infer<typeof workspaceSessionEnvelopeSchema>;
 export type CustomerRecord = z.infer<typeof customerRecordSchema>;
 export type MaterialRecord = z.infer<typeof materialRecordSchema>;
+export type SupplierRecord = z.infer<typeof supplierRecordSchema>;
 export type SalesOrderLine = z.infer<typeof salesOrderLineSchema>;
 export type SalesOrderRecord = z.infer<typeof salesOrderRecordSchema>;
 export type SalesOrderReferenceData = z.infer<typeof salesOrderReferenceDataSchema>;
@@ -1202,4 +1216,74 @@ export type GrirAccrualPreview = z.infer<typeof grirAccrualPreviewSchema>;
 export type RunGrirAccrualPayload = z.infer<typeof runGrirAccrualSchema>;
 export type ReverseGrirAccrualPayload = z.infer<typeof reverseGrirAccrualSchema>;
 export type CreateAccountingPeriodPayload = z.infer<typeof createAccountingPeriodSchema>;
+
+// ── 预收预付（Advance Receipts & Payments） ──
+
+export const advanceApplicationSchema = z.object({
+  id: z.string().uuid(),
+  invoiceId: z.string().uuid(),
+  invoiceNumber: z.string(),
+  appliedAmount: z.number(),
+  applicationDate: z.string(),
+  createdAt: z.string(),
+});
+
+export const advanceRefundSchema = z.object({
+  id: z.string().uuid(),
+  refundAmount: z.number(),
+  refundDate: z.string(),
+  reason: z.string(),
+  createdAt: z.string(),
+});
+
+export const advanceSchema = z.object({
+  id: z.string().uuid(),
+  advanceNumber: z.string(),
+  type: z.enum(["RECEIVABLE", "PAYABLE"]),
+  partyType: z.enum(["CUSTOMER", "SUPPLIER"]),
+  partyId: z.string().uuid(),
+  partyCode: z.string(),
+  partyName: z.string(),
+  currency: z.string(),
+  advanceDate: z.string(),
+  totalAmount: z.number(),
+  appliedAmount: z.number(),
+  refundedAmount: z.number(),
+  availableBalance: z.number(),
+  status: z.enum(["OPEN", "PARTIALLY_USED", "CLOSED"]),
+  note: z.string().nullable(),
+  version: z.number().int(),
+  createdAt: z.string(),
+  applications: z.array(advanceApplicationSchema),
+  refunds: z.array(advanceRefundSchema),
+});
+
+export const advancePageSchema = z.object({
+  items: z.array(advanceSchema),
+  totalElements: z.number().int(),
+  totalPages: z.number().int(),
+  page: z.number().int(),
+  size: z.number().int(),
+});
+
+export const createAdvanceSchema = z.object({
+  type: z.enum(["RECEIVABLE", "PAYABLE"]),
+  partyId: z.string().uuid(),
+  advanceDate: z.string(),
+  totalAmount: z.number().positive(),
+  note: z.string().max(500).optional(),
+});
+
+export const refundAdvanceSchema = z.object({
+  refundAmount: z.number().positive(),
+  refundDate: z.string(),
+  reason: z.string().min(4).max(500),
+});
+
+export type Advance = z.infer<typeof advanceSchema>;
+export type AdvanceApplication = z.infer<typeof advanceApplicationSchema>;
+export type AdvanceRefund = z.infer<typeof advanceRefundSchema>;
+export type AdvancePage = z.infer<typeof advancePageSchema>;
+export type CreateAdvancePayload = z.infer<typeof createAdvanceSchema>;
+export type RefundAdvancePayload = z.infer<typeof refundAdvanceSchema>;
 

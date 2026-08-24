@@ -29,7 +29,10 @@ export async function getOrderProfitPageData(pathname: string): Promise<OrderPro
     requestGuanSeqApi("/api/v1/finance/order-profits?page=0&size=100&costStatus=ALL", requestId),
     requestGuanSeqApi("/api/v1/finance/order-profit-reference-data", requestId),
   ]);
-  if (!settlementsResponse?.ok || !referencesResponse?.ok) return null;
+  if (!settlementsResponse) return null;
+  if (settlementsResponse && !settlementsResponse.ok) await readApiError(settlementsResponse, "订单利润台账加载失败");
+  if (!referencesResponse) return null;
+  if (referencesResponse && !referencesResponse.ok) await readApiError(referencesResponse, "订单利润参考数据加载失败");
   return {
     source: "backend",
     settlements: orderProfitPageSchema.parse(await settlementsResponse.json()).items,

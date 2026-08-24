@@ -42,6 +42,7 @@ GuanSeq 制造业务核心后端。组织与工作区、客户与物料主数据
 
 ```powershell
 docker compose up -d --wait postgres
+$env:SPRING_PROFILES_ACTIVE = "local"
 .\mvnw.cmd spring-boot:run
 ```
 
@@ -81,7 +82,7 @@ docker compose down
 | `GUANSEQ_DEV_USERNAME` | `lin.hao` | 本地开发用户名 |
 | `GUANSEQ_DEV_PASSWORD` | `guanseq_dev` | 本地开发密码 |
 
-正式环境必须显式注入数据库凭据，不使用本地默认密码。
+正式环境必须显式注入数据库凭据，不使用本地默认密码。应用不再默认激活 `local` Profile；未接入正式身份提供方时，受保护接口保持关闭。
 
 ## 测试
 

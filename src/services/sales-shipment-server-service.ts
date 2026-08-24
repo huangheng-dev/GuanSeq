@@ -25,7 +25,10 @@ export async function getSalesShipmentPageData(pathname: string): Promise<SalesS
     requestGuanSeqApi("/api/v1/sales/shipments?page=0&size=100&status=ALL", requestId),
     requestGuanSeqApi("/api/v1/sales/shipment-reference-data", requestId),
   ]);
-  if (!shipmentsResponse?.ok || !referencesResponse?.ok) return null;
+  if (!shipmentsResponse) return null;
+  if (shipmentsResponse && !shipmentsResponse.ok) await readApiError(shipmentsResponse, "销售发货台账加载失败");
+  if (!referencesResponse) return null;
+  if (referencesResponse && !referencesResponse.ok) await readApiError(referencesResponse, "销售发货参考数据加载失败");
   return {
     source: "backend",
     shipments: salesShipmentPageSchema.parse(await shipmentsResponse.json()).items,

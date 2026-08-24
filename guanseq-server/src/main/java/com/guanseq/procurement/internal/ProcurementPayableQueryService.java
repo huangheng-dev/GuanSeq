@@ -14,9 +14,11 @@ import com.guanseq.procurement.api.ProcurementPayableQueryProvider;
 class ProcurementPayableQueryService implements ProcurementPayableQueryProvider {
 
 	private final PurchaseOrderRepository orderRepository;
+	private final SupplierRepository supplierRepository;
 
-	ProcurementPayableQueryService(PurchaseOrderRepository orderRepository) {
+	ProcurementPayableQueryService(PurchaseOrderRepository orderRepository, SupplierRepository supplierRepository) {
 		this.orderRepository = orderRepository;
+		this.supplierRepository = supplierRepository;
 	}
 
 	@Override
@@ -29,6 +31,13 @@ class ProcurementPayableQueryService implements ProcurementPayableQueryProvider 
 	@Transactional(readOnly = true)
 	public Optional<PayableOrder> findReceivedOrder(UUID tenantOrganizationId, UUID purchaseOrderId) {
 		return orderRepository.findReceivedOrder(purchaseOrderId, tenantOrganizationId).map(this::toOrder);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public Optional<SupplierReference> findActiveSupplier(UUID tenantOrganizationId, UUID supplierId) {
+		return supplierRepository.findByIdAndTenantOrganizationIdAndStatus(supplierId, tenantOrganizationId, "ACTIVE")
+				.map(s -> new SupplierReference(s.getId(), s.getCode(), s.getName()));
 	}
 
 	private PayableOrder toOrder(PurchaseOrderEntity order) {

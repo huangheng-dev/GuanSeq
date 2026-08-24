@@ -8,9 +8,11 @@ import {
   receivableInvoiceRecordSchema,
   receivableReferenceDataSchema,
   type ReceivableCreditNoteRecord,
+  type Advance,
   type ReceivableInvoiceRecord,
 } from "@/lib/contracts";
 import { GuanSeqApiError, readApiError, requestGuanSeqApi } from "@/services/guanseq-api-server";
+import { listAdvances } from "./advance-server-service";
 
 const paths = new Set(["/finance/receivables", "/finance/sales-settlement/invoicing", "/finance/sales-settlement/receipts"]);
 
@@ -18,6 +20,7 @@ export type ReceivablePageData = {
   source: "backend";
   invoices: ReceivableInvoiceRecord[];
   references: ReturnType<typeof receivableReferenceDataSchema.parse>;
+  advances: Advance[];
 };
 
 export type CreateReceivableInvoicePayload = {
@@ -25,6 +28,7 @@ export type CreateReceivableInvoicePayload = {
   invoiceDate: string;
   dueDate: string;
   lines: Array<{ salesOrderLineId: string; invoiceQuantity: number }>;
+  advanceId?: string | null;
 };
 
 export type PostReceivableReceiptPayload = {
@@ -65,15 +69,20 @@ export type ReverseReceivableReceiptPayload = {
 export async function getReceivablePageData(pathname: string): Promise<ReceivablePageData | null> {
   if (!paths.has(pathname)) return null;
   const requestId = `web-receivable-list-${randomUUID()}`;
-  const [invoiceResponse, referenceResponse] = await Promise.all([
+  const [invoiceResponse, referenceResponse, advanceResponse] = await Promise.all([
     requestGuanSeqApi("/api/v1/finance/receivable-invoices?page=0&size=100&status=ALL", requestId),
     requestGuanSeqApi("/api/v1/finance/receivable-reference-data", requestId),
+    listAdvances({ type: "RECEIVABLE", status: "ALL", page: 0, size: 100 }),
   ]);
-  if (!invoiceResponse?.ok || !referenceResponse?.ok) return null;
+  if (!invoiceResponse) return null;
+  if (invoiceResponse && !invoiceResponse.ok) await readApiError(invoiceResponse, "应收发票台账加载失败");
+  if (!referenceResponse) return null;
+  if (referenceResponse && !referenceResponse.ok) await readApiError(referenceResponse, "应收参考数据加载失败");
   return {
     source: "backend",
     invoices: receivableInvoicePageSchema.parse(await invoiceResponse.json()).items,
     references: receivableReferenceDataSchema.parse(await referenceResponse.json()),
+    advances: advanceResponse.items.filter((item) => item.availableBalance > 0),
   };
 }
 
@@ -98,7 +107,8 @@ export async function postReceivableReceipt(payload: PostReceivableReceiptPayloa
 
 export async function listReceivableCreditNotes(requestId: string) {
   const response = await requestGuanSeqApi("/api/v1/finance/receivable-credit-notes?page=0&size=100", requestId);
-  if (!response?.ok) return [];
+  if (!response) return [];
+  if (!response.ok) await readApiError(response, "红字发票列表加载失败");
   return receivableCreditNotePageSchema.parse(await response.json()).items;
 }
 

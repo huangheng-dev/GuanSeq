@@ -16,7 +16,7 @@ export type MasterDataMutationResult = {
 };
 
 export function isBackendMasterDataPath(pathname: string) {
-  return pathname === "/sales/customers/list" || pathname === "/product/materials/list";
+  return pathname === "/sales/customers/list" || pathname === "/product/materials/list" || pathname === "/procurement/suppliers/list";
 }
 
 export async function submitMasterDataMutation(input: MasterDataMutationInput): Promise<MasterDataMutationResult> {

@@ -11,6 +11,7 @@ import {
 const createSchema = z.object({
   salesOrderId: z.string().uuid(), invoiceDate: z.string(), dueDate: z.string(),
   lines: z.array(z.object({ salesOrderLineId: z.string().uuid(), invoiceQuantity: z.number().positive() })).min(1),
+  advanceId: z.string().uuid().nullable().optional(),
 });
 const receiptSchema = z.object({
   invoiceId: z.string().uuid(), expectedVersion: z.number().int().nonnegative(),

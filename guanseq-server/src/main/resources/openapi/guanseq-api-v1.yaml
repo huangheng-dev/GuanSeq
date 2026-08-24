@@ -40,10 +40,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WorkspaceSession"
-        "401":
-          description: 未认证
-        "403":
-          description: 当前用户没有可访问工作区
+        "401": { $ref: "#/components/responses/AuthenticationRequired" }
+        "403": { $ref: "#/components/responses/AccessDenied" }
   /api/v1/me/current-workspace:
     put:
       operationId: switchMyWorkspace
@@ -68,14 +66,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WorkspaceSession"
-        "400":
-          description: 请求数据无效
-        "401":
-          description: 未认证
-        "403":
-          description: 无权访问目标工作区
-        "409":
-          description: 工作区选择版本冲突
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "401": { $ref: "#/components/responses/AuthenticationRequired" }
+        "403": { $ref: "#/components/responses/AccessDenied" }
+        "409": { $ref: "#/components/responses/BusinessConflict" }
   /api/v1/masterdata/customers:
     get:
       operationId: listCustomers
@@ -525,7 +519,7 @@ paths:
               schema: { $ref: "#/components/schemas/ReceivableInvoice" }
         "403": { description: 当前角色无权开票 }
         "409":
-          description: 请求编号/并发冲突，或会计期间已关账（X-Error-Code: PERIOD_CLOSED）
+          description: '请求编号/并发冲突，或会计期间已关账（X-Error-Code: PERIOD_CLOSED）'
           headers:
             X-Period-Label: { description: 已关账期间标签, schema: { type: string } }
             X-Error-Code: { description: 业务错误码, schema: { type: string, enum: [PERIOD_CLOSED] } }
@@ -569,7 +563,7 @@ paths:
               schema: { $ref: "#/components/schemas/ReceivableInvoice" }
         "403": { description: 当前角色无权登记收款 }
         "409":
-          description: 发票版本/请求编号/并发冲突，或会计期间已关账（X-Error-Code: PERIOD_CLOSED）
+          description: '发票版本/请求编号/并发冲突，或会计期间已关账（X-Error-Code: PERIOD_CLOSED）'
           headers:
             X-Period-Label: { description: 已关账期间标签, schema: { type: string } }
             X-Error-Code: { description: 业务错误码, schema: { type: string, enum: [PERIOD_CLOSED] } }
@@ -625,7 +619,7 @@ paths:
               schema: { $ref: "#/components/schemas/ReceivableCreditNote" }
         "403": { description: 当前角色无权开具红字发票 }
         "409":
-          description: 请求编号/并发冲突，或会计期间已关账（X-Error-Code: PERIOD_CLOSED）
+          description: '请求编号/并发冲突，或会计期间已关账（X-Error-Code: PERIOD_CLOSED）'
           headers:
             X-Period-Label: { description: 已关账期间标签, schema: { type: string } }
             X-Error-Code: { description: 业务错误码, schema: { type: string, enum: [PERIOD_CLOSED] } }
@@ -669,7 +663,7 @@ paths:
               schema: { $ref: "#/components/schemas/ReceivableInvoice" }
         "403": { description: 当前角色无权登记退款 }
         "409":
-          description: 发票版本/请求编号/并发冲突，或会计期间已关账（X-Error-Code: PERIOD_CLOSED）
+          description: '发票版本/请求编号/并发冲突，或会计期间已关账（X-Error-Code: PERIOD_CLOSED）'
           headers:
             X-Period-Label: { description: 已关账期间标签, schema: { type: string } }
             X-Error-Code: { description: 业务错误码, schema: { type: string, enum: [PERIOD_CLOSED] } }
@@ -699,7 +693,7 @@ paths:
               schema: { $ref: "#/components/schemas/ReceivableInvoice" }
         "403": { description: 当前角色无权反核销 }
         "409":
-          description: 请求编号/重复反核销/并发冲突，或会计期间已关账（X-Error-Code: PERIOD_CLOSED）
+          description: '请求编号/重复反核销/并发冲突，或会计期间已关账（X-Error-Code: PERIOD_CLOSED）'
           headers:
             X-Period-Label: { description: 已关账期间标签, schema: { type: string } }
             X-Error-Code: { description: 业务错误码, schema: { type: string, enum: [PERIOD_CLOSED] } }
@@ -747,7 +741,7 @@ paths:
               schema: { $ref: "#/components/schemas/PayableInvoice" }
         "403": { description: 当前角色无权登记应付发票 }
         "409":
-          description: 请求编号/供应商发票号/并发冲突，或会计期间已关账（X-Error-Code: PERIOD_CLOSED）
+          description: '请求编号/供应商发票号/并发冲突，或会计期间已关账（X-Error-Code: PERIOD_CLOSED）'
           headers:
             X-Period-Label: { description: 已关账期间标签, schema: { type: string } }
             X-Error-Code: { description: 业务错误码, schema: { type: string, enum: [PERIOD_CLOSED] } }
@@ -791,7 +785,7 @@ paths:
               schema: { $ref: "#/components/schemas/PayableInvoice" }
         "403": { description: 当前角色无权登记付款 }
         "409":
-          description: 发票版本/请求编号/并发冲突，或会计期间已关账（X-Error-Code: PERIOD_CLOSED）
+          description: '发票版本/请求编号/并发冲突，或会计期间已关账（X-Error-Code: PERIOD_CLOSED）'
           headers:
             X-Period-Label: { description: 已关账期间标签, schema: { type: string } }
             X-Error-Code: { description: 业务错误码, schema: { type: string, enum: [PERIOD_CLOSED] } }
@@ -847,7 +841,7 @@ paths:
               schema: { $ref: "#/components/schemas/PayableCreditNote" }
         "403": { description: 当前角色无权开具红字发票 }
         "409":
-          description: 请求编号/并发冲突，或会计期间已关账（X-Error-Code: PERIOD_CLOSED）
+          description: '请求编号/并发冲突，或会计期间已关账（X-Error-Code: PERIOD_CLOSED）'
           headers:
             X-Period-Label: { description: 已关账期间标签, schema: { type: string } }
             X-Error-Code: { description: 业务错误码, schema: { type: string, enum: [PERIOD_CLOSED] } }
@@ -891,7 +885,7 @@ paths:
               schema: { $ref: "#/components/schemas/PayableInvoice" }
         "403": { description: 当前角色无权登记退款 }
         "409":
-          description: 发票版本/请求编号/并发冲突，或会计期间已关账（X-Error-Code: PERIOD_CLOSED）
+          description: '发票版本/请求编号/并发冲突，或会计期间已关账（X-Error-Code: PERIOD_CLOSED）'
           headers:
             X-Period-Label: { description: 已关账期间标签, schema: { type: string } }
             X-Error-Code: { description: 业务错误码, schema: { type: string, enum: [PERIOD_CLOSED] } }
@@ -921,7 +915,7 @@ paths:
               schema: { $ref: "#/components/schemas/PayableInvoice" }
         "403": { description: 当前角色无权反核销 }
         "409":
-          description: 请求编号/重复反核销/并发冲突，或会计期间已关账（X-Error-Code: PERIOD_CLOSED）
+          description: '请求编号/重复反核销/并发冲突，或会计期间已关账（X-Error-Code: PERIOD_CLOSED）'
           headers:
             X-Period-Label: { description: 已关账期间标签, schema: { type: string } }
             X-Error-Code: { description: 业务错误码, schema: { type: string, enum: [PERIOD_CLOSED] } }
@@ -977,7 +971,7 @@ paths:
               schema: { $ref: "#/components/schemas/OrderProfit" }
         "403": { description: 当前角色无权结算订单利润 }
         "409":
-          description: 请求编号/结算并发冲突，或当前会计期间已关账（X-Error-Code: PERIOD_CLOSED）
+          description: '请求编号/结算并发冲突，或当前会计期间已关账（X-Error-Code: PERIOD_CLOSED）'
           headers:
             X-Period-Label:
               description: 已关账的期间标签（如 2026-08），PERIOD_CLOSED 时返回
@@ -1035,7 +1029,7 @@ paths:
         "403": { description: 当前角色无权重算订单利润 }
         "404": { description: 该销售订单尚无可重算的利润快照 }
         "409":
-          description: 乐观锁并发冲突，或当前会计期间已关账（X-Error-Code: PERIOD_CLOSED）
+          description: '乐观锁并发冲突，或当前会计期间已关账（X-Error-Code: PERIOD_CLOSED）'
           headers:
             X-Period-Label:
               description: 已关账的期间标签（如 2026-08），PERIOD_CLOSED 时返回
@@ -2433,12 +2427,220 @@ paths:
         "200":
           description: 生产领料参考数据
           content: { application/json: { schema: { $ref: "#/components/schemas/MaterialIssueReferenceData" } } }
+  /api/v1/finance/advances:
+    get:
+      operationId: listAdvances
+      summary: 分页查询预收预付
+      tags: [Finance]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - { name: type, in: query, schema: { type: string, enum: [RECEIVABLE, PAYABLE] } }
+        - { name: status, in: query, schema: { type: string, default: ALL } }
+        - { name: partyId, in: query, schema: { type: string, format: uuid } }
+        - { $ref: "#/components/parameters/Query" }
+        - { $ref: "#/components/parameters/Page" }
+        - { $ref: "#/components/parameters/Size" }
+      responses:
+        "200":
+          description: 预收预付分页
+          headers: { X-Request-Id: { $ref: "#/components/headers/RequestId" } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdvancePage" }
+    post:
+      operationId: registerAdvance
+      summary: 登记预收或预付款
+      tags: [Finance]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/RequestIdHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateAdvanceRequest" }
+      responses:
+        "200":
+          description: 已登记预收预付
+          headers: { X-Request-Id: { $ref: "#/components/headers/RequestId" } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Advance" }
+        "409":
+          description: '请求编号冲突或会计期间已关账（X-Error-Code: PERIOD_CLOSED）'
+          headers:
+            X-Period-Label: { description: 已关账期间标签, schema: { type: string } }
+            X-Error-Code: { description: 业务错误码, schema: { type: string, enum: [PERIOD_CLOSED] } }
+        "422": { description: 往来单位或日期不满足约束 }
+  /api/v1/finance/advances/{id}:
+    get:
+      operationId: getAdvance
+      summary: 获取预收预付详情（含抵扣和退款记录）
+      tags: [Finance]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/EntityId"
+      responses:
+        "200":
+          description: 预收预付详情
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Advance" }
+        "404": { description: 预收预付不存在或不可见 }
+  /api/v1/finance/advances/{id}/refund:
+    post:
+      operationId: refundAdvance
+      summary: 预收预付退款
+      tags: [Finance]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/EntityId"
+        - $ref: "#/components/parameters/RequestIdHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RefundAdvanceRequest" }
+      responses:
+        "200":
+          description: 已退款
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Advance" }
+        "404": { description: 预收预付不存在或不可见 }
+        "409":
+          description: '状态、金额或会计期间不满足约束（X-Error-Code: PERIOD_CLOSED）'
+          headers:
+            X-Period-Label: { description: 已关账期间标签, schema: { type: string } }
+            X-Error-Code: { description: 业务错误码, schema: { type: string, enum: [PERIOD_CLOSED] } }
+  /api/v1/procurement/suppliers:
+    get:
+      operationId: listSuppliers
+      summary: 分页查询当前租户可见供应商
+      tags: [Procurement]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - { $ref: "#/components/parameters/Query" }
+        - { name: status, in: query, schema: { type: string, default: ALL } }
+        - { $ref: "#/components/parameters/Page" }
+        - { $ref: "#/components/parameters/Size" }
+      responses:
+        "200":
+          description: 供应商分页
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SupplierPage" }
+    post:
+      operationId: createSupplier
+      summary: 新建供应商
+      tags: [Procurement]
+      security: [{ basicAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateSupplierRequest" }
+      responses:
+        "200":
+          description: 已创建供应商
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Supplier" }
+        "403": { description: 当前角色无权维护供应商 }
+        "409": { description: 供应商编码已存在 }
+  /api/v1/procurement/suppliers/{id}:
+    put:
+      operationId: updateSupplier
+      summary: 更新供应商
+      tags: [Procurement]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/EntityId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateSupplierRequest" }
+      responses:
+        "200":
+          description: 已更新供应商
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Supplier" }
+        "403": { description: 当前角色无权维护供应商 }
+        "404": { description: 供应商不存在或不可见 }
+  /api/v1/procurement/suppliers/{id}/actions:
+    post:
+      operationId: changeSupplierStatus
+      summary: 启用或停用供应商
+      tags: [Procurement]
+      security: [{ basicAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/EntityId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SupplierStatusRequest" }
+      responses:
+        "200":
+          description: 已更新供应商状态
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Supplier" }
+        "403": { description: 当前角色无权维护供应商 }
+        "404": { description: 供应商不存在或不可见 }
+        "409": { description: 供应商状态未变化或已被引用 }
+
 components:
   securitySchemes:
     basicAuth:
       type: http
       scheme: basic
       description: 仅用于当前本地开发身份适配器，正式身份接入后替换。
+  responses:
+    ValidationFailed:
+      description: 请求格式、字段或参数校验失败
+      headers: { X-Request-Id: { $ref: "#/components/headers/RequestId" } }
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiError" }
+    AuthenticationRequired:
+      description: 尚未完成身份认证
+      headers: { X-Request-Id: { $ref: "#/components/headers/RequestId" } }
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiError" }
+    AccessDenied:
+      description: 当前身份无权访问目标资源或执行目标动作
+      headers: { X-Request-Id: { $ref: "#/components/headers/RequestId" } }
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiError" }
+    ResourceNotFound:
+      description: 目标资源不存在或在当前数据范围内不可见
+      headers: { X-Request-Id: { $ref: "#/components/headers/RequestId" } }
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiError" }
+    BusinessConflict:
+      description: 状态、幂等请求或乐观锁发生业务冲突
+      headers: { X-Request-Id: { $ref: "#/components/headers/RequestId" } }
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiError" }
+    BusinessRuleViolation:
+      description: 请求违反当前业务规则
+      headers: { X-Request-Id: { $ref: "#/components/headers/RequestId" } }
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiError" }
+    InternalError:
+      description: 系统暂时无法完成请求
+      headers: { X-Request-Id: { $ref: "#/components/headers/RequestId" } }
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiError" }
   headers:
     RequestId:
       description: 用于日志和审计追踪的请求编号
@@ -2467,6 +2669,32 @@ components:
       in: query
       schema: { type: integer, minimum: 1, maximum: 200, default: 20 }
   schemas:
+    ApiError:
+      type: object
+      additionalProperties: false
+      required: [code, message, requestId, timestamp, fieldErrors]
+      properties:
+        code:
+          type: string
+          description: 稳定、可供客户端分支处理的错误码
+          examples: [VALIDATION_FAILED]
+        message:
+          type: string
+          description: 可向当前用户展示的错误说明
+        requestId:
+          type: string
+          description: 与响应头、日志及审计关联的请求编号
+        timestamp: { type: string, format: date-time }
+        fieldErrors:
+          type: array
+          items: { $ref: "#/components/schemas/FieldViolation" }
+    FieldViolation:
+      type: object
+      additionalProperties: false
+      required: [field, message]
+      properties:
+        field: { type: string }
+        message: { type: string }
     PlatformStatus:
       type: object
       additionalProperties: false
@@ -5032,13 +5260,6 @@ components:
               owner: { type: [string, "null"] }
         warehouses: { type: array, items: { $ref: "#/components/schemas/WarehouseOption" } }
         locations: { type: array, items: { $ref: "#/components/schemas/WarehouseLocationOption" } }
-    WarehouseOption:
-      type: object
-      required: [id, code, name]
-      properties:
-        id: { type: string, format: uuid }
-        code: { type: string }
-        name: { type: string }
     WarehouseLocationOption:
       type: object
       required: [id, warehouseId, code, name, locationType]
@@ -5049,3 +5270,119 @@ components:
         name: { type: string }
         locationType: { type: string }
 
+    AdvancePage:
+      allOf:
+        - $ref: "#/components/schemas/PageMetadata"
+        - type: object
+          required: [items]
+          properties:
+            items: { type: array, items: { $ref: "#/components/schemas/Advance" } }
+    Advance:
+      type: object
+      required: [id, advanceNumber, type, partyType, partyId, partyCode, partyName, currency, advanceDate, totalAmount, appliedAmount, refundedAmount, availableBalance, status, version, createdAt, applications, refunds]
+      properties:
+        id: { type: string, format: uuid }
+        advanceNumber: { type: string }
+        type: { type: string, enum: [RECEIVABLE, PAYABLE] }
+        partyType: { type: string, enum: [CUSTOMER, SUPPLIER] }
+        partyId: { type: string, format: uuid }
+        partyCode: { type: string }
+        partyName: { type: string }
+        currency: { type: string }
+        advanceDate: { type: string, format: date }
+        totalAmount: { type: number, exclusiveMinimum: 0 }
+        appliedAmount: { type: number, minimum: 0 }
+        refundedAmount: { type: number, minimum: 0 }
+        availableBalance: { type: number, minimum: 0 }
+        status: { type: string, enum: [OPEN, PARTIALLY_USED, CLOSED] }
+        note: { type: [string, "null"], maxLength: 500 }
+        version: { type: integer, format: int64 }
+        createdAt: { type: string, format: date-time }
+        applications:
+          type: array
+          items: { $ref: "#/components/schemas/AdvanceApplication" }
+        refunds:
+          type: array
+          items: { $ref: "#/components/schemas/AdvanceRefund" }
+    AdvanceApplication:
+      type: object
+      required: [id, invoiceId, invoiceNumber, appliedAmount, applicationDate, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        invoiceId: { type: string, format: uuid }
+        invoiceNumber: { type: string }
+        appliedAmount: { type: number, exclusiveMinimum: 0 }
+        applicationDate: { type: string, format: date }
+        createdAt: { type: string, format: date-time }
+    AdvanceRefund:
+      type: object
+      required: [id, refundAmount, refundDate, reason, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        refundAmount: { type: number, exclusiveMinimum: 0 }
+        refundDate: { type: string, format: date }
+        reason: { type: string }
+        createdAt: { type: string, format: date-time }
+    CreateAdvanceRequest:
+      type: object
+      additionalProperties: false
+      required: [type, partyId, advanceDate, totalAmount]
+      properties:
+        type: { type: string, enum: [RECEIVABLE, PAYABLE] }
+        partyId: { type: string, format: uuid }
+        advanceDate: { type: string, format: date }
+        totalAmount: { type: number, exclusiveMinimum: 0 }
+        note: { type: [string, "null"], maxLength: 500 }
+    RefundAdvanceRequest:
+      type: object
+      additionalProperties: false
+      required: [refundAmount, refundDate, reason]
+      properties:
+        refundAmount: { type: number, exclusiveMinimum: 0 }
+        refundDate: { type: string, format: date }
+        reason: { type: string, minLength: 4, maxLength: 500 }
+    SupplierPage:
+      allOf:
+        - $ref: "#/components/schemas/PageMetadata"
+        - type: object
+          required: [items]
+          properties:
+            items: { type: array, items: { $ref: "#/components/schemas/Supplier" } }
+    Supplier:
+      type: object
+      required: [id, code, name, status, version, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string }
+        name: { type: string }
+        contactName: { type: [string, "null"] }
+        contactPhone: { type: [string, "null"] }
+        status: { type: string, enum: [ACTIVE, INACTIVE] }
+        version: { type: integer, format: int64, minimum: 0 }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    CreateSupplierRequest:
+      type: object
+      additionalProperties: false
+      required: [code, name]
+      properties:
+        code: { type: string, maxLength: 40 }
+        name: { type: string, maxLength: 160 }
+        contactName: { type: [string, "null"], maxLength: 80 }
+        contactPhone: { type: [string, "null"], maxLength: 40 }
+    UpdateSupplierRequest:
+      type: object
+      additionalProperties: false
+      required: [name, expectedVersion]
+      properties:
+        name: { type: string, maxLength: 160 }
+        contactName: { type: [string, "null"], maxLength: 80 }
+        contactPhone: { type: [string, "null"], maxLength: 40 }
+        expectedVersion: { type: integer, format: int64, minimum: 0 }
+    SupplierStatusRequest:
+      type: object
+      additionalProperties: false
+      required: [status, expectedVersion]
+      properties:
+        status: { type: string, enum: [ACTIVE, INACTIVE] }
+        expectedVersion: { type: integer, format: int64, minimum: 0 }

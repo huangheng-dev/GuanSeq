@@ -51,13 +51,15 @@ public class ReceivableApplicationService {
 	private final ReceivableEventRepository eventRepository;
 	private final AccountingPeriodGuard periodGuard;
 	private final OrderProfitApplicationService orderProfitService;
+	private final AdvanceApplicationService advanceService;
 	private final JdbcTemplate jdbcTemplate;
 
 	ReceivableApplicationService(CurrentWorkspaceProvider workspaceProvider, SalesReceivableQueryProvider salesProvider,
 			ReceivableInvoiceRepository invoiceRepository, ReceivableReceiptRepository receiptRepository,
 			ReceivableCreditNoteRepository creditNoteRepository, ReceivableReversalRepository reversalRepository,
 			ReceivableEventRepository eventRepository, AccountingPeriodGuard periodGuard,
-			OrderProfitApplicationService orderProfitService, JdbcTemplate jdbcTemplate) {
+			OrderProfitApplicationService orderProfitService, AdvanceApplicationService advanceService,
+			JdbcTemplate jdbcTemplate) {
 		this.workspaceProvider = workspaceProvider;
 		this.salesProvider = salesProvider;
 		this.invoiceRepository = invoiceRepository;
@@ -67,6 +69,7 @@ public class ReceivableApplicationService {
 		this.eventRepository = eventRepository;
 		this.periodGuard = periodGuard;
 		this.orderProfitService = orderProfitService;
+		this.advanceService = advanceService;
 		this.jdbcTemplate = jdbcTemplate;
 	}
 
@@ -145,6 +148,23 @@ public class ReceivableApplicationService {
 							"orderNumber", order.orderNumber(), "grossAmount", invoice.getGrossAmount())));
 		} catch (DataIntegrityViolationException exception) {
 			throw new ResponseStatusException(HttpStatus.CONFLICT, "开票请求与已有业务事实冲突，请刷新后确认", exception);
+		}
+		// 开票时抵扣预收
+		AdvanceApplicationService.AdvanceApplicationResult advanceResult = advanceService.applyAdvance(access,
+				"RECEIVABLE", order.customerId(), invoice.getId(), invoice.getInvoiceNumber(),
+				invoice.getGrossAmount(), request.advanceId(), request.invoiceDate());
+		if (advanceResult != null && advanceResult.appliedAmount().signum() > 0) {
+			BigDecimal applied = advanceResult.appliedAmount();
+			String fromStatus = invoice.getStatus();
+			ReceivableReceiptEntity advanceReceipt = invoice.applyReceipt("ADV-" + invoice.getInvoiceNumber(),
+					applied, request.invoiceDate(), "OTHER", null,
+					"预收抵扣：" + advanceResult.advanceNumber(), requestId, access.userId());
+			invoiceRepository.saveAndFlush(invoice);
+			eventRepository.saveAndFlush(new ReceivableEventEntity(access.tenantOrganizationId(), access.workspaceId(),
+					access.userId(), invoice.getId(), advanceReceipt.getId(), "POST_RECEIPT",
+					fromStatus, invoice.getStatus(), requestId,
+					Map.of("receiptNumber", advanceReceipt.getReceiptNumber(), "amount", applied,
+							"advanceId", advanceResult.advanceId(), "outstandingAmount", invoice.outstandingAmount())));
 		}
 		return toRecord(invoice);
 	}

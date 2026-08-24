@@ -15,6 +15,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import jakarta.persistence.EntityManager;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -35,18 +37,23 @@ class PlanningMrpRunIntegrationTest {
 
 	private final MockMvc mockMvc;
 	private final JdbcTemplate jdbcTemplate;
+	private final EntityManager entityManager;
 
-	PlanningMrpRunIntegrationTest(@Autowired WebApplicationContext context, @Autowired JdbcTemplate jdbcTemplate) {
+	PlanningMrpRunIntegrationTest(@Autowired WebApplicationContext context, @Autowired JdbcTemplate jdbcTemplate, @Autowired EntityManager entityManager) {
 		this.mockMvc = MockMvcBuilders.webAppContextSetup(context)
 				.addFilters(context.getBean(RequestIdFilter.class))
 				.apply(springSecurity())
 				.build();
 		this.jdbcTemplate = jdbcTemplate;
+		this.entityManager = entityManager;
 	}
 
 	@Test
+	@Transactional
 	void freezesSupplyAndCompletesTimePhasedNettingWhenFactsAreReady() throws Exception {
 		LocalDate today = LocalDate.now();
+		jdbcTemplate.update("update planning.independent_demands set required_date = ? where id = cast(? as uuid)",
+				today, "53000000-0000-4000-8000-000000000001");
 		MvcResult created = mockMvc.perform(post("/api/v1/planning/mrp-runs")
 					.with(httpBasic(USERNAME, PASSWORD))
 					.header("X-Request-Id", "mrp-ready-check-0001")
@@ -84,6 +91,7 @@ class PlanningMrpRunIntegrationTest {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.id").value(runId));
 
+		entityManager.flush();
 		Integer snapshots = jdbcTemplate.queryForObject(
 				"select count(*) from planning.mrp_run_demands where run_id = cast(? as uuid)", Integer.class, runId);
 		Integer events = jdbcTemplate.queryForObject(

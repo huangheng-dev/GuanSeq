@@ -52,7 +52,7 @@ const mockGlobalSearchIndex: GlobalSearchItem[] = [
   { type: "BOM", title: "BOM-GS800-V3.2", detail: "GS-800 伺服驱动控制柜 · 68项", keywords: ["BOM", "GS-800", "V3.2"], href: "/product/boms/list" },
   { type: "采购订单", title: "PO-260814-026", detail: "华轴精工 · BR-6204 · 待交付", keywords: ["采购", "华轴", "BR-6204"], href: "/procurement/orders" },
   { type: "生产工单", title: "MO-260814-012", detail: "精密传动模组 PM-45 · 有风险", keywords: ["工单", "PM-45", "创驰装备"], href: "/production/orders/list" },
-  { type: "库存批次", title: "LOT-260731-08", detail: "BR-6204 · 原材料仓 · 合格", keywords: ["批次", "BR-6204", "库存"], href: "/warehouse/inventory/lots-serials" },
+  { type: "库存批次", title: "LOT-260731-08", detail: "BR-6204 · 原材料仓 · 合格", keywords: ["批次", "BR-6204", "库存"], href: "/warehouse/lot-serial" },
   { type: "质量问题", title: "NCR-260814-002", detail: "BR-6204 异响 · 32件待隔离", keywords: ["不合格", "异响", "BR-6204"], href: "/quality/nonconformance/reviews" },
   { type: "设备", title: "CNC-07", detail: "机加车间 · 设备异常", keywords: ["设备", "CNC", "机加"], href: "/equipment/assets" },
 ];

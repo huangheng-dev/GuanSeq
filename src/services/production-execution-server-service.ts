@@ -46,7 +46,12 @@ export async function getProductionExecutionPageData(pathname: string): Promise<
     requestGuanSeqApi("/api/v1/production/orders?page=0&size=100&status=ALL", requestId),
     requestGuanSeqApi("/api/v1/warehouse/inventory-reference-data", requestId),
   ]);
-  if (!reportsResponse?.ok || !ordersResponse?.ok || !referencesResponse?.ok) return null;
+  if (!reportsResponse) return null;
+  if (reportsResponse && !reportsResponse.ok) await readApiError(reportsResponse, "生产报工台账加载失败");
+  if (!ordersResponse) return null;
+  if (ordersResponse && !ordersResponse.ok) await readApiError(ordersResponse, "生产订单参考数据加载失败");
+  if (!referencesResponse) return null;
+  if (referencesResponse && !referencesResponse.ok) await readApiError(referencesResponse, "报工参考数据加载失败");
   return {
     source: "backend",
     reports: productionWorkReportPageSchema.parse(await reportsResponse.json()).items,
@@ -58,7 +63,8 @@ export async function getProductionExecutionPageData(pathname: string): Promise<
 export async function getFinalInspectionPageData(pathname: string): Promise<FinalInspectionPageData | null> {
   if (pathname !== "/quality/final") return null;
   const response = await requestGuanSeqApi("/api/v1/quality/final-inspections?page=0&size=100&status=ALL", `web-final-quality-${randomUUID()}`);
-  if (!response?.ok) return null;
+  if (!response) return null;
+  if (!response.ok) await readApiError(response, "完工检验台账加载失败");
   return { source: "backend", inspections: finalInspectionPageSchema.parse(await response.json()).items };
 }
 

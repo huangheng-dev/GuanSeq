@@ -20,7 +20,10 @@ export async function getPurchaseReceiptPageData(pathname: string): Promise<Purc
     requestGuanSeqApi("/api/v1/procurement/receipts?page=0&size=100&status=ALL", requestId),
     requestGuanSeqApi("/api/v1/procurement/receipt-reference-data", requestId),
   ]);
-  if (!receiptsResponse?.ok || !referencesResponse?.ok) return null;
+  if (!receiptsResponse) return null;
+  if (receiptsResponse && !receiptsResponse.ok) await readApiError(receiptsResponse, "采购收货台账加载失败");
+  if (!referencesResponse) return null;
+  if (referencesResponse && !referencesResponse.ok) await readApiError(referencesResponse, "采购收货参考数据加载失败");
   return {
     source: "backend",
     receipts: purchaseReceiptPageSchema.parse(await receiptsResponse.json()).items,

@@ -7,7 +7,8 @@ export type PlanningParameterPageData = { source: "backend"; parameters: Materia
 export async function getPlanningParameterPageData(pathname: string): Promise<PlanningParameterPageData | null> {
   if (pathname !== "/planning/parameters") return null;
   const response = await requestGuanSeqApi("/api/v1/planning/material-parameters?page=0&size=100", `web-planning-parameters-${randomUUID()}`);
-  if (!response?.ok) return null;
+  if (!response) return null;
+  if (!response.ok) await readApiError(response, "物料计划参数加载失败");
   return { source: "backend", parameters: materialPlanningParameterPageSchema.parse(await response.json()).items };
 }
 export async function updatePlanningParameter(materialId: string, leadTimeDays: number, expectedVersion: number, requestId: string) {

@@ -16,7 +16,10 @@ export async function getMrpSuggestionPageData(pathname: string): Promise<MrpSug
     requestGuanSeqApi("/api/v1/planning/mrp-suggestions?page=0&size=100&status=ALL&type=ALL", requestId),
     requestGuanSeqApi("/api/v1/procurement/order-reference-data", requestId),
   ]);
-  if (!suggestionsResponse?.ok || !referencesResponse?.ok) return null;
+  if (!suggestionsResponse) return null;
+  if (suggestionsResponse && !suggestionsResponse.ok) await readApiError(suggestionsResponse, "MRP 建议加载失败");
+  if (!referencesResponse) return null;
+  if (referencesResponse && !referencesResponse.ok) await readApiError(referencesResponse, "MRP 参考数据加载失败");
   return {
     source: "backend",
     suggestions: mrpSuggestionPageSchema.parse(await suggestionsResponse.json()).items,

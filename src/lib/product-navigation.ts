@@ -75,7 +75,7 @@ export const productAreas: ProductArea[] = [
   {
     id: "procurement", slug: "procurement", label: "采购与供应", icon: "local_shipping", capability: "SCM",
     description: "供应商、采购需求、订单、到货与委外协同",
-    modules: [moduleItem("供应商", "suppliers"), moduleItem("采购申请", "requisitions"), moduleItem("询价比价", "sourcing", [child("询价单", "inquiries"), child("比价决策", "comparisons")]), moduleItem("采购合同", "contracts"), moduleItem("采购价格", "pricing"), moduleItem("采购订单", "orders"), moduleItem("委外加工", "subcontracts"), moduleItem("到货协同", "receipts"), moduleItem("采购退货", "returns"), moduleItem("供应商协同", "supplier-collaboration", undefined, "已规划"), moduleItem("供应商绩效", "supplier-performance")],
+    modules: [moduleItem("供应商", "suppliers", [child("供应商列表", "list")]), moduleItem("采购申请", "requisitions"), moduleItem("询价比价", "sourcing", [child("询价单", "inquiries"), child("比价决策", "comparisons")]), moduleItem("采购合同", "contracts"), moduleItem("采购价格", "pricing"), moduleItem("采购订单", "orders"), moduleItem("委外加工", "subcontracts"), moduleItem("到货协同", "receipts"), moduleItem("采购退货", "returns"), moduleItem("供应商协同", "supplier-collaboration", undefined, "已规划"), moduleItem("供应商绩效", "supplier-performance")],
   },
   {
     id: "warehouse", slug: "warehouse", label: "仓储物流", icon: "inventory_2", capability: "WMS",
@@ -124,7 +124,7 @@ export const productAreas: ProductArea[] = [
   {
     id: "finance", slug: "finance", label: "成本与结算", icon: "account_balance_wallet", capability: "ERP",
     description: "销售与采购结算、应收应付、材料与制造成本、订单利润",
-    modules: [moduleItem("应收管理", "receivables"), moduleItem("销售开票与收款", "sales-settlement", [child("销售开票", "invoicing"), child("收款核销", "receipts"), child("客户对账", "reconciliation")]), moduleItem("应付管理", "payables"), moduleItem("采购发票与付款", "purchase-settlement", [child("采购发票", "invoices"), child("付款核销", "payments"), child("供应商对账", "reconciliation"), child("暂估应付", "grir-accruals")]), moduleItem("会计期间", "accounting-periods", undefined, "已启用"), moduleItem("标准成本", "standard-costs"), moduleItem("材料成本", "material-costs"), moduleItem("制造成本", "manufacturing-costs"), moduleItem("实际成本", "actual-costs"), moduleItem("成本差异", "cost-variances"), moduleItem("订单利润", "order-profit"), moduleItem("总账税务", "general-ledger", undefined, "已规划")],
+    modules: [moduleItem("应收管理", "receivables"), moduleItem("销售开票与收款", "sales-settlement", [child("销售开票", "invoicing"), child("收款核销", "receipts"), child("客户对账", "reconciliation")]), moduleItem("应付管理", "payables"), moduleItem("采购发票与付款", "purchase-settlement", [child("采购发票", "invoices"), child("付款核销", "payments"), child("供应商对账", "reconciliation"), child("暂估应付", "grir-accruals")]), moduleItem("会计期间", "accounting-periods", undefined, "已启用"), moduleItem("预收预付", "advances", undefined, "已启用"), moduleItem("标准成本", "standard-costs"), moduleItem("材料成本", "material-costs"), moduleItem("制造成本", "manufacturing-costs"), moduleItem("实际成本", "actual-costs"), moduleItem("成本差异", "cost-variances"), moduleItem("订单利润", "order-profit"), moduleItem("总账税务", "general-ledger", undefined, "已规划")],
   },
   {
     id: "analytics", slug: "analytics", label: "数据分析", icon: "monitoring", capability: "BI",

@@ -50,12 +50,14 @@ public class PayableApplicationService {
 	private final PayableReversalRepository reversalRepository;
 	private final PayableEventRepository eventRepository;
 	private final AccountingPeriodGuard periodGuard;
+	private final AdvanceApplicationService advanceService;
 	private final JdbcTemplate jdbcTemplate;
 
 	PayableApplicationService(CurrentWorkspaceProvider workspaceProvider, ProcurementPayableQueryProvider procurementProvider,
 			PayableInvoiceRepository invoiceRepository, PayablePaymentRepository paymentRepository,
 			PayableCreditNoteRepository creditNoteRepository, PayableReversalRepository reversalRepository,
-			PayableEventRepository eventRepository, AccountingPeriodGuard periodGuard, JdbcTemplate jdbcTemplate) {
+			PayableEventRepository eventRepository, AccountingPeriodGuard periodGuard,
+			AdvanceApplicationService advanceService, JdbcTemplate jdbcTemplate) {
 		this.workspaceProvider = workspaceProvider;
 		this.procurementProvider = procurementProvider;
 		this.invoiceRepository = invoiceRepository;
@@ -64,6 +66,7 @@ public class PayableApplicationService {
 		this.reversalRepository = reversalRepository;
 		this.eventRepository = eventRepository;
 		this.periodGuard = periodGuard;
+		this.advanceService = advanceService;
 		this.jdbcTemplate = jdbcTemplate;
 	}
 
@@ -146,6 +149,23 @@ public class PayableApplicationService {
 							"purchaseOrderId", order.id(), "orderNumber", order.orderNumber(), "grossAmount", invoice.getGrossAmount())));
 		} catch (DataIntegrityViolationException exception) {
 			throw new ResponseStatusException(HttpStatus.CONFLICT, "应付发票请求或供应商发票号与已有业务事实冲突，请刷新后确认", exception);
+		}
+		// 开票时抵扣预付
+		AdvanceApplicationService.AdvanceApplicationResult advanceResult = advanceService.applyAdvance(access,
+				"PAYABLE", order.supplierId(), invoice.getId(), invoice.getInvoiceNumber(),
+				invoice.getGrossAmount(), request.advanceId(), request.invoiceDate());
+		if (advanceResult != null && advanceResult.appliedAmount().signum() > 0) {
+			BigDecimal applied = advanceResult.appliedAmount();
+			String fromStatus = invoice.getStatus();
+			PayablePaymentEntity advancePayment = invoice.applyPayment("ADP-" + invoice.getInvoiceNumber(),
+					applied, request.invoiceDate(), "OTHER", null,
+					"预付抵扣：" + advanceResult.advanceNumber(), requestId, access.userId());
+			invoiceRepository.saveAndFlush(invoice);
+			eventRepository.saveAndFlush(new PayableEventEntity(access.tenantOrganizationId(), access.workspaceId(),
+					access.userId(), invoice.getId(), advancePayment.getId(), "POST_PAYMENT",
+					fromStatus, invoice.getStatus(), requestId,
+					Map.of("paymentNumber", advancePayment.getPaymentNumber(), "amount", applied,
+							"advanceId", advanceResult.advanceId(), "outstandingAmount", invoice.outstandingAmount())));
 		}
 		return toRecord(invoice);
 	}

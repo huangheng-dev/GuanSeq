@@ -24,6 +24,8 @@ import { getReceivablePageData } from "@/services/receivable-server-service";
 import { getPayablePageData } from "@/services/payable-server-service";
 import { getAccountingPeriodPageData } from "@/services/accounting-period-page-server-service";
 import { getGrirAccrualPageData } from "@/services/grir-accrual-page-server-service";
+import { getAdvancePageData } from "@/services/advance-page-server-service";
+import { isBackendPageUnavailable } from "@/lib/backend-page-registry";
 
 type RoutePageProps = {
   params: Promise<{ segments: string[] }>;
@@ -32,7 +34,7 @@ type RoutePageProps = {
 export default async function RoutePage({ params }: RoutePageProps) {
   const { segments } = await params;
   const pathname = `/${segments.join("/")}`;
-  const [snapshot, pageModel, searchIndex, salesOrderPage, planningDemandPage, mrpRunPage, mrpSuggestionPage, bomPage, routingPage, inventoryPage, procurementPage, planningParameterPage, productionOrderPage, productionExecutionPage, finalInspectionPage, materialIssuePage, operationTaskPage, purchaseReceiptPage, incomingInspectionPage, salesShipmentPage, orderProfitPage, receivablePage, payablePage, accountingPeriodPage, grirAccrualPage] = await Promise.all([
+  const [snapshot, pageModel, searchIndex, salesOrderPage, planningDemandPage, mrpRunPage, mrpSuggestionPage, bomPage, routingPage, inventoryPage, procurementPage, planningParameterPage, productionOrderPage, productionExecutionPage, finalInspectionPage, materialIssuePage, operationTaskPage, purchaseReceiptPage, incomingInspectionPage, salesShipmentPage, orderProfitPage, receivablePage, payablePage, accountingPeriodPage, grirAccrualPage, advancePage] = await Promise.all([
     getManufacturingSnapshot(),
     getBusinessPageWithData(pathname),
     getGlobalSearchIndex(),
@@ -58,8 +60,35 @@ export default async function RoutePage({ params }: RoutePageProps) {
     getPayablePageData(pathname),
     getAccountingPeriodPageData(pathname),
     getGrirAccrualPageData(pathname),
+    getAdvancePageData(pathname),
   ]);
   if (!pageModel) notFound();
-  return <ManufacturingWorkspace initialSnapshot={snapshot} initialPageModel={pageModel} initialSearchIndex={searchIndex} initialSalesOrderPage={salesOrderPage} initialPlanningDemandPage={planningDemandPage} initialMrpRunPage={mrpRunPage} initialMrpSuggestionPage={mrpSuggestionPage} initialBomPage={bomPage} initialRoutingPage={routingPage} initialInventoryPage={inventoryPage} initialProcurementPage={procurementPage} initialPlanningParameterPage={planningParameterPage} initialProductionOrderPage={productionOrderPage} initialProductionExecutionPage={productionExecutionPage} initialFinalInspectionPage={finalInspectionPage} initialMaterialIssuePage={materialIssuePage} initialOperationTaskPage={operationTaskPage} initialPurchaseReceiptPage={purchaseReceiptPage} initialIncomingInspectionPage={incomingInspectionPage} initialSalesShipmentPage={salesShipmentPage} initialOrderProfitPage={orderProfitPage} initialReceivablePage={receivablePage} initialPayablePage={payablePage} initialAccountingPeriodPage={accountingPeriodPage} initialGrirAccrualPage={grirAccrualPage} />;
+  const backendPageUnavailable = isBackendPageUnavailable(pathname, {
+    masterData: pageModel.dataSource === "backend" ? pageModel : null,
+    salesOrder: salesOrderPage,
+    salesShipment: salesShipmentPage,
+    planningDemand: planningDemandPage,
+    mrpRun: mrpRunPage,
+    mrpSuggestion: mrpSuggestionPage,
+    planningParameter: planningParameterPage,
+    bom: bomPage,
+    routing: routingPage,
+    inventory: inventoryPage,
+    materialIssue: materialIssuePage,
+    procurementOrder: procurementPage,
+    purchaseReceipt: purchaseReceiptPage,
+    productionOrder: productionOrderPage,
+    operationTask: operationTaskPage,
+    productionExecution: productionExecutionPage,
+    finalInspection: finalInspectionPage,
+    incomingInspection: incomingInspectionPage,
+    orderProfit: orderProfitPage,
+    receivable: receivablePage,
+    payable: payablePage,
+    accountingPeriod: accountingPeriodPage,
+    grirAccrual: grirAccrualPage,
+    advance: advancePage,
+  });
+  return <ManufacturingWorkspace backendPageUnavailable={backendPageUnavailable} initialSnapshot={snapshot} initialPageModel={pageModel} initialSearchIndex={searchIndex} initialSalesOrderPage={salesOrderPage} initialPlanningDemandPage={planningDemandPage} initialMrpRunPage={mrpRunPage} initialMrpSuggestionPage={mrpSuggestionPage} initialBomPage={bomPage} initialRoutingPage={routingPage} initialInventoryPage={inventoryPage} initialProcurementPage={procurementPage} initialPlanningParameterPage={planningParameterPage} initialProductionOrderPage={productionOrderPage} initialProductionExecutionPage={productionExecutionPage} initialFinalInspectionPage={finalInspectionPage} initialMaterialIssuePage={materialIssuePage} initialOperationTaskPage={operationTaskPage} initialPurchaseReceiptPage={purchaseReceiptPage} initialIncomingInspectionPage={incomingInspectionPage} initialSalesShipmentPage={salesShipmentPage} initialOrderProfitPage={orderProfitPage} initialReceivablePage={receivablePage} initialPayablePage={payablePage} initialAccountingPeriodPage={accountingPeriodPage} initialGrirAccrualPage={grirAccrualPage} initialAdvancePage={advancePage} />;
 }
 

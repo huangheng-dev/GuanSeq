@@ -10,6 +10,7 @@ import {
   submitReversePayablePayment,
 } from "@/services/payable-client-service";
 import type { PayablePageData } from "@/services/payable-server-service";
+import { fetchAdvances } from "@/services/advance-client-service";
 import { MaterialIcon } from "./material-icon";
 import { RoundedSelect } from "./rounded-select";
 const statusLabels = { OPEN: "待付款", PARTIALLY_PAID: "部分付款", PAID: "已付讫", CREDIT_PENDING: "待退款", SETTLED: "已结清" } as const;
@@ -29,8 +30,9 @@ function tone(status: PayableInvoiceRecord["status"]) {
   if (status === "CREDIT_PENDING") return "warn";
   return "warn";
 }
-function InvoiceDialog({ orders, initialOrderId, onClose, onSaved }: {
+function InvoiceDialog({ orders, advances, initialOrderId, onClose, onSaved }: {
     orders: PayableReferenceData["orders"];
+    advances: PayablePageData["advances"];
     initialOrderId?: string;
     onClose: () => void;
     onSaved: (invoice: PayableInvoiceRecord) => void;
@@ -42,7 +44,15 @@ function InvoiceDialog({ orders, initialOrderId, onClose, onSaved }: {
     const [invoiceDate, setInvoiceDate] = useState(today());
     const [dueDate, setDueDate] = useState(plusDays(30));
     const [quantities, setQuantities] = useState<Record<string, string>>({});
+    const [advanceId, setAdvanceId] = useState("");
+    const orderAdvances = order ? advances.filter((item) => item.partyId === order.supplierId && item.availableBalance > 0) : [];
     const [pending, setPending] = useState(false);
+    const [prevOrderId, setPrevOrderId] = useState(orderId);
+    if (prevOrderId !== orderId) {
+        setPrevOrderId(orderId);
+        setAdvanceId("");
+        setQuantities({});
+    }
     const [error, setError] = useState("");
     async function submit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
@@ -59,7 +69,7 @@ function InvoiceDialog({ orders, initialOrderId, onClose, onSaved }: {
             return setError("本次开票数量不能超过未开票的已收数量。");
         setPending(true);
         try {
-            onSaved(await submitCreatePayableInvoice({ purchaseOrderId: order.purchaseOrderId, supplierInvoiceNumber: supplierInvoiceNumber.trim(), invoiceDate, dueDate, lines }));
+            onSaved(await submitCreatePayableInvoice({ purchaseOrderId: order.purchaseOrderId, supplierInvoiceNumber: supplierInvoiceNumber.trim(), invoiceDate, dueDate, lines, advanceId: advanceId || null }));
         }
         catch (reason) {
             setError(reason instanceof Error ? reason.message : "采购发票创建失败");
@@ -73,7 +83,8 @@ function InvoiceDialog({ orders, initialOrderId, onClose, onSaved }: {
     <header className="dialogHeader"><span className="dialogTitleMark"><MaterialIcon name="request_quote" size={22}/></span><div><h2>登记采购发票</h2><p>开票上限来自采购订单累计已收数量，税率、币种和单价按订单快照取值。</p></div></header>
     <form onSubmit={submit}>
       <div className="formGrid"><label className="formField formFieldFull"><span>已收货采购订单<em>必填</em></span><RoundedSelect ariaLabel="已收货采购订单" size="field" value={orderId} onValueChange={(value) => { setOrderId(value); setQuantities({}); }} options={available.map((item) => ({ value: item.purchaseOrderId, label: `${item.orderNumber} · ${item.supplierName} · 待开 ${money(item.remainingAmount, item.currency)}` }))}/></label><label className="formField"><span>供应商发票号<em>必填</em></span><GsInput maxLength={80} value={supplierInvoiceNumber} onChange={(event) => setSupplierInvoiceNumber(event.target.value)} placeholder="供应商开具的发票号码"/></label><label className="formField"><span>开票日期<em>必填</em></span><GsInput type="date" value={invoiceDate} onChange={(event) => setInvoiceDate(event.target.value)}/></label><label className="formField"><span>到期日<em>必填</em></span><GsInput type="date" min={invoiceDate} value={dueDate} onChange={(event) => setDueDate(event.target.value)}/></label></div>
-      <div className="dialogLineList">{order?.lines.map((line) => <div className="dialogLineRow" key={line.purchaseOrderLineId}><span><strong>{line.materialCode} · {line.materialName}</strong><small>已发 {line.acceptedQuantity} · 已开 {line.invoicedQuantity} · 剩余 {line.remainingQuantity} {line.unit}</small></span><span><GsInput aria-label={`${line.materialCode}开票数量`} type="number" min="0" max={line.remainingQuantity} step="0.0001" value={quantities[line.purchaseOrderLineId] ?? line.remainingQuantity} onChange={(event) => setQuantities((current) => ({ ...current, [line.purchaseOrderLineId]: event.target.value }))}/><small>{money(line.unitPrice, order.currency)} / {line.unit}</small></span></div>)}</div>
+      <label className="formField formFieldFull"><span>预付抵扣</span><RoundedSelect ariaLabel="选择预付单抵扣" size="field" value={advanceId} onValueChange={setAdvanceId} options={[{ value: "", label: "不使用预付，收票后另行付款" }, ...orderAdvances.map((item) => ({ value: item.id, label: `${item.advanceNumber} · 可用 ${money(item.availableBalance, item.currency)}` }))]}/><small>选择后将在登记采购发票时自动抵扣应付余额，并写入预付核销记录。</small></label>
+        <div className="dialogLineList">{order?.lines.map((line) => <div className="dialogLineRow" key={line.purchaseOrderLineId}><span><strong>{line.materialCode} · {line.materialName}</strong><small>已发 {line.acceptedQuantity} · 已开 {line.invoicedQuantity} · 剩余 {line.remainingQuantity} {line.unit}</small></span><span><GsInput aria-label={`${line.materialCode}开票数量`} type="number" min="0" max={line.remainingQuantity} step="0.0001" value={quantities[line.purchaseOrderLineId] ?? line.remainingQuantity} onChange={(event) => setQuantities((current) => ({ ...current, [line.purchaseOrderLineId]: event.target.value }))}/><small>{money(line.unitPrice, order.currency)} / {line.unit}</small></span></div>)}</div>
       {error ? <p className="formError" role="alert">{error}</p> : null}<footer className="dialogFooter"><span><MaterialIcon name="verified_user" size={17}/>提交后形成财务事实，不直接修改采购订单。</span><div><GsButton htmlType="button" className="secondaryButton" disabled={pending} onClick={onClose}>取消</GsButton><GsButton className="primaryButton" disabled={pending || !available.length} htmlType="submit">{pending ? "开票中..." : "确认开票"}</GsButton></div></footer>
     </form>
   </section></GsModalHost>;
@@ -282,6 +293,7 @@ export function PayableWorkspace({ initialData, pathname }: {
 }) {
     const heading = pagePaths[pathname];
     const [invoices, setInvoices] = useState(initialData.invoices);
+    const [advances, setAdvances] = useState(initialData.advances);
     const [orders, setOrders] = useState(initialData.references.orders);
     const [query, setQuery] = useState("");
     const [status, setStatus] = useState("全部状态");
@@ -340,7 +352,7 @@ export function PayableWorkspace({ initialData, pathname }: {
         setPageSize(nextPageSize);
     }}/></footer>
     </section><div className="ledgerInsight"><MaterialIcon name="fact_check" size={18}/>当前闭环覆盖开票、付款、红字发票、退款与反核销；总账凭证和税务平台对接尚未接入。</div>
-    {creatingFor !== null ? <InvoiceDialog orders={orders} initialOrderId={creatingFor || undefined} onClose={() => setCreatingFor(null)} onSaved={(invoice) => saved(invoice, `${invoice.invoiceNumber} 已开具`)}/> : null}
+    {creatingFor !== null ? <InvoiceDialog orders={orders} advances={advances} initialOrderId={creatingFor || undefined} onClose={() => setCreatingFor(null)} onSaved={(invoice) => { saved(invoice, `${invoice.invoiceNumber} 已开具`); void fetchAdvances({ type: "PAYABLE", size: 100 }).then((page) => setAdvances(page.items)).catch(() => {}); }}/> : null}
     {paying ? <PaymentDialog invoice={paying} onClose={() => setPaying(null)} onSaved={(inv) => replace(inv, `${inv.invoiceNumber} 付款已登记`)}/> : null}
     {crediting ? <CreditNoteDialog invoice={crediting} onClose={() => setCrediting(null)} onSaved={handleCreditNoteSaved}/> : null}
     {refunding ? <RefundDialog invoice={refunding} onClose={() => setRefunding(null)} onSaved={(inv) => replace(inv, `${inv.invoiceNumber} 退款已登记`)}/> : null}

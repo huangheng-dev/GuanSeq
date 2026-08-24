@@ -24,7 +24,10 @@ export async function getSalesOrderPageData(pathname: string): Promise<SalesOrde
     requestGuanSeqApi("/api/v1/sales/orders?page=0&size=100&status=ALL", requestId),
     requestGuanSeqApi("/api/v1/sales/order-reference-data", requestId),
   ]);
-  if (!ordersResponse?.ok || !referencesResponse?.ok) return null;
+  if (!ordersResponse) return null;
+  if (ordersResponse && !ordersResponse.ok) await readApiError(ordersResponse, "销售订单台账加载失败");
+  if (!referencesResponse) return null;
+  if (referencesResponse && !referencesResponse.ok) await readApiError(referencesResponse, "销售订单参考数据加载失败");
   return {
     source: "backend",
     orders: salesOrderPageSchema.parse(await ordersResponse.json()).items,

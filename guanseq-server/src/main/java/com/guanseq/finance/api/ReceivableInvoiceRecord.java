@@ -69,7 +69,8 @@ public record ReceivableInvoiceRecord(
 			@NotNull UUID salesOrderId,
 			@NotNull LocalDate invoiceDate,
 			@NotNull LocalDate dueDate,
-			@NotEmpty @Size(max = 100) List<@Valid LineInput> lines) { }
+			@NotEmpty @Size(max = 100) List<@Valid LineInput> lines,
+			UUID advanceId) { }
 
 	public record LineInput(
 			@NotNull UUID salesOrderLineId,
