@@ -2580,3 +2580,72 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, a:focus-visib
   .workspaceUserTableRow .businessRowActions button { height: 44px; width: 44px; }
   .workspaceRoleBoundary { order: 4; }
 }
+
+/* 设备台账与人工受控运行状态 */
+.equipmentTruthBanner {
+  align-items: center;
+  background: linear-gradient(90deg, #f3f7fa, #fbfcfd);
+  border: 1px solid #d9e3ea;
+  border-left: 3px solid var(--gs-info);
+  display: grid;
+  gap: 12px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  padding: 13px 16px;
+}
+.equipmentTruthBanner > .material-symbols-rounded { color: var(--gs-info); }
+.equipmentTruthBanner strong { color: var(--gs-navy); font-size: 12.5px; }
+.equipmentTruthBanner p { color: var(--gs-ink-muted); font-size: 11.5px; margin: 3px 0 0; }
+.equipmentTruthBanner > span { background: #e6edf3; color: #49647a; font-size: 10.5px; padding: 5px 9px; }
+.businessMetrics .businessMetricdanger { color: var(--gs-danger); }
+.businessMetrics > div:has(.businessMetricdanger)::before { background: var(--gs-danger); }
+.businessStatusdanger { background: #f8e4e1; color: var(--gs-danger); }
+.equipmentFilters { display: flex; gap: 8px; }
+.equipmentFilters > * { min-width: 132px; }
+.equipmentAssetTable { overflow-x: auto; }
+.equipmentAssetTableHeader,
+.equipmentAssetTableRow {
+  align-items: center;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(190px, 1.25fr) minmax(110px, .65fr) minmax(195px, 1.2fr) minmax(155px, .95fr) 76px;
+  min-width: 900px;
+  padding: 0 18px;
+}
+.equipmentAssetTableHeader { background: var(--gs-surface-subtle); border-bottom: 1px solid var(--gs-line); color: var(--gs-ink-muted); font-size: 11px; min-height: 38px; }
+.equipmentAssetTableRow { border-bottom: 1px solid var(--gs-line); min-height: 70px; transition: background .14s ease, box-shadow .14s ease; }
+.equipmentAssetTableRow:hover { background: #f8fafb; box-shadow: inset 3px 0 var(--gs-info); }
+.equipmentAssetTableRow > span:not(.businessRowActions) { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.equipmentAssetTableRow strong { color: #27435c; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.equipmentAssetTableRow small { color: var(--gs-ink-muted); font-size: 10.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.equipmentAssetTableRow .businessStatus { align-self: flex-start; font-style: normal; }
+.equipmentAssetDialog { max-width: 820px; }
+.equipmentActionDialog { max-width: 620px; }
+.equipmentDetailStatus { align-items: center; background: #f5f8fa; display: grid; gap: 8px; grid-template-columns: auto auto minmax(0, 1fr); padding: 14px 24px; }
+.equipmentDetailStatus > span { color: var(--gs-info); font-size: 11px; font-weight: 700; }
+.equipmentDetailStatus > small { color: var(--gs-ink-muted); font-size: 10.5px; justify-self: end; }
+.equipmentActionButtons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.equipmentActionButtons button { display: inline-flex; gap: 6px; }
+.equipmentTimeline li { padding-bottom: 20px; }
+.equipmentTimeline time { max-width: 125px; text-align: right; }
+.equipmentAssetDrawer .workspaceRoleBoundary { margin: 20px 24px; }
+
+@media (max-width: 720px) {
+  .equipmentAssetPage .pageHeadingActions { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+  .equipmentTruthBanner { align-items: start; grid-template-columns: auto minmax(0, 1fr); }
+  .equipmentTruthBanner > span { grid-column: 1 / -1; justify-self: start; }
+  .equipmentAssetPage .businessToolbar { grid-template-columns: minmax(0, 1fr); }
+  .equipmentAssetPage .businessToolbar > .businessSearch,
+  .equipmentAssetPage .businessToolbar > .equipmentFilters { grid-column: 1; min-width: 0; width: 100%; }
+  .equipmentFilters { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+  .equipmentFilters > * { min-width: 0; width: 100%; }
+  .equipmentAssetTable { overflow: visible; }
+  .equipmentAssetTableHeader { display: none; }
+  .equipmentAssetTableRow { align-items: start; gap: 10px; grid-template-columns: minmax(0, 1fr) auto; min-width: 0; padding: 14px; }
+  .equipmentAssetTableRow > span:not(.businessRowActions) { border-top: 1px solid #edf1f4; grid-column: 1 / -1; padding-top: 8px; }
+  .equipmentAssetTableRow > span:first-child { border-top: 0; grid-column: 1; padding-top: 0; }
+  .equipmentAssetTableRow > .businessRowActions { grid-column: 2; grid-row: 1; }
+  .equipmentAssetTableRow .businessRowActions button { height: 44px; width: 44px; }
+  .equipmentDetailStatus { grid-template-columns: auto minmax(0, 1fr); padding: 14px 17px; }
+  .equipmentDetailStatus > small { grid-column: 1 / -1; justify-self: start; }
+  .equipmentTimeline time { grid-column: 2; justify-self: start; text-align: left; }
+}

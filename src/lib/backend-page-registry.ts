@@ -30,6 +30,8 @@ export const backendPageDataKeyByPath = {
   "/finance/accounting-periods": "accountingPeriod",
   "/finance/purchase-settlement/grir-accruals": "grirAccrual",
   "/finance/advances": "advance",
+  "/equipment/assets": "equipmentAsset",
+  "/equipment/status": "equipmentAsset",
 } as const;
 
 export type BackendPageDataKey = (typeof backendPageDataKeyByPath)[keyof typeof backendPageDataKeyByPath];

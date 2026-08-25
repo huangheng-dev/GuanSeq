@@ -36,6 +36,7 @@ public class WorkspaceUserApplicationService {
 			new WorkspaceRoleRecord("PRODUCT_ENGINEER", "产品工程师", "维护并发布 BOM 与工艺路线"),
 			new WorkspaceRoleRecord("PRODUCTION_MANAGER", "生产经理", "维护生产订单、工序、领料、报工和人工审核"),
 			new WorkspaceRoleRecord("PRODUCTION_OPERATOR", "生产操作员", "执行工序、登记人工并提交生产报工"),
+			new WorkspaceRoleRecord("MAINTENANCE_MANAGER", "设备经理", "维护设备台账并执行人工受控运行状态流转"),
 			new WorkspaceRoleRecord("QUALITY_MANAGER", "质量经理", "维护质量结论与质量业务"),
 			new WorkspaceRoleRecord("QUALITY_INSPECTOR", "质量检验员", "提交来料与完工检验结论"),
 			new WorkspaceRoleRecord("WAREHOUSE_MANAGER", "仓储经理", "执行收发、领退料和库存事务"),

@@ -74,6 +74,7 @@ export const workspaceRoleCodeSchema = z.enum([
   "PRODUCT_ENGINEER",
   "PRODUCTION_MANAGER",
   "PRODUCTION_OPERATOR",
+  "MAINTENANCE_MANAGER",
   "QUALITY_MANAGER",
   "QUALITY_INSPECTOR",
   "WAREHOUSE_MANAGER",
@@ -113,6 +114,49 @@ export const workspaceUserPageSchema = z.object({
   page: z.number().int().nonnegative(),
   size: z.number().int().positive(),
   totalPages: z.number().int().nonnegative(),
+});
+
+export const equipmentAssetCategorySchema = z.enum(["PRODUCTION", "QUALITY", "UTILITY", "LOGISTICS", "OTHER"]);
+export const equipmentOperatingStatusSchema = z.enum(["IDLE", "RUNNING", "DOWN", "MAINTENANCE", "INACTIVE"]);
+export const equipmentAssetActionSchema = z.enum(["START", "STOP", "REPORT_BREAKDOWN", "START_MAINTENANCE", "COMPLETE_MAINTENANCE", "INACTIVATE"]);
+export const equipmentAssetEventSchema = z.object({
+  id: z.string().uuid(),
+  actorUserId: z.string().uuid(),
+  action: z.enum(["CREATED", "UPDATED", "STARTED", "STOPPED", "BREAKDOWN_REPORTED", "MAINTENANCE_STARTED", "MAINTENANCE_COMPLETED", "INACTIVATED"]),
+  fromStatus: equipmentOperatingStatusSchema.nullable(),
+  toStatus: equipmentOperatingStatusSchema,
+  reason: z.string(),
+  requestId: z.string(),
+  details: z.record(z.string(), z.unknown()),
+  occurredAt: z.string().datetime(),
+});
+export const equipmentAssetSchema = z.object({
+  id: z.string().uuid(),
+  assetCode: z.string(),
+  assetName: z.string(),
+  category: equipmentAssetCategorySchema,
+  manufacturer: z.string().nullable(),
+  model: z.string().nullable(),
+  serialNumber: z.string().nullable(),
+  workCenterCode: z.string().nullable(),
+  workCenterName: z.string().nullable(),
+  location: z.string(),
+  responsiblePerson: z.string(),
+  commissioningDate: z.string().date().nullable(),
+  operatingStatus: equipmentOperatingStatusSchema,
+  statusChangedAt: z.string().datetime(),
+  version: z.number().int().nonnegative(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+  events: z.array(equipmentAssetEventSchema),
+});
+export const equipmentAssetPageSchema = z.object({
+  items: z.array(equipmentAssetSchema),
+  totalElements: z.number().int().nonnegative(),
+  page: z.number().int().nonnegative(),
+  size: z.number().int().positive(),
+  totalPages: z.number().int().nonnegative(),
+  canMaintain: z.boolean(),
 });
 
 const masterDataBaseSchema = z.object({
@@ -1105,6 +1149,12 @@ export type WorkspaceRoleCode = z.infer<typeof workspaceRoleCodeSchema>;
 export type WorkspaceRole = z.infer<typeof workspaceRoleSchema>;
 export type WorkspaceUser = z.infer<typeof workspaceUserSchema>;
 export type WorkspaceUserPage = z.infer<typeof workspaceUserPageSchema>;
+export type EquipmentAssetCategory = z.infer<typeof equipmentAssetCategorySchema>;
+export type EquipmentOperatingStatus = z.infer<typeof equipmentOperatingStatusSchema>;
+export type EquipmentAssetAction = z.infer<typeof equipmentAssetActionSchema>;
+export type EquipmentAssetEvent = z.infer<typeof equipmentAssetEventSchema>;
+export type EquipmentAsset = z.infer<typeof equipmentAssetSchema>;
+export type EquipmentAssetPage = z.infer<typeof equipmentAssetPageSchema>;
 export type CustomerRecord = z.infer<typeof customerRecordSchema>;
 export type MaterialRecord = z.infer<typeof materialRecordSchema>;
 export type SupplierRecord = z.infer<typeof supplierRecordSchema>;

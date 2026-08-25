@@ -2725,6 +2725,113 @@ paths:
         "403": { description: 当前角色无权维护供应商 }
         "404": { description: 供应商不存在或不可见 }
         "409": { description: 供应商状态未变化或已被引用 }
+  /api/v1/equipment/assets:
+    get:
+      operationId: listEquipmentAssets
+      summary: 分页查询当前工作区设备台账与人工状态
+      tags: [Equipment]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/Query"
+        - name: status
+          in: query
+          schema: { type: string, enum: [ALL, IDLE, RUNNING, DOWN, MAINTENANCE, INACTIVE], default: ALL }
+        - name: category
+          in: query
+          schema: { type: string, enum: [ALL, PRODUCTION, QUALITY, UTILITY, LOGISTICS, OTHER], default: ALL }
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Size"
+      responses:
+        "200":
+          description: 当前工作区设备分页；状态来源为人工维护
+          headers: { X-Request-Id: { $ref: "#/components/headers/RequestId" } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EquipmentAssetPage" }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "401": { $ref: "#/components/responses/AuthenticationRequired" }
+        "403": { $ref: "#/components/responses/AccessDenied" }
+    post:
+      operationId: createEquipmentAsset
+      summary: 在当前工作区新建设备台账
+      tags: [Equipment]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateEquipmentAssetRequest" }
+      responses:
+        "201":
+          description: 设备已按闲置状态建立并写入审计事件
+          headers: { X-Request-Id: { $ref: "#/components/headers/RequestId" } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EquipmentAsset" }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "401": { $ref: "#/components/responses/AuthenticationRequired" }
+        "403": { $ref: "#/components/responses/AccessDenied" }
+        "409": { $ref: "#/components/responses/BusinessConflict" }
+  /api/v1/equipment/assets/{id}:
+    get:
+      operationId: getEquipmentAsset
+      summary: 获取设备台账和完整状态事件
+      tags: [Equipment]
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/EntityId" }]
+      responses:
+        "200":
+          description: 设备详情与不可变事件
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EquipmentAsset" }
+        "401": { $ref: "#/components/responses/AuthenticationRequired" }
+        "404": { $ref: "#/components/responses/ResourceNotFound" }
+    put:
+      operationId: updateEquipmentAsset
+      summary: 使用乐观锁更新非运行设备台账
+      tags: [Equipment]
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/EntityId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateEquipmentAssetRequest" }
+      responses:
+        "200":
+          description: 已更新设备台账并追加审计事件
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EquipmentAsset" }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "401": { $ref: "#/components/responses/AuthenticationRequired" }
+        "403": { $ref: "#/components/responses/AccessDenied" }
+        "404": { $ref: "#/components/responses/ResourceNotFound" }
+        "409": { $ref: "#/components/responses/BusinessConflict" }
+  /api/v1/equipment/assets/{id}/actions:
+    post:
+      operationId: actOnEquipmentAsset
+      summary: 执行人工受控设备状态流转
+      tags: [Equipment]
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/EntityId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EquipmentAssetActionRequest" }
+      responses:
+        "200":
+          description: 状态已流转并追加人工来源事件
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EquipmentAsset" }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "401": { $ref: "#/components/responses/AuthenticationRequired" }
+        "403": { $ref: "#/components/responses/AccessDenied" }
+        "404": { $ref: "#/components/responses/ResourceNotFound" }
+        "409": { $ref: "#/components/responses/BusinessConflict" }
 
 components:
   securitySchemes:
@@ -2804,6 +2911,93 @@ components:
       in: query
       schema: { type: integer, minimum: 1, maximum: 200, default: 20 }
   schemas:
+    EquipmentAssetPage:
+      allOf:
+        - $ref: "#/components/schemas/PageMetadata"
+        - type: object
+          required: [items, canMaintain]
+          properties:
+            items: { type: array, items: { $ref: "#/components/schemas/EquipmentAsset" } }
+            canMaintain: { type: boolean, description: 当前工作区角色是否可维护设备事实 }
+    EquipmentAsset:
+      type: object
+      additionalProperties: false
+      required: [id, assetCode, assetName, category, location, responsiblePerson, operatingStatus, statusChangedAt, version, createdAt, updatedAt, events]
+      properties:
+        id: { type: string, format: uuid }
+        assetCode: { type: string }
+        assetName: { type: string }
+        category: { type: string, enum: [PRODUCTION, QUALITY, UTILITY, LOGISTICS, OTHER] }
+        manufacturer: { type: [string, "null"] }
+        model: { type: [string, "null"] }
+        serialNumber: { type: [string, "null"] }
+        workCenterCode: { type: [string, "null"] }
+        workCenterName: { type: [string, "null"] }
+        location: { type: string }
+        responsiblePerson: { type: string }
+        commissioningDate: { type: [string, "null"], format: date }
+        operatingStatus: { type: string, enum: [IDLE, RUNNING, DOWN, MAINTENANCE, INACTIVE] }
+        statusChangedAt: { type: string, format: date-time }
+        version: { type: integer, format: int64, minimum: 0 }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        events: { type: array, items: { $ref: "#/components/schemas/EquipmentAssetEvent" } }
+    EquipmentAssetEvent:
+      type: object
+      additionalProperties: false
+      required: [id, actorUserId, action, toStatus, reason, requestId, details, occurredAt]
+      properties:
+        id: { type: string, format: uuid }
+        actorUserId: { type: string, format: uuid }
+        action: { type: string, enum: [CREATED, UPDATED, STARTED, STOPPED, BREAKDOWN_REPORTED, MAINTENANCE_STARTED, MAINTENANCE_COMPLETED, INACTIVATED] }
+        fromStatus: { type: [string, "null"], enum: [IDLE, RUNNING, DOWN, MAINTENANCE, INACTIVE, null] }
+        toStatus: { type: string, enum: [IDLE, RUNNING, DOWN, MAINTENANCE, INACTIVE] }
+        reason: { type: string }
+        requestId: { type: string }
+        details: { type: object, additionalProperties: true }
+        occurredAt: { type: string, format: date-time }
+    CreateEquipmentAssetRequest:
+      type: object
+      additionalProperties: false
+      required: [assetCode, assetName, category, location, responsiblePerson, reason]
+      properties:
+        assetCode: { type: string, minLength: 1, maxLength: 40 }
+        assetName: { type: string, minLength: 1, maxLength: 120 }
+        category: { type: string, enum: [PRODUCTION, QUALITY, UTILITY, LOGISTICS, OTHER] }
+        manufacturer: { type: [string, "null"], maxLength: 120 }
+        model: { type: [string, "null"], maxLength: 120 }
+        serialNumber: { type: [string, "null"], maxLength: 120 }
+        workCenterCode: { type: [string, "null"], maxLength: 40 }
+        workCenterName: { type: [string, "null"], maxLength: 120 }
+        location: { type: string, minLength: 1, maxLength: 160 }
+        responsiblePerson: { type: string, minLength: 1, maxLength: 80 }
+        commissioningDate: { type: [string, "null"], format: date }
+        reason: { type: string, minLength: 4, maxLength: 500 }
+    UpdateEquipmentAssetRequest:
+      type: object
+      additionalProperties: false
+      required: [assetName, category, location, responsiblePerson, reason, expectedVersion]
+      properties:
+        assetName: { type: string, minLength: 1, maxLength: 120 }
+        category: { type: string, enum: [PRODUCTION, QUALITY, UTILITY, LOGISTICS, OTHER] }
+        manufacturer: { type: [string, "null"], maxLength: 120 }
+        model: { type: [string, "null"], maxLength: 120 }
+        serialNumber: { type: [string, "null"], maxLength: 120 }
+        workCenterCode: { type: [string, "null"], maxLength: 40 }
+        workCenterName: { type: [string, "null"], maxLength: 120 }
+        location: { type: string, minLength: 1, maxLength: 160 }
+        responsiblePerson: { type: string, minLength: 1, maxLength: 80 }
+        commissioningDate: { type: [string, "null"], format: date }
+        reason: { type: string, minLength: 4, maxLength: 500 }
+        expectedVersion: { type: integer, format: int64, minimum: 0 }
+    EquipmentAssetActionRequest:
+      type: object
+      additionalProperties: false
+      required: [action, reason, expectedVersion]
+      properties:
+        action: { type: string, enum: [START, STOP, REPORT_BREAKDOWN, START_MAINTENANCE, COMPLETE_MAINTENANCE, INACTIVATE] }
+        reason: { type: string, minLength: 4, maxLength: 500 }
+        expectedVersion: { type: integer, format: int64, minimum: 0 }
     ApiError:
       type: object
       additionalProperties: false
@@ -2881,7 +3075,7 @@ components:
         description: { type: string }
     WorkspaceRoleCode:
       type: string
-      enum: [ADMIN, SALES_MANAGER, PLANNING_MANAGER, PROCUREMENT_MANAGER, PRODUCT_ENGINEER, PRODUCTION_MANAGER, PRODUCTION_OPERATOR, QUALITY_MANAGER, QUALITY_INSPECTOR, WAREHOUSE_MANAGER, INVENTORY_CONTROLLER, FINANCE_MANAGER]
+      enum: [ADMIN, SALES_MANAGER, PLANNING_MANAGER, PROCUREMENT_MANAGER, PRODUCT_ENGINEER, PRODUCTION_MANAGER, PRODUCTION_OPERATOR, MAINTENANCE_MANAGER, QUALITY_MANAGER, QUALITY_INSPECTOR, WAREHOUSE_MANAGER, INVENTORY_CONTROLLER, FINANCE_MANAGER]
     WorkspaceUser:
       type: object
       additionalProperties: false
