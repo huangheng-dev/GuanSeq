@@ -190,6 +190,27 @@ public class InventoryApplicationService implements StockPositionProvider, Finis
 		return result;
 	}
 
+	@Override
+	@Transactional(readOnly = true)
+	public List<WarehouseStockPosition> getWarehousePositions(UUID tenantOrganizationId, UUID warehouseId,
+			Collection<UUID> materialIds) {
+		Map<UUID, MutablePosition> positions = new LinkedHashMap<>();
+		materialIds.forEach(id -> positions.putIfAbsent(id, new MutablePosition()));
+		for (StockBalanceEntity balance : balanceRepository
+				.findByTenantOrganizationIdAndWarehouseIdAndMaterialIdIn(tenantOrganizationId, warehouseId, materialIds)) {
+			MutablePosition position = positions.computeIfAbsent(balance.getMaterialId(), ignored -> new MutablePosition());
+			position.onHand = position.onHand.add(balance.getOnHandQuantity());
+			position.allocated = position.allocated.add(balance.getAllocatedQuantity());
+			position.frozen = position.frozen.add(balance.getFrozenQuantity());
+			position.available = position.available.add(balance.availableQuantity());
+			position.count++;
+		}
+		List<WarehouseStockPosition> result = new ArrayList<>();
+		positions.forEach((materialId, item) -> result.add(new WarehouseStockPosition(warehouseId, materialId,
+				item.onHand, item.allocated, item.frozen, item.available, item.count)));
+		return result;
+	}
+
 	private InventoryRecord toRecord(StockBalanceEntity balance) {
 		List<InventoryRecord.Movement> movements = movementRepository.findByBalanceIdOrderByOccurredAtDesc(balance.getId())
 				.stream().map(item -> new InventoryRecord.Movement(item.getId(), item.getMovementNumber(), item.getMovementType(),

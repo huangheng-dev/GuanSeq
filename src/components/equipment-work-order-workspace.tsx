@@ -1,10 +1,11 @@
 "use client";
 
-import { type FormEvent, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 
-import type { EquipmentAsset, EquipmentOperatingStatus, EquipmentWorkOrder, EquipmentWorkOrderAction, EquipmentWorkOrderOutcome, EquipmentWorkOrderPage, EquipmentWorkOrderPriority, EquipmentWorkOrderStatus, EquipmentWorkType } from "@/lib/contracts";
-import type { EquipmentWorkOrderMutation, EquipmentWorkOrderPageData } from "@/services/equipment-work-order-server-service";
-import { EquipmentWorkOrderClientError, loadEquipmentWorkOrderDetail, refreshEquipmentWorkOrders, submitEquipmentWorkOrderMutation } from "@/services/equipment-work-order-client-service";
+import type { EquipmentAsset, EquipmentOperatingStatus, EquipmentSparePart, EquipmentSparePartReference, EquipmentWorkOrder, EquipmentWorkOrderAction, EquipmentWorkOrderOutcome, EquipmentWorkOrderPage, EquipmentWorkOrderPriority, EquipmentWorkOrderStatus, EquipmentWorkType } from "@/lib/contracts";
+import type { EquipmentMaintenanceCostMutation, EquipmentWorkOrderMutation, EquipmentWorkOrderPageData } from "@/services/equipment-work-order-server-service";
+import { EquipmentWorkOrderClientError, loadEquipmentWorkOrderDetail, refreshEquipmentWorkOrders, submitEquipmentMaintenanceCostMutation, submitEquipmentWorkOrderMutation } from "@/services/equipment-work-order-client-service";
+import { refreshEquipmentSpareParts } from "@/services/equipment-spare-part-client-service";
 import { MaterialIcon } from "./material-icon";
 import { RoundedSelect } from "./rounded-select";
 import { GsButton, GsDrawer, GsInput, GsModalHost, GsPagination, GsTextArea } from "./ui";
@@ -82,10 +83,65 @@ function WorkOrderActionDialog({ order, action, onClose, onSaved }: { order: Equ
   </div><div className="mrpRunTruthNotice"><MaterialIcon name="link" size={18}/><span><strong>设备与工单原子联动</strong>状态、版本和事件在同一事务提交；不会向设备发送控制命令。</span></div>{error ? <div className="formError" role="alert">{error}</div> : null}<footer className="dialogFooter"><span>非法状态、过期版本或设备冲突会拒绝整笔操作</span><div><GsButton onClick={onClose} disabled={pending} htmlType="button">取消</GsButton><GsButton intent={action === "REJECT" || action === "CANCEL" ? "danger" : "primary"} loading={pending} htmlType="submit">确认{actionLabels[action]}</GsButton></div></footer></form></section></GsModalHost>;
 }
 
-function WorkOrderDrawer({ order, canMaintain, loading, error, onClose, onAction }: { order: EquipmentWorkOrder; canMaintain: boolean; loading: boolean; error: string; onClose: () => void; onAction: (action: EquipmentWorkOrderAction) => void }) {
+type CostAction = "ISSUE_SPARE" | "RETURN_SPARE" | "RECORD_LABOR" | "REVERSE_LABOR";
+const costActionLabels: Record<CostAction, string> = { ISSUE_SPARE: "领用备件", RETURN_SPARE: "退回备件", RECORD_LABOR: "登记人工", REVERSE_LABOR: "冲销人工" };
+
+function MaintenanceCostDialog({ order, action, onClose, onSaved }: { order: EquipmentWorkOrder; action: CostAction; onClose: () => void; onSaved: (order: EquipmentWorkOrder) => void }) {
+  const [spares, setSpares] = useState<EquipmentSparePart[]>([]); const [references, setReferences] = useState<EquipmentSparePartReference | null>(null);
+  const [loading, setLoading] = useState(action === "ISSUE_SPARE" || action === "RETURN_SPARE"); const [pending, setPending] = useState(false); const [error, setError] = useState("");
+  const [choice, setChoice] = useState(""); const [locationChoice, setLocationChoice] = useState(""); const [quantity, setQuantity] = useState("");
+  const [technician, setTechnician] = useState(order.assignee); const [hours, setHours] = useState(""); const [hourlyRate, setHourlyRate] = useState(""); const [reason, setReason] = useState("");
+  const issues = (order.costEvidence?.spareTransactions ?? []).filter((item) => item.transactionType === "ISSUE" && item.returnableQuantity > 0);
+  const laborEntries = (order.costEvidence?.laborTransactions ?? []).filter((item) => item.transactionType === "ENTRY" && !item.reversed);
+  useEffect(() => {
+    if (action !== "ISSUE_SPARE" && action !== "RETURN_SPARE") return;
+    let active = true; refreshEquipmentSpareParts().then((result) => { if (!active) return; setSpares(result.page.items.filter((item) => item.status === "ACTIVE")); setReferences(result.references); setLoading(false); })
+      .catch((failure) => { if (active) { setError(errorText(failure)); setLoading(false); } }); return () => { active = false; };
+  }, [action]);
+  const spareLabels = spares.map((item) => `${item.materialCode} · ${item.materialName} · 可用 ${item.availableQuantity} ${item.unit}`);
+  const issueLabels = issues.map((item) => `${item.materialCode} · ${item.materialName} · 可退 ${item.returnableQuantity} ${item.unit}`);
+  const laborLabels = laborEntries.map((item) => `${item.technicianName} · ${item.hours}h · ${item.currency} ${item.amount.toFixed(2)}`);
+  const selectedSpare = spares[spareLabels.indexOf(choice || spareLabels[0])]; const selectedIssue = issues[issueLabels.indexOf(choice || issueLabels[0])];
+  const selectedLabor = laborEntries[laborLabels.indexOf(choice || laborLabels[0])];
+  const locations = references?.locations.filter((item) => item.warehouseId === selectedIssue?.warehouseId) ?? [];
+  const locationLabels = locations.map((item) => `${item.code} · ${item.name}`);
+  async function submit(event: FormEvent) {
+    event.preventDefault(); if (reason.trim().length < 4) { setError("请填写至少 4 个字符的业务原因。"); return; }
+    let input: EquipmentMaintenanceCostMutation;
+    if (action === "ISSUE_SPARE") {
+      const amount = Number(quantity); if (!selectedSpare || !Number.isFinite(amount) || amount <= 0) { setError("请选择备件并填写大于零的领用数量。"); return; }
+      input = { operation: "issueSpare", id: order.id, sparePartId: selectedSpare.id, warehouseId: selectedSpare.preferredWarehouseId, quantity: amount, reason: reason.trim(), expectedVersion: order.version };
+    } else if (action === "RETURN_SPARE") {
+      const amount = Number(quantity); const location = locations[locationLabels.indexOf(locationChoice || locationLabels[0])];
+      if (!selectedIssue || !location || !Number.isFinite(amount) || amount <= 0 || amount > selectedIssue.returnableQuantity) { setError("请选择原领用、退回库位，并填写不超过可退量的数量。"); return; }
+      input = { operation: "returnSpare", id: order.id, issueTransactionId: selectedIssue.id, locationId: location.id, quantity: amount, reason: reason.trim(), expectedVersion: order.version };
+    } else if (action === "RECORD_LABOR") {
+      const hourValue = Number(hours); const rateValue = Number(hourlyRate); if (!technician.trim() || !Number.isFinite(hourValue) || hourValue <= 0 || hourValue > 24 || !Number.isFinite(rateValue) || rateValue <= 0) { setError("请填写责任人、0–24 小时范围内的工时和大于零的小时费率。"); return; }
+      input = { operation: "recordLabor", id: order.id, technicianName: technician.trim(), hours: hourValue, hourlyRate: rateValue, currency: order.costEvidence?.currency ?? "CNY", reason: reason.trim(), expectedVersion: order.version };
+    } else {
+      if (!selectedLabor) { setError("请选择尚未冲销的人工登记。"); return; }
+      input = { operation: "reverseLabor", id: order.id, entryId: selectedLabor.id, reason: reason.trim(), expectedVersion: order.version };
+    }
+    setPending(true); setError(""); try { const result = await submitEquipmentMaintenanceCostMutation(input); onSaved({ ...order, version: result.workOrderVersion, costEvidence: result.costEvidence }); }
+    catch (failure) { setError(errorText(failure)); setPending(false); }
+  }
+  const options = action === "ISSUE_SPARE" ? spareLabels : action === "RETURN_SPARE" ? issueLabels : laborLabels;
+  return <GsModalHost zIndex={1100} onClose={() => { if (!pending) onClose(); }}><section className="businessDialog" role="dialog" aria-modal="true" aria-labelledby="maintenance-cost-dialog-title" onMouseDown={(event) => event.stopPropagation()}><header className="dialogHeader"><span className="dialogTitleMark"><MaterialIcon name={action.includes("LABOR") ? "engineering" : "inventory_2"} size={22}/></span><div><h2 id="maintenance-cost-dialog-title">{costActionLabels[action]}</h2><p>{order.workOrderNumber} · 工单版本 {order.version} · 运维成本估算</p></div><GsButton className="iconButton" onClick={onClose} disabled={pending} aria-label="关闭维修成本表单" htmlType="button"><MaterialIcon name="close"/></GsButton></header>
+    <form onSubmit={submit}><div className="formGrid">{loading ? <div className="businessEmptyState formFieldFull"><strong>正在读取备件与仓库事实</strong></div> : null}
+      {action === "ISSUE_SPARE" || action === "RETURN_SPARE" || action === "REVERSE_LABOR" ? <label className="formField formFieldFull"><span>{action === "ISSUE_SPARE" ? "备件" : action === "RETURN_SPARE" ? "原领用事务" : "原人工登记"}<em>必填</em></span><RoundedSelect ariaLabel={costActionLabels[action]} options={options.length ? options : ["暂无可用记录"]} value={choice || options[0] || "暂无可用记录"} onValueChange={(value) => { setChoice(value); setLocationChoice(""); }}/></label> : null}
+      {action === "RETURN_SPARE" ? <label className="formField formFieldFull"><span>退回库位<em>必填</em></span><RoundedSelect ariaLabel="退回库位" options={locationLabels.length ? locationLabels : ["暂无可用库位"]} value={locationChoice || locationLabels[0] || "暂无可用库位"} onValueChange={setLocationChoice}/></label> : null}
+      {action === "ISSUE_SPARE" || action === "RETURN_SPARE" ? <label className="formField"><span>数量<em>必填</em></span><GsInput type="number" min="0.0001" step="0.0001" value={quantity} onChange={(event) => setQuantity(event.target.value)}/></label> : null}
+      {action === "RECORD_LABOR" ? <><label className="formField"><span>维修人员<em>必填</em></span><GsInput value={technician} maxLength={80} onChange={(event) => setTechnician(event.target.value)}/></label><label className="formField"><span>实际小时<em>必填</em></span><GsInput type="number" min="0.01" max="24" step="0.01" value={hours} onChange={(event) => setHours(event.target.value)}/></label><label className="formField"><span>估算小时费率<em>必填</em></span><GsInput type="number" min="0.01" step="0.01" value={hourlyRate} onChange={(event) => setHourlyRate(event.target.value)}/><small>不是工资或财务凭证。</small></label></> : null}
+      <label className="formField formFieldFull"><span>{action === "REVERSE_LABOR" ? "冲销原因" : "业务原因"}<em>必填</em></span><GsTextArea rows={3} maxLength={500} value={reason} onChange={(event) => setReason(event.target.value)}/></label>
+    </div><div className="mrpRunTruthNotice"><MaterialIcon name="verified" size={18}/><span><strong>不可变证据</strong>领退同步库存流水；成本冻结当时口径；错误人工通过冲销恢复。</span></div>{error ? <div className="formError" role="alert">{error}</div> : null}<footer className="dialogFooter"><span>并发冲突会拒绝整笔操作</span><div><GsButton onClick={onClose} disabled={pending} htmlType="button">取消</GsButton><GsButton intent={action === "REVERSE_LABOR" ? "danger" : "primary"} loading={pending} htmlType="submit">确认{costActionLabels[action]}</GsButton></div></footer></form>
+  </section></GsModalHost>;
+}
+
+function WorkOrderDrawer({ order, canMaintain, loading, error, onClose, onAction, onCostAction }: { order: EquipmentWorkOrder; canMaintain: boolean; loading: boolean; error: string; onClose: () => void; onAction: (action: EquipmentWorkOrderAction) => void; onCostAction: (action: CostAction) => void }) {
   return <GsDrawer open title={`${order.workOrderNumber} · ${order.title}`} onClose={onClose} className="equipmentAssetDrawer"><div className="equipmentDetailStatus"><em className={`businessStatus businessStatus${statusTones[order.status]}`}>{statusLabels[order.status]}</em><span>{typeLabels[order.workType]}</span><small>设备状态：{assetStatusLabels[order.assetOperatingStatus]} · 版本 {order.assetVersion}</small></div>
     <dl className="detailLedger"><div><dt>设备</dt><dd>{order.assetName} · {order.assetCode}</dd></div><div><dt>位置</dt><dd>{order.assetLocation}</dd></div><div><dt>来源</dt><dd>{sourceLabels[order.sourceType]}</dd></div><div><dt>优先级</dt><dd>{priorityLabels[order.priority]}</dd></div><div><dt>责任人</dt><dd>{order.assignee}</dd></div><div><dt>计划开始</dt><dd>{dateText(order.plannedStartAt)}</dd></div><div><dt>要求完成</dt><dd>{dateText(order.dueAt)}</dd></div><div><dt>执行结论</dt><dd>{order.outcome ? (order.outcome === "PASS" ? "通过" : "不通过") : "待提交"}</dd></div></dl>
     <section className="drawerSection"><div className="sectionTitleCompact"><h3>作业要求</h3><span>工单版本 {order.version}</span></div><p className="equipmentWorkOrderNarrative">{order.description}</p>{order.completionNotes ? <p className="equipmentWorkOrderResult"><strong>最近执行记录</strong>{order.completionNotes}</p> : null}</section>
+    {order.workType === "REPAIR" && order.costEvidence ? <section className="drawerSection maintenanceCostEvidence"><div className="sectionTitleCompact"><h3>维修成本证据</h3><span>{order.costEvidence.currency} · 运维估算</span></div><div className="maintenanceCostTotals"><div><small>净备件</small><strong>{order.costEvidence.spareCost.toFixed(2)}</strong></div><div><small>净人工</small><strong>{order.costEvidence.laborCost.toFixed(2)}</strong></div><div><small>成本合计</small><strong>{order.costEvidence.totalCost.toFixed(2)}</strong></div></div><p className="equipmentWorkOrderNarrative">{order.costEvidence.basis}</p>{canMaintain && order.costEvidence.availableActions.length ? <div className="equipmentActionButtons"><GsButton onClick={() => onCostAction("ISSUE_SPARE")} htmlType="button">领用备件</GsButton><GsButton onClick={() => onCostAction("RETURN_SPARE")} disabled={!order.costEvidence.spareTransactions.some((item) => item.transactionType === "ISSUE" && item.returnableQuantity > 0)} htmlType="button">退回备件</GsButton><GsButton onClick={() => onCostAction("RECORD_LABOR")} htmlType="button">登记人工</GsButton><GsButton onClick={() => onCostAction("REVERSE_LABOR")} disabled={!order.costEvidence.laborTransactions.some((item) => item.transactionType === "ENTRY" && !item.reversed)} htmlType="button">冲销人工</GsButton></div> : null}<div className="maintenanceCostLedger"><h4>备件事务</h4>{order.costEvidence.spareTransactions.length ? order.costEvidence.spareTransactions.map((item) => <p key={item.id}><strong>{item.transactionType === "ISSUE" ? "领用" : "退回"} {item.materialName}</strong><span>{item.quantity} {item.unit} · {item.currency} {item.amount.toFixed(2)}</span><small>{item.warehouseCode} · {item.reason} · {dateText(item.occurredAt)}</small></p>) : <p><small>尚未领用备件。</small></p>}<h4>人工事务</h4>{order.costEvidence.laborTransactions.length ? order.costEvidence.laborTransactions.map((item) => <p key={item.id}><strong>{item.transactionType === "ENTRY" ? "登记" : "冲销"} {item.technicianName}</strong><span>{item.hours}h · {item.currency} {item.amount.toFixed(2)}</span><small>{item.reason} · {dateText(item.occurredAt)}</small></p>) : <p><small>尚未登记人工。</small></p>}</div></section> : null}
     {canMaintain && order.availableActions.length ? <section className="drawerSection"><div className="sectionTitleCompact"><h3>可执行动作</h3><span>以后端状态机为准</span></div><div className="equipmentActionButtons">{order.availableActions.map((action) => <GsButton key={action} intent={action === "REJECT" || action === "CANCEL" ? "danger" : "secondary"} onClick={() => onAction(action)} htmlType="button">{actionLabels[action]}</GsButton>)}</div></section> : !canMaintain ? <section className="workspaceRoleBoundary"><MaterialIcon name="lock" size={19}/><div><strong>当前角色为只读</strong><p>设备经理、生产经理或管理员可以执行运维工单。</p></div></section> : null}
     <section className="drawerSection"><div className="sectionTitleCompact"><h3>运维证据</h3><span>{loading ? "加载中" : `${order.events.length} 条`}</span></div>{error ? <div className="formError" role="alert">{error}</div> : null}<ol className="evidenceTimeline equipmentTimeline">{order.events.map((event) => <li key={event.id}><span/><div><strong>{eventLabels[event.action] ?? event.action} · {statusLabels[event.toStatus]}</strong><small>{event.reason}{event.outcome ? ` · ${event.outcome === "PASS" ? "通过" : "不通过"}` : ""}</small><small>请求编号：{event.requestId}</small></div><time>{dateText(event.occurredAt)}</time></li>)}</ol></section>
   </GsDrawer>;
@@ -105,6 +161,7 @@ export function EquipmentWorkOrderWorkspace({ initialData, view }: { initialData
   const [refreshing, setRefreshing] = useState(false); const [createOpen, setCreateOpen] = useState(false);
   const [referenceTime] = useState(() => Date.now());
   const [selected, setSelected] = useState<EquipmentWorkOrder | null>(null); const [action, setAction] = useState<EquipmentWorkOrderAction | null>(null);
+  const [costAction, setCostAction] = useState<CostAction | null>(null);
   const [detailLoading, setDetailLoading] = useState(false); const [detailError, setDetailError] = useState(""); const [toast, setToast] = useState("");
   const filtered = useMemo(() => !pageData ? [] : pageData.items.filter((order) => order.workType === workType && (status === "全部状态" || statusLabels[order.status] === status) && (!query.trim() || `${order.workOrderNumber}${order.assetCode}${order.assetName}${order.title}${order.assignee}`.toLowerCase().includes(query.trim().toLowerCase()))), [pageData, query, status, workType]);
   if (!pageData && unavailable) return <UnavailableState data={unavailable} onRecovered={(next, nextAssets) => { setPageData(next); setAssets(nextAssets); setUnavailable(null); }}/>;
@@ -113,6 +170,7 @@ export function EquipmentWorkOrderWorkspace({ initialData, view }: { initialData
   const count = (target: EquipmentWorkOrderStatus) => filtered.filter((order) => order.status === target).length;
   const overdue = filtered.filter((order) => !["COMPLETED", "CANCELLED"].includes(order.status) && new Date(order.dueAt).getTime() < referenceTime).length;
   function replace(saved: EquipmentWorkOrder) { setPageData((current) => current ? { ...current, items: current.items.some((item) => item.id === saved.id) ? current.items.map((item) => item.id === saved.id ? { ...saved, events: [] } : item) : [{ ...saved, events: [] }, ...current.items], totalElements: current.items.some((item) => item.id === saved.id) ? current.totalElements : current.totalElements + 1 } : current); setSelected(saved); setCreateOpen(false); setAction(null); setToast(saved.outcome === "FAIL" ? `${saved.workOrderNumber} 已记录异常并联动维修工单` : `${saved.workOrderNumber} 已更新`); window.setTimeout(() => setToast(""), 2800); }
+  function replaceCost(saved: EquipmentWorkOrder) { setPageData((current) => current ? { ...current, items: current.items.map((item) => item.id === saved.id ? { ...saved, events: [] } : item) } : current); setSelected(saved); setCostAction(null); setToast(`${saved.workOrderNumber} 的维修成本证据已更新`); window.setTimeout(() => setToast(""), 2600); }
   async function openDetail(order: EquipmentWorkOrder) { setSelected(order); setDetailLoading(true); setDetailError(""); try { setSelected(await loadEquipmentWorkOrderDetail(order.id)); } catch (error) { setDetailError(errorText(error)); } finally { setDetailLoading(false); } }
   async function refresh() { setRefreshing(true); try { const result = await refreshEquipmentWorkOrders(); setPageData(result.page); setAssets(result.assets); setToast("设备运维计划与状态已刷新"); window.setTimeout(() => setToast(""), 2200); } catch (error) { setToast(errorText(error)); } finally { setRefreshing(false); } }
   return <div className="businessPage equipmentWorkOrderPage"><header className="pageHeading businessPageHeading"><div className="pageTitleGroup"><span className="pageTitleIcon"><MaterialIcon name={iconFor(workType)} size={23}/></span><div><h2>{title}</h2><p>{workType === "INSPECTION" ? "计划现场点检，异常自动转入维修闭环。" : workType === "PREVENTIVE_MAINTENANCE" ? "按停机窗口执行保养并记录结果。" : "从故障报修推进到维修完工与现场验收。"}</p></div></div><div className="pageHeadingActions"><GsButton onClick={refresh} loading={refreshing} htmlType="button"><MaterialIcon name="refresh" size={17}/>刷新</GsButton>{pageData.canMaintain ? <GsButton intent="primary" onClick={() => setCreateOpen(true)} htmlType="button"><MaterialIcon name="add" size={17}/>新建{typeLabels[workType]}</GsButton> : null}</div></header>
@@ -123,9 +181,10 @@ export function EquipmentWorkOrderWorkspace({ initialData, view }: { initialData
       <footer className="businessLedgerFooter"><span>第 {filtered.length ? (currentPage - 1) * pageSize + 1 : 0}–{Math.min(currentPage * pageSize, filtered.length)} 条，共 {filtered.length} 条</span><GsPagination current={currentPage} pageSize={pageSize} total={filtered.length} pageSizeOptions={[10, 20, 50]} onChange={(nextPage, nextSize) => { setPage(nextPage); setPageSize(nextSize); }}/></footer>
     </section>
     {!pageData.canMaintain ? <section className="workspaceRoleBoundary"><MaterialIcon name="shield_lock" size={20}/><div><strong>当前角色只读</strong><p>设备经理、生产经理和管理员可以维护运维任务；后端权限是唯一可信边界。</p></div></section> : null}
-    {selected ? <WorkOrderDrawer order={selected} canMaintain={pageData.canMaintain} loading={detailLoading} error={detailError} onClose={() => setSelected(null)} onAction={setAction}/> : null}
+    {selected ? <WorkOrderDrawer order={selected} canMaintain={pageData.canMaintain} loading={detailLoading} error={detailError} onClose={() => setSelected(null)} onAction={setAction} onCostAction={setCostAction}/> : null}
     {createOpen ? <WorkOrderCreateDialog workType={workType} assets={assets} onClose={() => setCreateOpen(false)} onSaved={replace}/> : null}
     {selected && action ? <WorkOrderActionDialog order={selected} action={action} onClose={() => setAction(null)} onSaved={replace}/> : null}
+    {selected && costAction ? <MaintenanceCostDialog order={selected} action={costAction} onClose={() => setCostAction(null)} onSaved={replaceCost}/> : null}
     {toast ? <div className="toastMessage" role="status"><MaterialIcon name="info" size={18}/>{toast}</div> : null}
   </div>;
 }

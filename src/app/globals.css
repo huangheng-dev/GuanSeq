@@ -2632,6 +2632,14 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, a:focus-visib
 .equipmentWorkOrderNarrative { color: var(--gs-ink-secondary); font-size: 12px; line-height: 1.75; margin: 12px 0 0; }
 .equipmentWorkOrderResult { background: #f4f8f6; border-left: 3px solid var(--gs-success); color: var(--gs-ink-secondary); display: grid; font-size: 11.5px; gap: 5px; line-height: 1.65; margin: 14px 0 0; padding: 10px 12px; }
 .equipmentWorkOrderResult strong { color: var(--gs-navy); }
+.maintenanceCostTotals { display: grid; gap: 10px; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 12px 0; }
+.maintenanceCostTotals div { background: var(--gs-surface-subtle); border: 1px solid var(--gs-line); border-radius: 10px; padding: 11px 12px; }
+.maintenanceCostTotals small, .maintenanceCostTotals strong { display: block; }
+.maintenanceCostTotals strong { font-size: 18px; font-variant-numeric: tabular-nums; margin-top: 5px; }
+.maintenanceCostLedger { display: grid; gap: 8px; margin-top: 14px; }
+.maintenanceCostLedger h4 { font-size: 12px; margin: 8px 0 0; }
+.maintenanceCostLedger p { border-bottom: 1px solid var(--gs-line); display: grid; gap: 4px 10px; grid-template-columns: minmax(0, 1fr) auto; margin: 0; padding: 10px 0; }
+.maintenanceCostLedger p small { color: var(--gs-ink-muted); grid-column: 1 / -1; }
 .equipmentWorkOrderTable { overflow-x: auto; }
 .equipmentWorkOrderTableHeader,
 .equipmentWorkOrderTableRow {
@@ -2651,6 +2659,9 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, a:focus-visib
 .equipmentWorkOrderTableRow .businessStatus { align-self: flex-start; font-style: normal; }
 
 @media (max-width: 720px) {
+  .maintenanceCostTotals { grid-template-columns: 1fr; }
+  .maintenanceCostLedger p { grid-template-columns: 1fr; }
+  .maintenanceCostLedger p small { grid-column: auto; }
   .equipmentAssetPage .pageHeadingActions, .equipmentWorkOrderPage .pageHeadingActions { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
   .equipmentTruthBanner { align-items: start; grid-template-columns: auto minmax(0, 1fr); }
   .equipmentTruthBanner > span { grid-column: 1 / -1; justify-self: start; }

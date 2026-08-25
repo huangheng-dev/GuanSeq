@@ -39,6 +39,8 @@ interface StockBalanceRepository extends JpaRepository<StockBalanceEntity, UUID>
 	Optional<StockBalanceEntity> findByTenantOrganizationIdAndWarehouseIdAndLocationIdAndMaterialIdAndLotNumberAndQualityStatus(
 			UUID tenantId, UUID warehouseId, UUID locationId, UUID materialId, String lotNumber, String qualityStatus);
 	List<StockBalanceEntity> findByTenantOrganizationIdAndMaterialIdIn(UUID tenantId, Collection<UUID> materialIds);
+	List<StockBalanceEntity> findByTenantOrganizationIdAndWarehouseIdAndMaterialIdIn(UUID tenantId, UUID warehouseId,
+			Collection<UUID> materialIds);
 	List<StockBalanceEntity> findByTenantOrganizationIdAndWarehouseIdAndMaterialIdAndQualityStatusOrderByLocationCodeAscLotNumberAscUpdatedAtAsc(
 		UUID tenantId, UUID warehouseId, UUID materialId, String qualityStatus);
 }

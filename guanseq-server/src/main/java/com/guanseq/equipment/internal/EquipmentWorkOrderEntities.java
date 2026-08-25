@@ -89,6 +89,15 @@ class EquipmentWorkOrderEntity {
 		this.updatedAt = now;
 	}
 
+	void touch(UUID actorId) {
+		this.updatedBy = actorId;
+		this.updatedAt = Instant.now();
+	}
+
+	UUID getTenantOrganizationId() { return tenantOrganizationId; }
+	UUID getOwningOrganizationId() { return owningOrganizationId; }
+	UUID getWorkspaceId() { return workspaceId; }
+
 	UUID getId() { return id; }
 	UUID getAssetId() { return assetId; }
 	String getWorkOrderNumber() { return workOrderNumber; }

@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto";
 import {
   equipmentWorkOrderPageSchema,
   equipmentWorkOrderSchema,
+  equipmentMaintenanceCostMutationResultSchema,
   type EquipmentAsset,
   type EquipmentWorkOrder,
   type EquipmentWorkOrderAction,
@@ -22,6 +23,12 @@ export type EquipmentWorkOrderMutation =
       assetExpectedVersion: number }
   | { operation: "action"; id: string; action: EquipmentWorkOrderAction; reason: string; expectedVersion: number;
       assetExpectedVersion: number; outcome?: EquipmentWorkOrderOutcome | null; completionNotes?: string | null };
+
+export type EquipmentMaintenanceCostMutation =
+  | { operation: "issueSpare"; id: string; sparePartId: string; warehouseId: string; quantity: number; reason: string; expectedVersion: number }
+  | { operation: "returnSpare"; id: string; issueTransactionId: string; locationId: string; quantity: number; reason: string; expectedVersion: number }
+  | { operation: "recordLabor"; id: string; technicianName: string; hours: number; hourlyRate: number; currency: string; reason: string; expectedVersion: number }
+  | { operation: "reverseLabor"; id: string; entryId: string; reason: string; expectedVersion: number };
 
 export type EquipmentWorkOrderPageData =
   | { source: "backend"; page: EquipmentWorkOrderPage; assets: EquipmentAsset[]; requestId: string }
@@ -74,4 +81,23 @@ export async function mutateEquipmentWorkOrder(input: EquipmentWorkOrderMutation
   if (!response) throw new GuanSeqApiError("设备运维服务暂时不可用，未保存任何更改", 503);
   if (!response.ok) await readApiError(response, "设备运维操作失败");
   return { workOrder: equipmentWorkOrderSchema.parse(await response.json()), requestId: response.headers.get("X-Request-Id") ?? requestId };
+}
+
+export async function mutateEquipmentMaintenanceCost(input: EquipmentMaintenanceCostMutation, requestId: string) {
+  const path = input.operation === "issueSpare" ? `/api/v1/equipment/work-orders/${input.id}/spare-issues`
+    : input.operation === "returnSpare" ? `/api/v1/equipment/work-orders/${input.id}/spare-returns`
+    : input.operation === "recordLabor" ? `/api/v1/equipment/work-orders/${input.id}/labor-entries`
+    : `/api/v1/equipment/work-orders/${input.id}/labor-entries/${input.entryId}/reversals`;
+  const body = input.operation === "issueSpare" ? { sparePartId: input.sparePartId, warehouseId: input.warehouseId,
+    quantity: input.quantity, reason: input.reason, expectedVersion: input.expectedVersion }
+    : input.operation === "returnSpare" ? { issueTransactionId: input.issueTransactionId, locationId: input.locationId,
+      quantity: input.quantity, reason: input.reason, expectedVersion: input.expectedVersion }
+    : input.operation === "recordLabor" ? { technicianName: input.technicianName, hours: input.hours,
+      hourlyRate: input.hourlyRate, currency: input.currency, reason: input.reason, expectedVersion: input.expectedVersion }
+    : { reason: input.reason, expectedVersion: input.expectedVersion };
+  const response = await requestGuanSeqApi(path, requestId, { method: "POST", body: JSON.stringify(body) }, 10000);
+  if (!response) throw new GuanSeqApiError("维修成本服务暂时不可用，未保存任何更改", 503);
+  if (!response.ok) await readApiError(response, "维修备件或人工成本操作失败");
+  return { result: equipmentMaintenanceCostMutationResultSchema.parse(await response.json()),
+    requestId: response.headers.get("X-Request-Id") ?? requestId };
 }

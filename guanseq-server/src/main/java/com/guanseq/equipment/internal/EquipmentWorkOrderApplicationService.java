@@ -36,15 +36,18 @@ public class EquipmentWorkOrderApplicationService {
 	private final EquipmentAssetEventRepository assetEventRepository;
 	private final EquipmentWorkOrderRepository workOrderRepository;
 	private final EquipmentWorkOrderEventRepository eventRepository;
+	private final EquipmentMaintenanceCostQueryService costQueryService;
 
 	EquipmentWorkOrderApplicationService(CurrentWorkspaceProvider workspaceProvider,
 			EquipmentAssetRepository assetRepository, EquipmentAssetEventRepository assetEventRepository,
-			EquipmentWorkOrderRepository workOrderRepository, EquipmentWorkOrderEventRepository eventRepository) {
+			EquipmentWorkOrderRepository workOrderRepository, EquipmentWorkOrderEventRepository eventRepository,
+			EquipmentMaintenanceCostQueryService costQueryService) {
 		this.workspaceProvider = workspaceProvider;
 		this.assetRepository = assetRepository;
 		this.assetEventRepository = assetEventRepository;
 		this.workOrderRepository = workOrderRepository;
 		this.eventRepository = eventRepository;
+		this.costQueryService = costQueryService;
 	}
 
 	@Transactional(readOnly = true)
@@ -252,6 +255,7 @@ public class EquipmentWorkOrderApplicationService {
 				order.getTitle(), order.getDescription(), order.getPriority(), order.getStatus(), order.getPlannedStartAt(),
 				order.getDueAt(), order.getAssignee(), order.getOutcome(), order.getCompletionNotes(), order.getStartedAt(),
 				order.getSubmittedAt(), order.getCompletedAt(), order.getVersion(), order.getCreatedAt(), order.getUpdatedAt(),
+				includeEvents && "REPAIR".equals(order.getWorkType()) ? costQueryService.get(order) : null,
 				availableActions(order), events);
 	}
 

@@ -16,14 +16,17 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.guanseq.equipment.internal.EquipmentWorkOrderApplicationService;
+import com.guanseq.equipment.internal.EquipmentMaintenanceCostApplicationService;
 
 @RestController
 @RequestMapping(path = "/api/v1/equipment/work-orders", produces = MediaType.APPLICATION_JSON_VALUE)
 public class EquipmentWorkOrderController {
 
 	private final EquipmentWorkOrderApplicationService service;
+	private final EquipmentMaintenanceCostApplicationService costService;
 
-	EquipmentWorkOrderController(EquipmentWorkOrderApplicationService service) { this.service = service; }
+	EquipmentWorkOrderController(EquipmentWorkOrderApplicationService service,
+			EquipmentMaintenanceCostApplicationService costService) { this.service = service; this.costService = costService; }
 
 	@GetMapping
 	EquipmentWorkOrderPage list(Principal principal, @RequestParam(required = false) String query,
@@ -50,5 +53,29 @@ public class EquipmentWorkOrderController {
 	EquipmentWorkOrderRecord act(Principal principal, @PathVariable UUID id,
 			@Valid @RequestBody EquipmentWorkOrderRecord.ActionRequest request) {
 		return service.act(principal.getName(), id, request);
+	}
+
+	@PostMapping(path = "/{id}/spare-issues", consumes = MediaType.APPLICATION_JSON_VALUE)
+	EquipmentMaintenanceCostRecord.MutationResult issueSpare(Principal principal, @PathVariable UUID id,
+			@Valid @RequestBody EquipmentMaintenanceCostRecord.IssueRequest request) {
+		return costService.issue(principal.getName(), id, request);
+	}
+
+	@PostMapping(path = "/{id}/spare-returns", consumes = MediaType.APPLICATION_JSON_VALUE)
+	EquipmentMaintenanceCostRecord.MutationResult returnSpare(Principal principal, @PathVariable UUID id,
+			@Valid @RequestBody EquipmentMaintenanceCostRecord.ReturnRequest request) {
+		return costService.returnSpare(principal.getName(), id, request);
+	}
+
+	@PostMapping(path = "/{id}/labor-entries", consumes = MediaType.APPLICATION_JSON_VALUE)
+	EquipmentMaintenanceCostRecord.MutationResult recordLabor(Principal principal, @PathVariable UUID id,
+			@Valid @RequestBody EquipmentMaintenanceCostRecord.LaborEntryRequest request) {
+		return costService.recordLabor(principal.getName(), id, request);
+	}
+
+	@PostMapping(path = "/{id}/labor-entries/{entryId}/reversals", consumes = MediaType.APPLICATION_JSON_VALUE)
+	EquipmentMaintenanceCostRecord.MutationResult reverseLabor(Principal principal, @PathVariable UUID id,
+			@PathVariable UUID entryId, @Valid @RequestBody EquipmentMaintenanceCostRecord.LaborReversalRequest request) {
+		return costService.reverseLabor(principal.getName(), id, entryId, request);
 	}
 }

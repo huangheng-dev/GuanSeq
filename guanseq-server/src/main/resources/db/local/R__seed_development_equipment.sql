@@ -11,6 +11,20 @@ INSERT INTO equipment.assets (
     ('a1000000-0000-4000-8000-000000000099', '99999999-9999-4999-8999-999999999999', '99999999-9999-4999-8999-999999999998', '99999999-9999-4999-8999-999999999996', 'EQ-TENANT-HIDDEN', '隔离租户设备', 'PRODUCTION', NULL, NULL, NULL, NULL, NULL, '隔离工厂', '隔离责任人', NULL, 'IDLE', '2026-08-25 00:00:00+00', 0, '99999999-9999-4999-8999-999999999997', '2026-08-20 01:25:00+00', '99999999-9999-4999-8999-999999999997', '2026-08-20 01:25:00+00')
 ON CONFLICT (id) DO NOTHING;
 
+INSERT INTO equipment.spare_parts (
+    id, tenant_organization_id, owning_organization_id, workspace_id, creation_request_id, material_id,
+    material_code_snapshot, material_name_snapshot, material_specification_snapshot, unit_snapshot,
+    preferred_warehouse_id, preferred_warehouse_code_snapshot, preferred_warehouse_name_snapshot,
+    reorder_point, status, version, created_by, created_at, updated_by, updated_at
+) VALUES
+    ('c1000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000001',
+     '00000000-0000-4000-8000-000000000101', '10000000-0000-4000-8000-000000000101',
+     'seed-equipment-spare-bearing-created', '42000000-0000-4000-8000-000000000003',
+     'BR-6204', '深沟球轴承', '6204-2RS', '件', '71000000-0000-4000-8000-000000000001',
+     'WH-RM', '原材料仓', 120, 'ACTIVE', 0, '20000000-0000-4000-8000-000000000001',
+     '2026-08-25 00:45:00+00', '20000000-0000-4000-8000-000000000001', '2026-08-25 00:45:00+00')
+ON CONFLICT (id) DO NOTHING;
+
 INSERT INTO equipment.maintenance_work_orders (
     id, tenant_organization_id, owning_organization_id, workspace_id, work_order_number, creation_request_id,
     work_type, source_type, source_work_order_id, asset_id, asset_code_snapshot, asset_name_snapshot,

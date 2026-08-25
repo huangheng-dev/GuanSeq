@@ -11,7 +11,10 @@ const workOrder = {
   plannedStartAt: "2026-08-25T02:00:00Z", dueAt: "2026-08-25T10:00:00Z", assignee: "周凯",
   outcome: null, completionNotes: "更换传感器并完成负载验证", startedAt: "2026-08-25T02:10:00Z",
   submittedAt: "2026-08-25T04:00:00Z", completedAt: null, version: 2,
-  createdAt: "2026-08-25T01:00:00Z", updatedAt: "2026-08-25T04:00:00Z", availableActions: ["ACCEPT", "REJECT"],
+  createdAt: "2026-08-25T01:00:00Z", updatedAt: "2026-08-25T04:00:00Z",
+  costEvidence: { spareCost: 240, laborCost: 200, totalCost: 440, currency: "CNY",
+    basis: "备件按领用日有效标准成本；人工按本次登记小时费率估算；不生成财务凭证",
+    availableActions: [], spareTransactions: [], laborTransactions: [] }, availableActions: ["ACCEPT", "REJECT"],
   events: [{ id: "b2000000-0000-4000-8000-000000000001", actorUserId: "20000000-0000-4000-8000-000000000001",
     action: "SUBMITTED_FOR_ACCEPTANCE", fromStatus: "IN_PROGRESS", toStatus: "WAITING_ACCEPTANCE",
     reason: "维修完成并提交验收", outcome: null, requestId: "repair-submit-001", details: {}, occurredAt: "2026-08-25T04:00:00Z" }],
@@ -22,6 +25,7 @@ describe("equipment work order contracts", () => {
     const parsed = equipmentWorkOrderSchema.parse(workOrder);
     expect(parsed.availableActions).toEqual(["ACCEPT", "REJECT"]);
     expect(parsed.events[0].requestId).toBe("repair-submit-001");
+    expect(parsed.costEvidence?.totalCost).toBe(440);
     expect(equipmentWorkOrderPageSchema.parse({ items: [workOrder], totalElements: 1, page: 0, size: 200, totalPages: 1, canMaintain: true }).canMaintain).toBe(true);
   });
 

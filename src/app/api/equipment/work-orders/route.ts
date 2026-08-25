@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { equipmentWorkOrderActionSchema, equipmentWorkOrderOutcomeSchema, equipmentWorkOrderPrioritySchema, equipmentWorkTypeSchema } from "@/lib/contracts";
 import { GuanSeqApiError } from "@/services/guanseq-api-server";
-import { loadEquipmentWorkOrder, loadEquipmentWorkOrderPage, mutateEquipmentWorkOrder } from "@/services/equipment-work-order-server-service";
+import { loadEquipmentWorkOrder, loadEquipmentWorkOrderPage, mutateEquipmentMaintenanceCost, mutateEquipmentWorkOrder } from "@/services/equipment-work-order-server-service";
 
 const mutationSchema = z.discriminatedUnion("operation", [
   z.object({ operation: z.literal("create"), assetId: z.string().uuid(), workType: equipmentWorkTypeSchema,
@@ -14,6 +14,15 @@ const mutationSchema = z.discriminatedUnion("operation", [
     reason: z.string().trim().min(4).max(500), expectedVersion: z.number().int().nonnegative(),
     assetExpectedVersion: z.number().int().nonnegative(), outcome: equipmentWorkOrderOutcomeSchema.nullable().optional(),
     completionNotes: z.string().trim().max(1000).nullable().optional() }),
+  z.object({ operation: z.literal("issueSpare"), id: z.string().uuid(), sparePartId: z.string().uuid(), warehouseId: z.string().uuid(),
+    quantity: z.number().positive(), reason: z.string().trim().min(4).max(500), expectedVersion: z.number().int().nonnegative() }),
+  z.object({ operation: z.literal("returnSpare"), id: z.string().uuid(), issueTransactionId: z.string().uuid(), locationId: z.string().uuid(),
+    quantity: z.number().positive(), reason: z.string().trim().min(4).max(500), expectedVersion: z.number().int().nonnegative() }),
+  z.object({ operation: z.literal("recordLabor"), id: z.string().uuid(), technicianName: z.string().trim().min(1).max(80),
+    hours: z.number().positive().max(24), hourlyRate: z.number().positive(), currency: z.string().regex(/^[A-Z]{3}$/),
+    reason: z.string().trim().min(4).max(500), expectedVersion: z.number().int().nonnegative() }),
+  z.object({ operation: z.literal("reverseLabor"), id: z.string().uuid(), entryId: z.string().uuid(),
+    reason: z.string().trim().min(4).max(500), expectedVersion: z.number().int().nonnegative() }),
 ]);
 
 function requestIdFrom(request: Request) { return request.headers.get("X-Request-Id") ?? crypto.randomUUID(); }
@@ -46,7 +55,11 @@ export async function POST(request: Request) {
   if (!parsed.success) return Response.json({ message: "设备运维参数无效，请检查必填项、时间、原因和版本", requestId },
     { status: 400, headers: { "X-Request-Id": requestId } });
   try {
-    const result = await mutateEquipmentWorkOrder(parsed.data, requestId);
-    return Response.json({ workOrder: result.workOrder }, { headers: { "X-Request-Id": result.requestId } });
+    if (parsed.data.operation === "create" || parsed.data.operation === "action") {
+      const result = await mutateEquipmentWorkOrder(parsed.data, requestId);
+      return Response.json({ workOrder: result.workOrder }, { headers: { "X-Request-Id": result.requestId } });
+    }
+    const result = await mutateEquipmentMaintenanceCost(parsed.data, requestId);
+    return Response.json({ result: result.result }, { headers: { "X-Request-Id": result.requestId } });
   } catch (error) { return errorResponse(error, requestId, "设备运维服务发生未预期错误"); }
 }

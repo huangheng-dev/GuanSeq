@@ -84,4 +84,11 @@ describe("frontend quality gates", () => {
   it("removes the retired handcrafted overlay and pagination paths", () => {
     expect(globalsCss).not.toMatch(/dialogBackdrop|drawerBackdrop|paginationJump|businessPageSize|aiAssistantBackdrop/);
   });
+
+  it("keeps maintenance labor rates valid for the browser's two-decimal step", () => {
+    const source = readFileSync(join(sourceRoot, "components", "equipment-work-order-workspace.tsx"), "utf8");
+
+    expect(source).toContain('min="0.01" step="0.01" value={hourlyRate}');
+    expect(source).not.toContain('min="0.000001" step="0.01" value={hourlyRate}');
+  });
 });

@@ -38,6 +38,7 @@ public record EquipmentWorkOrderRecord(
 		long version,
 		Instant createdAt,
 		Instant updatedAt,
+		EquipmentMaintenanceCostRecord.CostEvidence costEvidence,
 		List<String> availableActions,
 		List<Event> events) {
 

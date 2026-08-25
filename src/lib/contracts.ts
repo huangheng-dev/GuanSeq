@@ -165,6 +165,25 @@ export const equipmentWorkOrderPrioritySchema = z.enum(["LOW", "MEDIUM", "HIGH",
 export const equipmentWorkOrderStatusSchema = z.enum(["PLANNED", "IN_PROGRESS", "WAITING_ACCEPTANCE", "COMPLETED", "CANCELLED"]);
 export const equipmentWorkOrderOutcomeSchema = z.enum(["PASS", "FAIL"]);
 export const equipmentWorkOrderActionSchema = z.enum(["START", "COMPLETE", "SUBMIT_FOR_ACCEPTANCE", "ACCEPT", "REJECT", "CANCEL"]);
+export const equipmentSpareTransactionSchema = z.object({
+  id: z.string().uuid(), transactionType: z.enum(["ISSUE", "RETURN"]), returnOfIssueId: z.string().uuid().nullable(),
+  sparePartId: z.string().uuid(), materialCode: z.string(), materialName: z.string(), materialSpecification: z.string().nullable(),
+  unit: z.string(), quantity: z.number().positive(), returnedQuantity: z.number().nonnegative(), returnableQuantity: z.number().nonnegative(),
+  unitCost: z.number().positive(), currency: z.string(), amount: z.number().positive(), warehouseId: z.string().uuid(),
+  warehouseCode: z.string(), warehouseName: z.string(), warehouseEvidence: z.array(z.record(z.string(), z.unknown())),
+  reason: z.string(), requestId: z.string(), actorUserId: z.string().uuid(), occurredAt: z.string().datetime(),
+});
+export const equipmentLaborTransactionSchema = z.object({
+  id: z.string().uuid(), transactionType: z.enum(["ENTRY", "REVERSAL"]), reversalOfEntryId: z.string().uuid().nullable(),
+  technicianName: z.string(), hours: z.number().positive(), hourlyRate: z.number().positive(), currency: z.string(),
+  amount: z.number().positive(), reversed: z.boolean(), reason: z.string(), requestId: z.string(),
+  actorUserId: z.string().uuid(), occurredAt: z.string().datetime(),
+});
+export const equipmentMaintenanceCostEvidenceSchema = z.object({
+  spareCost: z.number(), laborCost: z.number(), totalCost: z.number(), currency: z.string(), basis: z.string(),
+  spareTransactions: z.array(equipmentSpareTransactionSchema), laborTransactions: z.array(equipmentLaborTransactionSchema),
+  availableActions: z.array(z.enum(["ISSUE_SPARE", "RETURN_SPARE", "RECORD_LABOR", "REVERSE_LABOR"])),
+});
 export const equipmentWorkOrderEventSchema = z.object({
   id: z.string().uuid(), actorUserId: z.string().uuid(),
   action: z.enum(["CREATED", "STARTED", "EXECUTION_COMPLETED", "SUBMITTED_FOR_ACCEPTANCE", "ACCEPTED", "REJECTED", "CANCELLED", "REPAIR_GENERATED"]),
@@ -183,12 +202,35 @@ export const equipmentWorkOrderSchema = z.object({
   startedAt: z.string().datetime().nullable(), submittedAt: z.string().datetime().nullable(),
   completedAt: z.string().datetime().nullable(), version: z.number().int().nonnegative(),
   createdAt: z.string().datetime(), updatedAt: z.string().datetime(),
+  costEvidence: equipmentMaintenanceCostEvidenceSchema.nullable(),
   availableActions: z.array(equipmentWorkOrderActionSchema), events: z.array(equipmentWorkOrderEventSchema),
 });
 export const equipmentWorkOrderPageSchema = z.object({
   items: z.array(equipmentWorkOrderSchema), totalElements: z.number().int().nonnegative(),
   page: z.number().int().nonnegative(), size: z.number().int().positive(), totalPages: z.number().int().nonnegative(),
   canMaintain: z.boolean(),
+});
+
+export const equipmentSparePartSchema = z.object({
+  id: z.string().uuid(), materialId: z.string().uuid(), materialCode: z.string(), materialName: z.string(),
+  materialSpecification: z.string().nullable(), unit: z.string(), preferredWarehouseId: z.string().uuid(),
+  preferredWarehouseCode: z.string(), preferredWarehouseName: z.string(), reorderPoint: z.number().nonnegative(),
+  availableQuantity: z.number().nonnegative(), standardUnitCost: z.number().positive().nullable(), currency: z.string().nullable(),
+  costEffectiveDate: z.string().date().nullable(), costStatus: z.enum(["READY", "MISSING_COST"]),
+  stockStatus: z.enum(["SUFFICIENT", "BELOW_REORDER_POINT"]), status: z.enum(["ACTIVE", "INACTIVE"]),
+  version: z.number().int().nonnegative(), updatedAt: z.string().datetime(),
+});
+export const equipmentSparePartPageSchema = z.object({
+  items: z.array(equipmentSparePartSchema), totalElements: z.number().int().nonnegative(), page: z.number().int().nonnegative(),
+  size: z.number().int().positive(), totalPages: z.number().int().nonnegative(), canMaintain: z.boolean(),
+});
+export const equipmentSparePartReferenceSchema = z.object({
+  materials: z.array(z.object({ id: z.string().uuid(), code: z.string(), name: z.string(), specification: z.string().nullable(), unit: z.string() })),
+  warehouses: z.array(z.object({ id: z.string().uuid(), code: z.string(), name: z.string() })),
+  locations: z.array(z.object({ id: z.string().uuid(), warehouseId: z.string().uuid(), code: z.string(), name: z.string(), locationType: z.string() })),
+});
+export const equipmentMaintenanceCostMutationResultSchema = z.object({
+  workOrderVersion: z.number().int().nonnegative(), costEvidence: equipmentMaintenanceCostEvidenceSchema,
 });
 
 const masterDataBaseSchema = z.object({
@@ -1196,6 +1238,13 @@ export type EquipmentWorkOrderAction = z.infer<typeof equipmentWorkOrderActionSc
 export type EquipmentWorkOrderEvent = z.infer<typeof equipmentWorkOrderEventSchema>;
 export type EquipmentWorkOrder = z.infer<typeof equipmentWorkOrderSchema>;
 export type EquipmentWorkOrderPage = z.infer<typeof equipmentWorkOrderPageSchema>;
+export type EquipmentSpareTransaction = z.infer<typeof equipmentSpareTransactionSchema>;
+export type EquipmentLaborTransaction = z.infer<typeof equipmentLaborTransactionSchema>;
+export type EquipmentMaintenanceCostEvidence = z.infer<typeof equipmentMaintenanceCostEvidenceSchema>;
+export type EquipmentSparePart = z.infer<typeof equipmentSparePartSchema>;
+export type EquipmentSparePartPage = z.infer<typeof equipmentSparePartPageSchema>;
+export type EquipmentSparePartReference = z.infer<typeof equipmentSparePartReferenceSchema>;
+export type EquipmentMaintenanceCostMutationResult = z.infer<typeof equipmentMaintenanceCostMutationResultSchema>;
 export type CustomerRecord = z.infer<typeof customerRecordSchema>;
 export type MaterialRecord = z.infer<typeof materialRecordSchema>;
 export type SupplierRecord = z.infer<typeof supplierRecordSchema>;

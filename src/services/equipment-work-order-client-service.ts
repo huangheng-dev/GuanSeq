@@ -1,7 +1,8 @@
 import { z } from "zod";
 
-import { equipmentAssetSchema, equipmentWorkOrderPageSchema, equipmentWorkOrderSchema, type EquipmentAsset, type EquipmentWorkOrder, type EquipmentWorkOrderPage } from "@/lib/contracts";
-import type { EquipmentWorkOrderMutation } from "@/services/equipment-work-order-server-service";
+import { equipmentAssetSchema, equipmentMaintenanceCostMutationResultSchema, equipmentWorkOrderPageSchema, equipmentWorkOrderSchema,
+  type EquipmentAsset, type EquipmentMaintenanceCostMutationResult, type EquipmentWorkOrder, type EquipmentWorkOrderPage } from "@/lib/contracts";
+import type { EquipmentMaintenanceCostMutation, EquipmentWorkOrderMutation } from "@/services/equipment-work-order-server-service";
 
 export class EquipmentWorkOrderClientError extends Error {
   constructor(message: string, readonly status: number, readonly requestId?: string) { super(message); }
@@ -34,4 +35,13 @@ export async function submitEquipmentWorkOrderMutation(input: EquipmentWorkOrder
   const body = await payload(response);
   if (!response.ok || !body?.workOrder) throw failure(response, body, "设备运维操作失败");
   return equipmentWorkOrderSchema.parse(body.workOrder);
+}
+
+export async function submitEquipmentMaintenanceCostMutation(input: EquipmentMaintenanceCostMutation): Promise<EquipmentMaintenanceCostMutationResult> {
+  const response = await fetch("/api/equipment/work-orders", { method: "POST",
+    headers: { "Content-Type": "application/json", "X-Request-Id": `web-equipment-cost-${crypto.randomUUID()}` },
+    body: JSON.stringify(input) });
+  const body = await payload(response);
+  if (!response.ok || !body?.result) throw failure(response, body, "维修备件或人工成本操作失败");
+  return equipmentMaintenanceCostMutationResultSchema.parse(body.result);
 }

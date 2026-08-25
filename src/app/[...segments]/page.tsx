@@ -28,6 +28,7 @@ import { getAdvancePageData } from "@/services/advance-page-server-service";
 import { getWorkspaceUserPageData } from "@/services/workspace-user-server-service";
 import { getEquipmentAssetPageData } from "@/services/equipment-asset-server-service";
 import { getEquipmentWorkOrderPageData } from "@/services/equipment-work-order-server-service";
+import { getEquipmentSparePartPageData } from "@/services/equipment-spare-part-server-service";
 import { isBackendPageUnavailable } from "@/lib/backend-page-registry";
 import { requireFrontendSession } from "@/services/oidc-session-server";
 
@@ -41,7 +42,7 @@ export default async function RoutePage({ params }: RoutePageProps) {
   const { segments } = await params;
   const pathname = `/${segments.join("/")}`;
   await requireFrontendSession(pathname);
-  const [snapshot, pageModel, searchIndex, salesOrderPage, planningDemandPage, mrpRunPage, mrpSuggestionPage, bomPage, routingPage, inventoryPage, procurementPage, planningParameterPage, productionOrderPage, productionExecutionPage, finalInspectionPage, materialIssuePage, operationTaskPage, purchaseReceiptPage, incomingInspectionPage, salesShipmentPage, orderProfitPage, receivablePage, payablePage, accountingPeriodPage, grirAccrualPage, advancePage, workspaceUserPage, equipmentAssetPage, equipmentWorkOrderPage] = await Promise.all([
+  const [snapshot, pageModel, searchIndex, salesOrderPage, planningDemandPage, mrpRunPage, mrpSuggestionPage, bomPage, routingPage, inventoryPage, procurementPage, planningParameterPage, productionOrderPage, productionExecutionPage, finalInspectionPage, materialIssuePage, operationTaskPage, purchaseReceiptPage, incomingInspectionPage, salesShipmentPage, orderProfitPage, receivablePage, payablePage, accountingPeriodPage, grirAccrualPage, advancePage, workspaceUserPage, equipmentAssetPage, equipmentWorkOrderPage, equipmentSparePartPage] = await Promise.all([
     getManufacturingSnapshot(),
     getBusinessPageWithData(pathname),
     getGlobalSearchIndex(),
@@ -71,6 +72,7 @@ export default async function RoutePage({ params }: RoutePageProps) {
     getWorkspaceUserPageData(pathname),
     getEquipmentAssetPageData(pathname),
     getEquipmentWorkOrderPageData(pathname),
+    getEquipmentSparePartPageData(pathname),
   ]);
   if (!pageModel) notFound();
   const backendPageUnavailable = isBackendPageUnavailable(pathname, {
@@ -100,7 +102,8 @@ export default async function RoutePage({ params }: RoutePageProps) {
     advance: advancePage,
     equipmentAsset: equipmentAssetPage,
     equipmentWorkOrder: equipmentWorkOrderPage,
+    equipmentSparePart: equipmentSparePartPage,
   });
-  return <ManufacturingWorkspace backendPageUnavailable={backendPageUnavailable} initialSnapshot={snapshot} initialPageModel={pageModel} initialSearchIndex={searchIndex} initialSalesOrderPage={salesOrderPage} initialPlanningDemandPage={planningDemandPage} initialMrpRunPage={mrpRunPage} initialMrpSuggestionPage={mrpSuggestionPage} initialBomPage={bomPage} initialRoutingPage={routingPage} initialInventoryPage={inventoryPage} initialProcurementPage={procurementPage} initialPlanningParameterPage={planningParameterPage} initialProductionOrderPage={productionOrderPage} initialProductionExecutionPage={productionExecutionPage} initialFinalInspectionPage={finalInspectionPage} initialMaterialIssuePage={materialIssuePage} initialOperationTaskPage={operationTaskPage} initialPurchaseReceiptPage={purchaseReceiptPage} initialIncomingInspectionPage={incomingInspectionPage} initialSalesShipmentPage={salesShipmentPage} initialOrderProfitPage={orderProfitPage} initialReceivablePage={receivablePage} initialPayablePage={payablePage} initialAccountingPeriodPage={accountingPeriodPage} initialGrirAccrualPage={grirAccrualPage} initialAdvancePage={advancePage} initialWorkspaceUserPage={workspaceUserPage} initialEquipmentAssetPage={equipmentAssetPage} initialEquipmentWorkOrderPage={equipmentWorkOrderPage} />;
+  return <ManufacturingWorkspace backendPageUnavailable={backendPageUnavailable} initialSnapshot={snapshot} initialPageModel={pageModel} initialSearchIndex={searchIndex} initialSalesOrderPage={salesOrderPage} initialPlanningDemandPage={planningDemandPage} initialMrpRunPage={mrpRunPage} initialMrpSuggestionPage={mrpSuggestionPage} initialBomPage={bomPage} initialRoutingPage={routingPage} initialInventoryPage={inventoryPage} initialProcurementPage={procurementPage} initialPlanningParameterPage={planningParameterPage} initialProductionOrderPage={productionOrderPage} initialProductionExecutionPage={productionExecutionPage} initialFinalInspectionPage={finalInspectionPage} initialMaterialIssuePage={materialIssuePage} initialOperationTaskPage={operationTaskPage} initialPurchaseReceiptPage={purchaseReceiptPage} initialIncomingInspectionPage={incomingInspectionPage} initialSalesShipmentPage={salesShipmentPage} initialOrderProfitPage={orderProfitPage} initialReceivablePage={receivablePage} initialPayablePage={payablePage} initialAccountingPeriodPage={accountingPeriodPage} initialGrirAccrualPage={grirAccrualPage} initialAdvancePage={advancePage} initialWorkspaceUserPage={workspaceUserPage} initialEquipmentAssetPage={equipmentAssetPage} initialEquipmentWorkOrderPage={equipmentWorkOrderPage} initialEquipmentSparePartPage={equipmentSparePartPage} />;
 }
 

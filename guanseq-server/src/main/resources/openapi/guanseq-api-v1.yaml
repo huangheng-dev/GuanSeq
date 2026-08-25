@@ -2921,6 +2921,120 @@ paths:
         "404": { $ref: "#/components/responses/ResourceNotFound" }
         "409": { $ref: "#/components/responses/BusinessConflict" }
         "422": { $ref: "#/components/responses/BusinessRuleViolation" }
+  /api/v1/equipment/spare-parts:
+    get:
+      operationId: listEquipmentSpareParts
+      summary: 查询当前工作区备件台账、默认仓可用量与标准成本
+      tags: [Equipment]
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/Query" }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/Size" }]
+      responses:
+        "200":
+          description: 备件台账分页
+          content: { application/json: { schema: { $ref: "#/components/schemas/EquipmentSparePartPage" } } }
+        "401": { $ref: "#/components/responses/AuthenticationRequired" }
+    post:
+      operationId: createEquipmentSparePart
+      summary: 使用有效物料和默认仓库建立备件台账
+      tags: [Equipment]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/CreateEquipmentSparePartRequest" } } }
+      responses:
+        "201":
+          description: 备件台账已建立
+          content: { application/json: { schema: { $ref: "#/components/schemas/EquipmentSparePart" } } }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "403": { $ref: "#/components/responses/AccessDenied" }
+        "409": { $ref: "#/components/responses/BusinessConflict" }
+        "422": { $ref: "#/components/responses/BusinessRuleViolation" }
+  /api/v1/equipment/spare-parts/references:
+    get:
+      operationId: getEquipmentSparePartReferences
+      summary: 查询备件可选物料、仓库和库位
+      tags: [Equipment]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: 当前租户有效引用
+          content: { application/json: { schema: { $ref: "#/components/schemas/EquipmentSparePartReferenceData" } } }
+        "401": { $ref: "#/components/responses/AuthenticationRequired" }
+  /api/v1/equipment/work-orders/{id}/spare-issues:
+    post:
+      operationId: issueEquipmentSparePart
+      summary: 为执行中的维修工单领用备件
+      tags: [Equipment]
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/EntityId" }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/EquipmentSpareIssueRequest" } } }
+      responses:
+        "200":
+          description: 库存出库与成本证据已原子提交
+          content: { application/json: { schema: { $ref: "#/components/schemas/EquipmentMaintenanceCostMutationResult" } } }
+        "403": { $ref: "#/components/responses/AccessDenied" }
+        "404": { $ref: "#/components/responses/ResourceNotFound" }
+        "409": { $ref: "#/components/responses/BusinessConflict" }
+        "422": { $ref: "#/components/responses/BusinessRuleViolation" }
+  /api/v1/equipment/work-orders/{id}/spare-returns:
+    post:
+      operationId: returnEquipmentSparePart
+      summary: 按原领用事务退回维修备件
+      tags: [Equipment]
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/EntityId" }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/EquipmentSpareReturnRequest" } } }
+      responses:
+        "200":
+          description: 库存回补与成本冲减已原子提交
+          content: { application/json: { schema: { $ref: "#/components/schemas/EquipmentMaintenanceCostMutationResult" } } }
+        "403": { $ref: "#/components/responses/AccessDenied" }
+        "404": { $ref: "#/components/responses/ResourceNotFound" }
+        "409": { $ref: "#/components/responses/BusinessConflict" }
+        "422": { $ref: "#/components/responses/BusinessRuleViolation" }
+  /api/v1/equipment/work-orders/{id}/labor-entries:
+    post:
+      operationId: recordEquipmentMaintenanceLabor
+      summary: 登记维修人工与估算费率快照
+      tags: [Equipment]
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/EntityId" }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/EquipmentLaborEntryRequest" } } }
+      responses:
+        "200":
+          description: 人工估算证据已登记
+          content: { application/json: { schema: { $ref: "#/components/schemas/EquipmentMaintenanceCostMutationResult" } } }
+        "403": { $ref: "#/components/responses/AccessDenied" }
+        "409": { $ref: "#/components/responses/BusinessConflict" }
+        "422": { $ref: "#/components/responses/BusinessRuleViolation" }
+  /api/v1/equipment/work-orders/{id}/labor-entries/{entryId}/reversals:
+    post:
+      operationId: reverseEquipmentMaintenanceLabor
+      summary: 冲销错误的维修人工登记
+      tags: [Equipment]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/EntityId"
+        - name: entryId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/EquipmentLaborReversalRequest" } } }
+      responses:
+        "200":
+          description: 人工登记已按不可变事务冲销
+          content: { application/json: { schema: { $ref: "#/components/schemas/EquipmentMaintenanceCostMutationResult" } } }
+        "403": { $ref: "#/components/responses/AccessDenied" }
+        "404": { $ref: "#/components/responses/ResourceNotFound" }
+        "409": { $ref: "#/components/responses/BusinessConflict" }
 
 components:
   securitySchemes:
@@ -3098,6 +3212,83 @@ components:
           properties:
             items: { type: array, items: { $ref: "#/components/schemas/EquipmentWorkOrder" } }
             canMaintain: { type: boolean, description: 当前工作区角色是否可维护设备运维工单 }
+    EquipmentSparePartPage:
+      allOf:
+        - $ref: "#/components/schemas/PageMetadata"
+        - type: object
+          required: [items, canMaintain]
+          properties:
+            items: { type: array, items: { $ref: "#/components/schemas/EquipmentSparePart" } }
+            canMaintain: { type: boolean }
+    EquipmentSparePart:
+      type: object
+      additionalProperties: false
+      required: [id, materialId, materialCode, materialName, unit, preferredWarehouseId, preferredWarehouseCode, preferredWarehouseName, reorderPoint, availableQuantity, costStatus, stockStatus, status, version, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        materialId: { type: string, format: uuid }
+        materialCode: { type: string }
+        materialName: { type: string }
+        materialSpecification: { type: [string, "null"] }
+        unit: { type: string }
+        preferredWarehouseId: { type: string, format: uuid }
+        preferredWarehouseCode: { type: string }
+        preferredWarehouseName: { type: string }
+        reorderPoint: { type: number, minimum: 0 }
+        availableQuantity: { type: number }
+        standardUnitCost: { type: [number, "null"] }
+        currency: { type: [string, "null"] }
+        costEffectiveDate: { type: [string, "null"], format: date }
+        costStatus: { type: string, enum: [READY, MISSING_COST] }
+        stockStatus: { type: string, enum: [SUFFICIENT, BELOW_REORDER_POINT] }
+        status: { type: string, enum: [ACTIVE, INACTIVE] }
+        version: { type: integer, format: int64, minimum: 0 }
+        updatedAt: { type: string, format: date-time }
+    CreateEquipmentSparePartRequest:
+      type: object
+      additionalProperties: false
+      required: [materialId, preferredWarehouseId, reorderPoint, reason]
+      properties:
+        materialId: { type: string, format: uuid }
+        preferredWarehouseId: { type: string, format: uuid }
+        reorderPoint: { type: number, minimum: 0 }
+        reason: { type: string, minLength: 4, maxLength: 500 }
+    EquipmentSparePartReferenceData:
+      type: object
+      additionalProperties: false
+      required: [materials, warehouses, locations]
+      properties:
+        materials:
+          type: array
+          items:
+            type: object
+            required: [id, code, name, unit]
+            properties:
+              id: { type: string, format: uuid }
+              code: { type: string }
+              name: { type: string }
+              specification: { type: [string, "null"] }
+              unit: { type: string }
+        warehouses:
+          type: array
+          items:
+            type: object
+            required: [id, code, name]
+            properties:
+              id: { type: string, format: uuid }
+              code: { type: string }
+              name: { type: string }
+        locations:
+          type: array
+          items:
+            type: object
+            required: [id, warehouseId, code, name, locationType]
+            properties:
+              id: { type: string, format: uuid }
+              warehouseId: { type: string, format: uuid }
+              code: { type: string }
+              name: { type: string }
+              locationType: { type: string }
     EquipmentWorkOrder:
       type: object
       additionalProperties: false
@@ -3129,10 +3320,118 @@ components:
         version: { type: integer, format: int64, minimum: 0 }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
+        costEvidence:
+          oneOf:
+            - $ref: "#/components/schemas/EquipmentMaintenanceCostEvidence"
+            - type: "null"
         availableActions:
           type: array
           items: { type: string, enum: [START, COMPLETE, SUBMIT_FOR_ACCEPTANCE, ACCEPT, REJECT, CANCEL] }
         events: { type: array, items: { $ref: "#/components/schemas/EquipmentWorkOrderEvent" } }
+    EquipmentMaintenanceCostEvidence:
+      type: object
+      additionalProperties: false
+      required: [spareCost, laborCost, totalCost, currency, basis, spareTransactions, laborTransactions, availableActions]
+      properties:
+        spareCost: { type: number }
+        laborCost: { type: number }
+        totalCost: { type: number }
+        currency: { type: string }
+        basis: { type: string, description: 运维估算口径，不是财务凭证 }
+        spareTransactions: { type: array, items: { $ref: "#/components/schemas/EquipmentSpareTransaction" } }
+        laborTransactions: { type: array, items: { $ref: "#/components/schemas/EquipmentLaborTransaction" } }
+        availableActions:
+          type: array
+          items: { type: string, enum: [ISSUE_SPARE, RETURN_SPARE, RECORD_LABOR, REVERSE_LABOR] }
+    EquipmentSpareTransaction:
+      type: object
+      additionalProperties: false
+      required: [id, transactionType, sparePartId, materialCode, materialName, unit, quantity, returnedQuantity, returnableQuantity, unitCost, currency, amount, warehouseId, warehouseCode, warehouseName, warehouseEvidence, reason, requestId, actorUserId, occurredAt]
+      properties:
+        id: { type: string, format: uuid }
+        transactionType: { type: string, enum: [ISSUE, RETURN] }
+        returnOfIssueId: { type: [string, "null"], format: uuid }
+        sparePartId: { type: string, format: uuid }
+        materialCode: { type: string }
+        materialName: { type: string }
+        materialSpecification: { type: [string, "null"] }
+        unit: { type: string }
+        quantity: { type: number, exclusiveMinimum: 0 }
+        returnedQuantity: { type: number, minimum: 0 }
+        returnableQuantity: { type: number, minimum: 0 }
+        unitCost: { type: number, exclusiveMinimum: 0 }
+        currency: { type: string }
+        amount: { type: number, exclusiveMinimum: 0 }
+        warehouseId: { type: string, format: uuid }
+        warehouseCode: { type: string }
+        warehouseName: { type: string }
+        warehouseEvidence: { type: array, items: { type: object, additionalProperties: true } }
+        reason: { type: string }
+        requestId: { type: string }
+        actorUserId: { type: string, format: uuid }
+        occurredAt: { type: string, format: date-time }
+    EquipmentLaborTransaction:
+      type: object
+      additionalProperties: false
+      required: [id, transactionType, technicianName, hours, hourlyRate, currency, amount, reversed, reason, requestId, actorUserId, occurredAt]
+      properties:
+        id: { type: string, format: uuid }
+        transactionType: { type: string, enum: [ENTRY, REVERSAL] }
+        reversalOfEntryId: { type: [string, "null"], format: uuid }
+        technicianName: { type: string }
+        hours: { type: number, exclusiveMinimum: 0, maximum: 24 }
+        hourlyRate: { type: number, exclusiveMinimum: 0 }
+        currency: { type: string }
+        amount: { type: number, exclusiveMinimum: 0 }
+        reversed: { type: boolean }
+        reason: { type: string }
+        requestId: { type: string }
+        actorUserId: { type: string, format: uuid }
+        occurredAt: { type: string, format: date-time }
+    EquipmentMaintenanceCostMutationResult:
+      type: object
+      required: [workOrderVersion, costEvidence]
+      properties:
+        workOrderVersion: { type: integer, format: int64, minimum: 0 }
+        costEvidence: { $ref: "#/components/schemas/EquipmentMaintenanceCostEvidence" }
+    EquipmentSpareIssueRequest:
+      type: object
+      additionalProperties: false
+      required: [sparePartId, warehouseId, quantity, reason, expectedVersion]
+      properties:
+        sparePartId: { type: string, format: uuid }
+        warehouseId: { type: string, format: uuid }
+        quantity: { type: number, exclusiveMinimum: 0 }
+        reason: { type: string, minLength: 4, maxLength: 500 }
+        expectedVersion: { type: integer, format: int64, minimum: 0 }
+    EquipmentSpareReturnRequest:
+      type: object
+      additionalProperties: false
+      required: [issueTransactionId, locationId, quantity, reason, expectedVersion]
+      properties:
+        issueTransactionId: { type: string, format: uuid }
+        locationId: { type: string, format: uuid }
+        quantity: { type: number, exclusiveMinimum: 0 }
+        reason: { type: string, minLength: 4, maxLength: 500 }
+        expectedVersion: { type: integer, format: int64, minimum: 0 }
+    EquipmentLaborEntryRequest:
+      type: object
+      additionalProperties: false
+      required: [technicianName, hours, hourlyRate, currency, reason, expectedVersion]
+      properties:
+        technicianName: { type: string, minLength: 1, maxLength: 80 }
+        hours: { type: number, minimum: 0.01, maximum: 24 }
+        hourlyRate: { type: number, exclusiveMinimum: 0 }
+        currency: { type: string, pattern: "^[A-Z]{3}$" }
+        reason: { type: string, minLength: 4, maxLength: 500 }
+        expectedVersion: { type: integer, format: int64, minimum: 0 }
+    EquipmentLaborReversalRequest:
+      type: object
+      additionalProperties: false
+      required: [reason, expectedVersion]
+      properties:
+        reason: { type: string, minLength: 4, maxLength: 500 }
+        expectedVersion: { type: integer, format: int64, minimum: 0 }
     EquipmentWorkOrderEvent:
       type: object
       additionalProperties: false

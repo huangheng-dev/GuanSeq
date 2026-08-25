@@ -43,6 +43,7 @@ class ItemStandardCostEntity {
 	UUID getMaterialId() { return materialId; }
 	BigDecimal getUnitCost() { return unitCost; }
 	String getCurrency() { return currency; }
+	LocalDate getEffectiveDate() { return effectiveDate; }
 }
 
 @Entity
