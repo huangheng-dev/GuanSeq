@@ -10,8 +10,8 @@ function withoutNestedDialogRole(children: ReactNode) {
     : child);
 }
 
-export function GsModalHost({ children, onClose }: { children: ReactNode; onClose: () => void }) {
-  return <GsModal className="gsModalHost" open closable={false} footer={null} onCancel={onClose}>{withoutNestedDialogRole(children)}</GsModal>;
+export function GsModalHost({ children, onClose, zIndex }: { children: ReactNode; onClose: () => void; zIndex?: number }) {
+  return <GsModal className="gsModalHost" open closable={false} footer={null} onCancel={onClose} zIndex={zIndex}>{withoutNestedDialogRole(children)}</GsModal>;
 }
 
 export function GsDrawerHost({ children, onClose, size }: { children: ReactNode; onClose: () => void; size?: number | string }) {

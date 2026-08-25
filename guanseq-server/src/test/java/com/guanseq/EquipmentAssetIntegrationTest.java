@@ -89,7 +89,7 @@ class EquipmentAssetIntegrationTest {
 	}
 
 	@Test
-	void enforcesControlledLifecycleAndRecordsManualEvidence() throws Exception {
+	void reportsBreakdownWithRepairOrderAndBlocksMaintenanceBypass() throws Exception {
 		MvcResult created = mockMvc.perform(post("/api/v1/equipment/assets").with(httpBasic(USERNAME, PASSWORD))
 					.header("X-Request-Id", "equipment-life-create-001")
 					.contentType(MediaType.APPLICATION_JSON).content(createBody("EQ-LIFE-001", "状态流转设备")))
@@ -102,19 +102,22 @@ class EquipmentAssetIntegrationTest {
 					.contentType(MediaType.APPLICATION_JSON).content(updateBody("运行中修改", 1)))
 				.andExpect(status().isConflict());
 		act(id, "REPORT_BREAKDOWN", "主轴振动异常，人工报故障", 1, "equipment-life-down-001", 200);
-		act(id, "START_MAINTENANCE", "设备经理确认开始维修", 2, "equipment-life-maintain-001", 200);
-		act(id, "COMPLETE_MAINTENANCE", "更换轴承并完成空载验证", 3, "equipment-life-complete-001", 200);
+		act(id, "START_MAINTENANCE", "尝试绕过维修工单直接开工", 2, "equipment-life-maintain-001", 409);
 
 		mockMvc.perform(get("/api/v1/equipment/assets/{id}", id).with(httpBasic(USERNAME, PASSWORD)))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.operatingStatus").value("IDLE"))
-				.andExpect(jsonPath("$.version").value(4))
-				.andExpect(jsonPath("$.events[0].action").value("MAINTENANCE_COMPLETED"))
+				.andExpect(jsonPath("$.operatingStatus").value("DOWN"))
+				.andExpect(jsonPath("$.version").value(2))
+				.andExpect(jsonPath("$.events[0].action").value("BREAKDOWN_REPORTED"))
 				.andExpect(jsonPath("$.events[0].details.statusSource").value("MANUAL"))
+				.andExpect(jsonPath("$.events[0].details.repairWorkOrderId").isNotEmpty())
 				.andExpect(jsonPath("$.events[?(@.requestId == 'equipment-life-down-001')]").exists());
 
-		act(id, "INACTIVATE", "设备退出当前生产服务", 4, "equipment-life-inactivate-001", 200);
-		act(id, "START", "停用设备不能重新开机", 5, "equipment-life-restart-001", 409);
+		mockMvc.perform(get("/api/v1/equipment/work-orders?type=REPAIR&query=EQ-LIFE-001&page=0&size=10")
+					.with(httpBasic(USERNAME, PASSWORD)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.items[0].sourceType").value("BREAKDOWN"))
+				.andExpect(jsonPath("$.items[0].status").value("PLANNED"));
 	}
 
 	@Test

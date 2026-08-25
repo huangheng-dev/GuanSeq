@@ -28,12 +28,15 @@ public class EquipmentAssetApplicationService {
 	private final CurrentWorkspaceProvider workspaceProvider;
 	private final EquipmentAssetRepository assetRepository;
 	private final EquipmentAssetEventRepository eventRepository;
+	private final EquipmentWorkOrderApplicationService workOrderService;
 
 	EquipmentAssetApplicationService(CurrentWorkspaceProvider workspaceProvider,
-			EquipmentAssetRepository assetRepository, EquipmentAssetEventRepository eventRepository) {
+			EquipmentAssetRepository assetRepository, EquipmentAssetEventRepository eventRepository,
+			EquipmentWorkOrderApplicationService workOrderService) {
 		this.workspaceProvider = workspaceProvider;
 		this.assetRepository = assetRepository;
 		this.eventRepository = eventRepository;
+		this.workOrderService = workOrderService;
 	}
 
 	@Transactional(readOnly = true)
@@ -101,7 +104,15 @@ public class EquipmentAssetApplicationService {
 		Transition transition = transition(request.action(), from);
 		asset.changeStatus(transition.toStatus(), access.userId());
 		assetRepository.saveAndFlush(asset);
-		audit(access, asset, transition.eventAction(), from, transition.toStatus(), request.reason());
+		if ("REPORT_BREAKDOWN".equals(request.action())) {
+			String actionRequestId = requestId();
+			EquipmentWorkOrderEntity repair = workOrderService.createGeneratedRepair(access, asset, "BREAKDOWN", null,
+					request.reason(), actionRequestId);
+			audit(access, asset, transition.eventAction(), from, transition.toStatus(), request.reason(),
+					Map.of("statusSource", "MANUAL", "repairWorkOrderId", repair.getId().toString()), actionRequestId);
+		} else {
+			audit(access, asset, transition.eventAction(), from, transition.toStatus(), request.reason());
+		}
 		return toRecord(asset, true);
 	}
 
@@ -110,8 +121,8 @@ public class EquipmentAssetApplicationService {
 			case "START" -> requireTransition(from, Set.of("IDLE"), "RUNNING", "STARTED");
 			case "STOP" -> requireTransition(from, Set.of("RUNNING"), "IDLE", "STOPPED");
 			case "REPORT_BREAKDOWN" -> requireTransition(from, Set.of("IDLE", "RUNNING"), "DOWN", "BREAKDOWN_REPORTED");
-			case "START_MAINTENANCE" -> requireTransition(from, Set.of("IDLE", "DOWN"), "MAINTENANCE", "MAINTENANCE_STARTED");
-			case "COMPLETE_MAINTENANCE" -> requireTransition(from, Set.of("MAINTENANCE"), "IDLE", "MAINTENANCE_COMPLETED");
+			case "START_MAINTENANCE", "COMPLETE_MAINTENANCE" -> throw new ResponseStatusException(HttpStatus.CONFLICT,
+					"设备维修必须从保养或维修工单推进，不能从台账绕过执行与验收");
 			case "INACTIVATE" -> requireTransition(from, Set.of("IDLE"), "INACTIVE", "INACTIVATED");
 			default -> throw new ResponseStatusException(HttpStatus.CONFLICT, "当前设备状态不允许执行该动作");
 		};
@@ -132,9 +143,19 @@ public class EquipmentAssetApplicationService {
 
 	private void audit(CurrentWorkspaceAccess access, EquipmentAssetEntity asset, String action, String fromStatus,
 			String toStatus, String reason) {
+		audit(access, asset, action, fromStatus, toStatus, reason, Map.of("statusSource", "MANUAL"));
+	}
+
+	private void audit(CurrentWorkspaceAccess access, EquipmentAssetEntity asset, String action, String fromStatus,
+			String toStatus, String reason, Map<String, Object> details) {
+		audit(access, asset, action, fromStatus, toStatus, reason, details, requestId());
+	}
+
+	private void audit(CurrentWorkspaceAccess access, EquipmentAssetEntity asset, String action, String fromStatus,
+			String toStatus, String reason, Map<String, Object> details, String auditRequestId) {
 		eventRepository.saveAndFlush(new EquipmentAssetEventEntity(access.tenantOrganizationId(), access.workspaceId(),
-				access.userId(), asset.getId(), action, fromStatus, toStatus, reason, requestId(),
-				Map.of("statusSource", "MANUAL")));
+				access.userId(), asset.getId(), action, fromStatus, toStatus, reason, auditRequestId,
+				details));
 	}
 
 	private EquipmentAssetRecord toRecord(EquipmentAssetEntity asset, boolean includeEvents) {

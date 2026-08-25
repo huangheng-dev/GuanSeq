@@ -32,6 +32,9 @@ export const backendPageDataKeyByPath = {
   "/finance/advances": "advance",
   "/equipment/assets": "equipmentAsset",
   "/equipment/status": "equipmentAsset",
+  "/equipment/inspections": "equipmentWorkOrder",
+  "/equipment/maintenance": "equipmentWorkOrder",
+  "/equipment/work-orders": "equipmentWorkOrder",
 } as const;
 
 export type BackendPageDataKey = (typeof backendPageDataKeyByPath)[keyof typeof backendPageDataKeyByPath];

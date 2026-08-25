@@ -159,6 +159,38 @@ export const equipmentAssetPageSchema = z.object({
   canMaintain: z.boolean(),
 });
 
+export const equipmentWorkTypeSchema = z.enum(["INSPECTION", "PREVENTIVE_MAINTENANCE", "REPAIR"]);
+export const equipmentWorkOrderSourceSchema = z.enum(["MANUAL", "BREAKDOWN", "INSPECTION_FAILURE", "MAINTENANCE_FAILURE"]);
+export const equipmentWorkOrderPrioritySchema = z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]);
+export const equipmentWorkOrderStatusSchema = z.enum(["PLANNED", "IN_PROGRESS", "WAITING_ACCEPTANCE", "COMPLETED", "CANCELLED"]);
+export const equipmentWorkOrderOutcomeSchema = z.enum(["PASS", "FAIL"]);
+export const equipmentWorkOrderActionSchema = z.enum(["START", "COMPLETE", "SUBMIT_FOR_ACCEPTANCE", "ACCEPT", "REJECT", "CANCEL"]);
+export const equipmentWorkOrderEventSchema = z.object({
+  id: z.string().uuid(), actorUserId: z.string().uuid(),
+  action: z.enum(["CREATED", "STARTED", "EXECUTION_COMPLETED", "SUBMITTED_FOR_ACCEPTANCE", "ACCEPTED", "REJECTED", "CANCELLED", "REPAIR_GENERATED"]),
+  fromStatus: equipmentWorkOrderStatusSchema.nullable(), toStatus: equipmentWorkOrderStatusSchema,
+  reason: z.string(), outcome: equipmentWorkOrderOutcomeSchema.nullable(), requestId: z.string(),
+  details: z.record(z.string(), z.unknown()), occurredAt: z.string().datetime(),
+});
+export const equipmentWorkOrderSchema = z.object({
+  id: z.string().uuid(), workOrderNumber: z.string(), workType: equipmentWorkTypeSchema,
+  sourceType: equipmentWorkOrderSourceSchema, sourceWorkOrderId: z.string().uuid().nullable(),
+  assetId: z.string().uuid(), assetCode: z.string(), assetName: z.string(), assetLocation: z.string(),
+  assetOperatingStatus: equipmentOperatingStatusSchema, assetVersion: z.number().int().nonnegative(),
+  title: z.string(), description: z.string(), priority: equipmentWorkOrderPrioritySchema,
+  status: equipmentWorkOrderStatusSchema, plannedStartAt: z.string().datetime(), dueAt: z.string().datetime(),
+  assignee: z.string(), outcome: equipmentWorkOrderOutcomeSchema.nullable(), completionNotes: z.string().nullable(),
+  startedAt: z.string().datetime().nullable(), submittedAt: z.string().datetime().nullable(),
+  completedAt: z.string().datetime().nullable(), version: z.number().int().nonnegative(),
+  createdAt: z.string().datetime(), updatedAt: z.string().datetime(),
+  availableActions: z.array(equipmentWorkOrderActionSchema), events: z.array(equipmentWorkOrderEventSchema),
+});
+export const equipmentWorkOrderPageSchema = z.object({
+  items: z.array(equipmentWorkOrderSchema), totalElements: z.number().int().nonnegative(),
+  page: z.number().int().nonnegative(), size: z.number().int().positive(), totalPages: z.number().int().nonnegative(),
+  canMaintain: z.boolean(),
+});
+
 const masterDataBaseSchema = z.object({
   id: z.string().uuid(),
   code: z.string(),
@@ -1155,6 +1187,15 @@ export type EquipmentAssetAction = z.infer<typeof equipmentAssetActionSchema>;
 export type EquipmentAssetEvent = z.infer<typeof equipmentAssetEventSchema>;
 export type EquipmentAsset = z.infer<typeof equipmentAssetSchema>;
 export type EquipmentAssetPage = z.infer<typeof equipmentAssetPageSchema>;
+export type EquipmentWorkType = z.infer<typeof equipmentWorkTypeSchema>;
+export type EquipmentWorkOrderSource = z.infer<typeof equipmentWorkOrderSourceSchema>;
+export type EquipmentWorkOrderPriority = z.infer<typeof equipmentWorkOrderPrioritySchema>;
+export type EquipmentWorkOrderStatus = z.infer<typeof equipmentWorkOrderStatusSchema>;
+export type EquipmentWorkOrderOutcome = z.infer<typeof equipmentWorkOrderOutcomeSchema>;
+export type EquipmentWorkOrderAction = z.infer<typeof equipmentWorkOrderActionSchema>;
+export type EquipmentWorkOrderEvent = z.infer<typeof equipmentWorkOrderEventSchema>;
+export type EquipmentWorkOrder = z.infer<typeof equipmentWorkOrderSchema>;
+export type EquipmentWorkOrderPage = z.infer<typeof equipmentWorkOrderPageSchema>;
 export type CustomerRecord = z.infer<typeof customerRecordSchema>;
 export type MaterialRecord = z.infer<typeof materialRecordSchema>;
 export type SupplierRecord = z.infer<typeof supplierRecordSchema>;
