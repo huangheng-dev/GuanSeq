@@ -2964,6 +2964,78 @@ paths:
         "403": { description: 无权提交检验结论 }
         "409": { description: 检验已经判定或版本冲突 }
         "422": { description: 数量合计或缺陷说明不符合检验规则 }
+  /api/v1/quality/nonconformances:
+    get:
+      operationId: listQualityNonconformances
+      summary: 分页查询当前工作区不合格评审与 CAPA
+      description: 只查询质量模块拥有的来料和完工检验不合格事实；处置决定不等于下游退货、返工、报废或库存事务已经执行。
+      tags: [Quality]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/Query"
+        - name: queue
+          in: query
+          schema: { type: string, enum: [ALL, REVIEW, ACTION], default: ALL }
+        - name: status
+          in: query
+          schema: { type: string, enum: [ALL, OPEN, REVIEWED, ACTION_REQUIRED, ACTION_IN_PROGRESS, VERIFICATION_PENDING, CLOSED], default: ALL }
+        - name: severity
+          in: query
+          schema: { type: string, enum: [ALL, LOW, MEDIUM, HIGH, CRITICAL], default: ALL }
+        - name: sourceType
+          in: query
+          schema: { type: string, enum: [ALL, INCOMING_INSPECTION, FINAL_INSPECTION], default: ALL }
+        - name: overdue
+          in: query
+          schema: { type: boolean, default: false }
+        - $ref: "#/components/parameters/Page"
+        - name: size
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+      responses:
+        "200":
+          description: 当前工作区不合格记录分页
+          headers: { X-Request-Id: { $ref: "#/components/headers/RequestId" } }
+          content: { application/json: { schema: { $ref: "#/components/schemas/NonconformancePage" } } }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "401": { $ref: "#/components/responses/AuthenticationRequired" }
+        "403": { $ref: "#/components/responses/AccessDenied" }
+  /api/v1/quality/nonconformances/{id}:
+    get:
+      operationId: getQualityNonconformance
+      summary: 查询不合格来源、当前状态和完整责任事件
+      tags: [Quality]
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/EntityId" }]
+      responses:
+        "200":
+          description: 不合格与 CAPA 详情
+          headers: { X-Request-Id: { $ref: "#/components/headers/RequestId" } }
+          content: { application/json: { schema: { $ref: "#/components/schemas/Nonconformance" } } }
+        "401": { $ref: "#/components/responses/AuthenticationRequired" }
+        "403": { $ref: "#/components/responses/AccessDenied" }
+        "404": { $ref: "#/components/responses/ResourceNotFound" }
+  /api/v1/quality/nonconformances/{id}/actions:
+    post:
+      operationId: actOnQualityNonconformance
+      summary: 评审、处置、执行或验证不合格纠正措施
+      tags: [Quality]
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: "#/components/parameters/EntityId" }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/NonconformanceActionRequest" } } }
+      responses:
+        "200":
+          description: 动作完成后的不合格详情
+          headers: { X-Request-Id: { $ref: "#/components/headers/RequestId" } }
+          content: { application/json: { schema: { $ref: "#/components/schemas/Nonconformance" } } }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "401": { $ref: "#/components/responses/AuthenticationRequired" }
+        "403": { $ref: "#/components/responses/AccessDenied" }
+        "404": { $ref: "#/components/responses/ResourceNotFound" }
+        "409": { $ref: "#/components/responses/BusinessConflict" }
+        "422": { $ref: "#/components/responses/BusinessRuleViolation" }
   /api/v1/planning/material-parameters:
     get:
       operationId: listMaterialPlanningParameters
@@ -8417,6 +8489,116 @@ components:
           required: [items]
           properties:
             items: { type: array, items: { $ref: "#/components/schemas/IncomingInspection" } }
+    NonconformancePage:
+      type: object
+      additionalProperties: false
+      required: [items, totalElements, page, size, totalPages, summary, canReview, canExecuteAction, canVerify]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/Nonconformance" } }
+        totalElements: { type: integer, format: int64, minimum: 0 }
+        page: { type: integer, minimum: 0 }
+        size: { type: integer, minimum: 1, maximum: 100 }
+        totalPages: { type: integer, minimum: 0 }
+        summary: { $ref: "#/components/schemas/NonconformanceSummary" }
+        canReview: { type: boolean }
+        canExecuteAction: { type: boolean }
+        canVerify: { type: boolean }
+    NonconformanceSummary:
+      type: object
+      additionalProperties: false
+      required: [open, reviewed, actionRequired, actionInProgress, verificationPending, closed, overdue]
+      properties:
+        open: { type: integer, format: int64, minimum: 0 }
+        reviewed: { type: integer, format: int64, minimum: 0 }
+        actionRequired: { type: integer, format: int64, minimum: 0 }
+        actionInProgress: { type: integer, format: int64, minimum: 0 }
+        verificationPending: { type: integer, format: int64, minimum: 0 }
+        closed: { type: integer, format: int64, minimum: 0 }
+        overdue: { type: integer, format: int64, minimum: 0 }
+    Nonconformance:
+      type: object
+      additionalProperties: false
+      required: [id, caseNumber, sourceType, inspectionId, inspectionNumber, sourceDocumentId, sourceDocumentNumber, orderId, orderNumber, materialId, materialCode, materialName, unit, nonconformingQuantity, defectDescription, status, overdue, version, createdAt, updatedAt, events]
+      properties:
+        id: { type: string, format: uuid }
+        caseNumber: { type: string }
+        sourceType: { type: string, enum: [INCOMING_INSPECTION, FINAL_INSPECTION] }
+        inspectionId: { type: string, format: uuid }
+        inspectionNumber: { type: string }
+        sourceDocumentId: { type: string, format: uuid }
+        sourceDocumentNumber: { type: string }
+        orderId: { type: string, format: uuid }
+        orderNumber: { type: string }
+        supplierId: { type: [string, "null"], format: uuid }
+        supplierCode: { type: [string, "null"] }
+        supplierName: { type: [string, "null"] }
+        materialId: { type: string, format: uuid }
+        materialCode: { type: string }
+        materialName: { type: string }
+        materialSpecification: { type: [string, "null"] }
+        unit: { type: string }
+        nonconformingQuantity: { type: number, exclusiveMinimum: 0 }
+        defectDescription: { type: string }
+        status: { type: string, enum: [OPEN, REVIEWED, ACTION_REQUIRED, ACTION_IN_PROGRESS, VERIFICATION_PENDING, CLOSED] }
+        severity: { type: [string, "null"], enum: [LOW, MEDIUM, HIGH, CRITICAL, null] }
+        immediateContainment: { type: [string, "null"] }
+        reviewConclusion: { type: [string, "null"] }
+        capaRequired: { type: [boolean, "null"] }
+        dispositionType: { type: [string, "null"], enum: [RETURN_TO_SUPPLIER, REWORK, SCRAP, CONCESSION, SORTING, OTHER, null] }
+        dispositionDecision: { type: [string, "null"] }
+        dispositionEvidence: { type: [string, "null"] }
+        dispositionOwner: { type: [string, "null"] }
+        rootCause: { type: [string, "null"] }
+        correctiveAction: { type: [string, "null"] }
+        actionOwner: { type: [string, "null"] }
+        actionDueDate: { type: [string, "null"], format: date }
+        overdue: { type: boolean }
+        actionCompletionEvidence: { type: [string, "null"] }
+        verificationEffective: { type: [boolean, "null"] }
+        verificationConclusion: { type: [string, "null"] }
+        version: { type: integer, format: int64, minimum: 0 }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        closedAt: { type: [string, "null"], format: date-time }
+        events: { type: array, items: { $ref: "#/components/schemas/NonconformanceEvent" } }
+    NonconformanceEvent:
+      type: object
+      additionalProperties: false
+      required: [id, action, toStatus, actorUserId, actorUsername, requestId, details, occurredAt]
+      properties:
+        id: { type: string, format: uuid }
+        action: { type: string, enum: [CREATED, REVIEW, DISPOSE, PLAN_ACTION, COMPLETE_ACTION, VERIFY, REOPEN] }
+        fromStatus: { type: [string, "null"] }
+        toStatus: { type: string }
+        actorUserId: { type: string, format: uuid }
+        actorUsername: { type: string }
+        reason: { type: [string, "null"] }
+        requestId: { type: string }
+        details: { type: object, additionalProperties: true }
+        occurredAt: { type: string, format: date-time }
+    NonconformanceActionRequest:
+      type: object
+      additionalProperties: false
+      required: [action, expectedVersion]
+      properties:
+        action: { type: string, enum: [REVIEW, DISPOSE, PLAN_ACTION, COMPLETE_ACTION, VERIFY, REOPEN] }
+        expectedVersion: { type: integer, format: int64, minimum: 0 }
+        severity: { type: [string, "null"], enum: [LOW, MEDIUM, HIGH, CRITICAL, null] }
+        immediateContainment: { type: [string, "null"], maxLength: 1000 }
+        reviewConclusion: { type: [string, "null"], maxLength: 1000 }
+        capaRequired: { type: [boolean, "null"] }
+        dispositionType: { type: [string, "null"], enum: [RETURN_TO_SUPPLIER, REWORK, SCRAP, CONCESSION, SORTING, OTHER, null] }
+        dispositionDecision: { type: [string, "null"], maxLength: 1000 }
+        dispositionEvidence: { type: [string, "null"], maxLength: 1000 }
+        dispositionOwner: { type: [string, "null"], maxLength: 120 }
+        rootCause: { type: [string, "null"], maxLength: 1000 }
+        correctiveAction: { type: [string, "null"], maxLength: 1000 }
+        actionOwner: { type: [string, "null"], maxLength: 120 }
+        actionDueDate: { type: [string, "null"], format: date }
+        actionCompletionEvidence: { type: [string, "null"], maxLength: 1000 }
+        effective: { type: [boolean, "null"] }
+        verificationConclusion: { type: [string, "null"], maxLength: 1000 }
+        reason: { type: [string, "null"], maxLength: 1000 }
     IncomingInspection:
       type: object
       required: [id, inspectionNumber, sourceId, sourceNumber, purchaseOrderId, purchaseOrderNumber, supplierId, supplierCode, supplierName, materialId, materialCode, materialName, unit, inspectionQuantity, status, version, createdAt]

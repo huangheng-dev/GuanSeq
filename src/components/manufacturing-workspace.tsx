@@ -87,6 +87,8 @@ import { ProductionExecutionWorkspace } from "./production-execution-workspace";
 import { FinalInspectionWorkspace } from "./final-inspection-workspace";
 import type { IncomingInspectionPageData } from "@/services/incoming-inspection-server-service";
 import { IncomingInspectionWorkspace } from "./incoming-inspection-workspace";
+import type { NonconformancePageData } from "@/services/nonconformance-server-service";
+import { NonconformanceWorkspace } from "./nonconformance-workspace";
 import type { MaterialIssuePageData } from "@/services/material-issue-server-service";
 import { MaterialIssueWorkspace } from "./material-issue-workspace";
 import { MobileMaterialIssueWorkspace } from "./mobile-material-issue-workspace";
@@ -148,6 +150,7 @@ type ManufacturingWorkspaceProps = {
   initialProductionExecutionPage?: ProductionExecutionPageData | null;
   initialFinalInspectionPage?: FinalInspectionPageData | null;
   initialIncomingInspectionPage?: IncomingInspectionPageData | null;
+  initialNonconformancePage?: NonconformancePageData | null;
   initialMaterialIssuePage?: MaterialIssuePageData | null;
   initialOperationTaskPage?: OperationTaskPageData | null;
   initialMobileProductionReportingPage?: MobileProductionReportingPageData | null;
@@ -493,6 +496,7 @@ export function ManufacturingWorkspace({
   initialPurchaseReceiptPage,
   initialPurchaseReturnPage,
   initialIncomingInspectionPage,
+  initialNonconformancePage,
   initialSalesShipmentPage,
   initialSalesReturnPage,
   initialOrderProfitPage,
@@ -541,6 +545,7 @@ export function ManufacturingWorkspace({
       initialPurchaseReceiptPage={initialPurchaseReceiptPage}
       initialPurchaseReturnPage={initialPurchaseReturnPage}
       initialIncomingInspectionPage={initialIncomingInspectionPage}
+      initialNonconformancePage={initialNonconformancePage}
       initialSalesShipmentPage={initialSalesShipmentPage}
       initialSalesReturnPage={initialSalesReturnPage}
       initialOrderProfitPage={initialOrderProfitPage}
@@ -589,6 +594,7 @@ function ManufacturingWorkspaceContent({
   initialPurchaseReceiptPage,
   initialPurchaseReturnPage,
   initialIncomingInspectionPage,
+  initialNonconformancePage,
   initialSalesShipmentPage,
   initialSalesReturnPage,
   initialOrderProfitPage,
@@ -1719,6 +1725,9 @@ function ManufacturingWorkspaceContent({
           <IncomingInspectionWorkspace
             initialData={initialIncomingInspectionPage}
           />
+        ) : pathname.startsWith("/quality/nonconformance/") &&
+          initialNonconformancePage ? (
+          <NonconformanceWorkspace initialData={initialNonconformancePage} />
         ) : pathname === "/product/boms/list" && initialBomPage ? (
           <BomWorkspace initialData={initialBomPage} />
         ) : pathname === "/product/routings/list" && initialRoutingPage ? (

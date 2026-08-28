@@ -11,7 +11,7 @@ import org.springframework.data.repository.query.Param;
 
 interface FinalInspectionRepository extends JpaRepository<FinalInspectionEntity, UUID> {
 	@Query("""
-		select i from FinalInspectionEntity i where i.tenantOrganizationId = :tenantId
+		select i from FinalInspectionEntity i where i.tenantOrganizationId = :tenantId and i.workspaceId = :workspaceId
 		and i.inspectionType = :type
 		and (:status = '' or i.status = :status)
 		and (:query = '' or lower(i.inspectionNumber) like lower(concat('%', :query, '%'))
@@ -20,9 +20,11 @@ interface FinalInspectionRepository extends JpaRepository<FinalInspectionEntity,
 			or lower(i.materialCode) like lower(concat('%', :query, '%'))
 			or lower(i.materialName) like lower(concat('%', :query, '%')))
 		""")
-	Page<FinalInspectionEntity> search(@Param("tenantId") UUID tenantId, @Param("type") String type, @Param("query") String query,
+	Page<FinalInspectionEntity> search(@Param("tenantId") UUID tenantId, @Param("workspaceId") UUID workspaceId,
+			@Param("type") String type, @Param("query") String query,
 			@Param("status") String status, Pageable pageable);
 	Optional<FinalInspectionEntity> findByIdAndTenantOrganizationId(UUID id, UUID tenantId);
+	Optional<FinalInspectionEntity> findByIdAndTenantOrganizationIdAndWorkspaceId(UUID id, UUID tenantId, UUID workspaceId);
 	Optional<FinalInspectionEntity> findByTenantOrganizationIdAndSourceTypeAndSourceId(UUID tenantId, String sourceType,
 			UUID sourceId);
 	Optional<FinalInspectionEntity> findByTenantOrganizationIdAndRequestId(UUID tenantId, String requestId);

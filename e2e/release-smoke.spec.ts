@@ -84,7 +84,7 @@ test("发行冒烟：初始化、IAM、主闭环、退货与失败恢复", async
     await openFormalPage(page, "/procurement/receipts", "采购到货协同");
     await page.getByRole("button", { name: "登记到货", exact: true }).click();
     let dialog = await activeDialog(page, "登记采购到货");
-    await dialog.getByLabel("BR-6204收货数量").fill("1");
+    await dialog.getByLabel("BR-6204收货数量").fill("2");
     await dialog.getByLabel("BR-6204批号").fill("E2E-BR-6204");
     await submitAndClose(dialog, "登记到货");
     await expect(page.getByRole("table", { name: "采购收货列表" })).toContainText("待检");
@@ -92,9 +92,33 @@ test("发行冒烟：初始化、IAM、主闭环、退货与失败恢复", async
     await openFormalPage(page, "/quality/incoming", "来料检验 IQC");
     await page.getByRole("button", { name: "录入判定" }).click();
     dialog = await activeDialog(page, "来料检验判定");
-    await expect(dialog.getByRole("spinbutton", { name: "合格数量", exact: true })).toHaveValue("1");
+    await dialog.getByRole("spinbutton", { name: "合格数量", exact: true }).fill("1");
+    await dialog.getByRole("spinbutton", { name: "不合格数量", exact: true }).fill("1");
+    await dialog.getByLabel("缺陷说明").fill("E2E 来料外观划伤，隔离后进入质量评审");
     await submitAndClose(dialog, "提交判定");
-    await expect(page.getByRole("table", { name: "来料检验任务" })).toContainText("合格 1/0");
+    await expect(page.getByRole("table", { name: "来料检验任务" })).toContainText("部分合格 1/1");
+
+    await openFormalPage(page, "/quality/nonconformance/records", "不合格记录");
+    await expect(page.getByRole("table")).toContainText("E2E 来料外观划伤");
+    await page.locator(".nonconformanceTableRow").first().click();
+    await page.getByRole("button", { name: "提交评审", exact: true }).click();
+    dialog = await activeDialog(page, "提交评审");
+    await dialog.getByLabel("即时遏制措施").fill("隔离本批不合格物料并复核同批库存");
+    await dialog.getByLabel("评审结论").fill("低风险外观缺陷，完成返工证据后验证关闭");
+    await submitAndClose(dialog, "确认提交");
+
+    await page.getByRole("button", { name: "提交处置决定", exact: true }).click();
+    dialog = await activeDialog(page, "提交处置决定");
+    await dialog.getByLabel("处置责任人").fill("来料质量组");
+    await dialog.getByRole("textbox", { name: "处置决定 必填" }).fill("供应商现场返工并由质量复核");
+    await dialog.getByLabel("执行证据").fill("返工记录 E2E-RWK-001 已由来料质量组复核");
+    await submitAndClose(dialog, "确认提交");
+
+    await page.getByRole("button", { name: "有效性验证", exact: true }).click();
+    dialog = await activeDialog(page, "有效性验证");
+    await dialog.getByLabel("验证结论").fill("复验合格且同批库存未发现相同缺陷");
+    await submitAndClose(dialog, "确认提交");
+    await expect(page.locator(".nonconformanceDrawer")).toContainText("已关闭");
 
     await openFormalPage(page, "/procurement/returns", "采购退货与供应商处置");
     await page.getByRole("button", { name: "建立采购退货" }).click();

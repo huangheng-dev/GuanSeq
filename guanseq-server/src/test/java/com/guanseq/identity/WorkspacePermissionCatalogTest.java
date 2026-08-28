@@ -17,7 +17,7 @@ class WorkspacePermissionCatalogTest {
 	@Test
 	void containsOnlyControlledRolesAndKeepsAdministratorOnEveryPermission() {
 		assertThat(WorkspaceRoleCatalog.roles()).hasSize(13);
-		assertThat(WorkspacePermission.catalog()).hasSize(54);
+		assertThat(WorkspacePermission.catalog()).hasSize(58);
 		assertThat(WorkspacePermission.catalog())
 				.allSatisfy(permission -> {
 					assertThat(permission.roleCodes()).contains(WorkspaceRoleCatalog.ADMIN);
@@ -53,6 +53,10 @@ class WorkspacePermissionCatalogTest {
 		enforced.put(WorkspacePermission.PRODUCTION_LABOR_APPROVE, field("production.internal.OperationLaborEntryApplicationService", "APPROVAL_ROLES"));
 		enforced.put(WorkspacePermission.PRODUCTION_REPORT, field("production.internal.ProductionWorkReportApplicationService", "REPORT_ROLES"));
 		enforced.put(WorkspacePermission.QUALITY_INSPECTION_COMPLETE, field("quality.internal.FinalInspectionApplicationService", "QUALITY_ROLES"));
+		enforced.put(WorkspacePermission.QUALITY_NONCONFORMANCE_READ, field("quality.internal.NonconformanceApplicationService", "READ_ROLES"));
+		enforced.put(WorkspacePermission.QUALITY_NONCONFORMANCE_REVIEW, field("quality.internal.NonconformanceApplicationService", "REVIEW_ROLES"));
+		enforced.put(WorkspacePermission.QUALITY_CORRECTIVE_ACTION_EXECUTE, field("quality.internal.NonconformanceApplicationService", "EXECUTE_ROLES"));
+		enforced.put(WorkspacePermission.QUALITY_CORRECTIVE_ACTION_VERIFY, field("quality.internal.NonconformanceApplicationService", "VERIFY_ROLES"));
 		enforced.put(WorkspacePermission.WAREHOUSE_INVENTORY_MOVE, field("warehouse.internal.InventoryApplicationService", "MOVEMENT_ROLES"));
 		enforced.put(WorkspacePermission.WAREHOUSE_PUTAWAY, field("warehouse.internal.PutawayApplicationService", "PUTAWAY_ROLES"));
 		enforced.put(WorkspacePermission.WAREHOUSE_TRANSFER, field("warehouse.internal.InventoryTransferApplicationService", "ROLES"));
@@ -78,7 +82,7 @@ class WorkspacePermissionCatalogTest {
 		enforced.put(WorkspacePermission.EQUIPMENT_FIELD_ACCEPTANCE_MAINTAIN, field("equipment.internal.EquipmentTelemetryFieldAcceptanceApplicationService", "MAINTAIN_ROLES"));
 		enforced.put(WorkspacePermission.EQUIPMENT_FIELD_ACCEPTANCE_APPROVE, field("equipment.internal.EquipmentTelemetryFieldAcceptanceApplicationService", "APPROVE_ROLES"));
 
-		assertThat(enforced).hasSize(48);
+		assertThat(enforced).hasSize(52);
 		for (Map.Entry<WorkspacePermission, RoleSetField> entry : enforced.entrySet()) {
 			assertThat(entry.getValue().roles()).as(entry.getKey().name()).containsExactlyInAnyOrderElementsOf(entry.getKey().roleCodes());
 		}

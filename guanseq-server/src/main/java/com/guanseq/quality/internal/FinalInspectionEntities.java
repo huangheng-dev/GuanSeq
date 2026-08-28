@@ -86,6 +86,7 @@ class FinalInspectionEntity {
 	}
 
 	UUID getId() { return id; } UUID getTenantOrganizationId() { return tenantOrganizationId; }
+	UUID getOwningOrganizationId() { return owningOrganizationId; } UUID getWorkspaceId() { return workspaceId; }
 	String getInspectionType() { return inspectionType; }
 	String getInspectionNumber() { return inspectionNumber; } String getSourceType() { return sourceType; }
 	UUID getSourceId() { return sourceId; } String getSourceNumber() { return sourceNumber; }
@@ -98,6 +99,7 @@ class FinalInspectionEntity {
 	BigDecimal getAcceptedQuantity() { return acceptedQuantity; } BigDecimal getRejectedQuantity() { return rejectedQuantity; }
 	String getInspector() { return inspector; } String getDefectDescription() { return defectDescription; }
 	String getConclusion() { return conclusion; } String getDecisionRequestId() { return decisionRequestId; }
+	UUID getCreatedBy() { return createdBy; } UUID getCompletedBy() { return completedBy; }
 	long getVersion() { return version; } Instant getCreatedAt() { return createdAt; } Instant getCompletedAt() { return completedAt; }
 }
 

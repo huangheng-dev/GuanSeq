@@ -4,7 +4,7 @@ import { backendPageDataKeyByPath, getBackendPageDataKey, isBackendPageUnavailab
 
 describe("backend page registry", () => {
   it("keeps every formal backend route unique and explicitly registered", () => {
-    expect(Object.keys(backendPageDataKeyByPath)).toHaveLength(54);
+    expect(Object.keys(backendPageDataKeyByPath)).toHaveLength(57);
     expect(getBackendPageDataKey("/sales/orders/list")).toBe("salesOrder");
     expect(getBackendPageDataKey("/sales/returns")).toBe("salesReturn");
     expect(getBackendPageDataKey("/procurement/returns")).toBe("purchaseReturn");
@@ -29,6 +29,9 @@ describe("backend page registry", () => {
     expect(getBackendPageDataKey("/equipment/alerts")).toBe("equipmentAlert");
     expect(getBackendPageDataKey("/equipment/telemetry")).toBe("equipmentTelemetry");
     expect(getBackendPageDataKey("/equipment/oee")).toBe("equipmentOee");
+    expect(getBackendPageDataKey("/quality/nonconformance/records")).toBe("nonconformance");
+    expect(getBackendPageDataKey("/quality/nonconformance/reviews")).toBe("nonconformance");
+    expect(getBackendPageDataKey("/quality/nonconformance/actions")).toBe("nonconformance");
   });
 
   it("fails closed when formal data is absent or marked unavailable", () => {
@@ -50,5 +53,7 @@ describe("backend page registry", () => {
     expect(isBackendPageUnavailable("/settings/roles", {})).toBe(true);
     expect(isBackendPageUnavailable("/settings/roles", { rolePermission: { source: "backend" } })).toBe(false);
     expect(isBackendPageUnavailable("/settings/roles", { rolePermission: { source: "unavailable" } })).toBe(true);
+    expect(isBackendPageUnavailable("/quality/nonconformance/records", {})).toBe(true);
+    expect(isBackendPageUnavailable("/quality/nonconformance/records", { nonconformance: { source: "backend" } })).toBe(false);
   });
 });

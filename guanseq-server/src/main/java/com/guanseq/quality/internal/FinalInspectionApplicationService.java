@@ -33,20 +33,23 @@ public class FinalInspectionApplicationService implements FinalInspectionProvide
 	private final CurrentWorkspaceProvider workspaceProvider;
 	private final FinalInspectionRepository inspectionRepository;
 	private final FinalInspectionEventRepository eventRepository;
+	private final NonconformanceApplicationService nonconformanceService;
 	private final ApplicationEventPublisher eventPublisher;
 	private final JdbcTemplate jdbcTemplate;
 
 	FinalInspectionApplicationService(CurrentWorkspaceProvider workspaceProvider,
 			FinalInspectionRepository inspectionRepository, FinalInspectionEventRepository eventRepository,
+			NonconformanceApplicationService nonconformanceService,
 			ApplicationEventPublisher eventPublisher, JdbcTemplate jdbcTemplate) {
 		this.workspaceProvider = workspaceProvider; this.inspectionRepository = inspectionRepository;
-		this.eventRepository = eventRepository; this.eventPublisher = eventPublisher; this.jdbcTemplate = jdbcTemplate;
+		this.eventRepository = eventRepository; this.nonconformanceService = nonconformanceService;
+		this.eventPublisher = eventPublisher; this.jdbcTemplate = jdbcTemplate;
 	}
 
 	@Transactional(readOnly = true)
 	public FinalInspectionPage listFinal(String username, String query, String status, int page, int size) {
 		CurrentWorkspaceAccess access = workspaceProvider.resolve(username);
-		var result = inspectionRepository.search(access.tenantOrganizationId(), "FINAL", normalize(query), normalizeStatus(status),
+		var result = inspectionRepository.search(access.tenantOrganizationId(), access.workspaceId(), "FINAL", normalize(query), normalizeStatus(status),
 				PageRequest.of(Math.max(0, page), Math.min(100, Math.max(1, size)), Sort.by(Sort.Direction.DESC, "createdAt")));
 		return new FinalInspectionPage(result.getContent().stream().map(this::toFinalRecord).toList(),
 				result.getTotalElements(), result.getNumber(), result.getSize(), result.getTotalPages());
@@ -73,7 +76,7 @@ public class FinalInspectionApplicationService implements FinalInspectionProvide
 	@Transactional(readOnly = true)
 	public IncomingInspectionPage listIncoming(String username, String query, String status, int page, int size) {
 		CurrentWorkspaceAccess access = workspaceProvider.resolve(username);
-		var result = inspectionRepository.search(access.tenantOrganizationId(), "INCOMING", normalize(query), normalizeStatus(status),
+		var result = inspectionRepository.search(access.tenantOrganizationId(), access.workspaceId(), "INCOMING", normalize(query), normalizeStatus(status),
 				PageRequest.of(Math.max(0, page), Math.min(100, Math.max(1, size)), Sort.by(Sort.Direction.DESC, "createdAt")));
 		return new IncomingInspectionPage(result.getContent().stream().map(this::toIncomingRecord).toList(),
 				result.getTotalElements(), result.getNumber(), result.getSize(), result.getTotalPages());
@@ -174,6 +177,7 @@ public class FinalInspectionApplicationService implements FinalInspectionProvide
 				access.userId(), inspection.getId(), "COMPLETED", "PENDING", "COMPLETED", requestId,
 				Map.of("result", inspection.getResult(), "acceptedQuantity", inspection.getAcceptedQuantity(),
 						"rejectedQuantity", inspection.getRejectedQuantity())));
+		nonconformanceService.createFromInspection(access, inspection, requestId);
 		return requestId;
 	}
 
@@ -203,7 +207,7 @@ public class FinalInspectionApplicationService implements FinalInspectionProvide
 				item.getResult(), item.getAcceptedQuantity(), item.getRejectedQuantity());
 	}
 	private FinalInspectionEntity require(CurrentWorkspaceAccess access, UUID id) {
-		return inspectionRepository.findByIdAndTenantOrganizationId(id, access.tenantOrganizationId())
+		return inspectionRepository.findByIdAndTenantOrganizationIdAndWorkspaceId(id, access.tenantOrganizationId(), access.workspaceId())
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "检验任务不存在或不在当前租户范围"));
 	}
 	private String nextNumber(String prefix) {
