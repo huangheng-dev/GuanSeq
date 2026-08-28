@@ -14,6 +14,8 @@ import org.springframework.data.repository.query.Param;
 import jakarta.persistence.LockModeType;
 
 interface OrganizationUnitRepository extends JpaRepository<OrganizationUnitEntity, UUID> {
+	List<OrganizationUnitEntity> findAllByParentIdOrderByName(UUID parentId);
+	Optional<OrganizationUnitEntity> findByCode(String code);
 }
 
 interface IdentityUserRepository extends JpaRepository<IdentityUserEntity, UUID> {
@@ -26,6 +28,7 @@ interface IdentityUserRepository extends JpaRepository<IdentityUserEntity, UUID>
 }
 
 interface WorkspaceRepository extends JpaRepository<WorkspaceEntity, UUID> {
+	long countByOperatingOrganizationAndStatus(OrganizationUnitEntity operatingOrganization, String status);
 
 	@Query("""
 			select w from WorkspaceEntity w
@@ -44,6 +47,8 @@ interface WorkspaceRepository extends JpaRepository<WorkspaceEntity, UUID> {
 }
 
 interface WorkspaceMembershipRepository extends JpaRepository<WorkspaceMembershipEntity, UUID> {
+	List<WorkspaceMembershipEntity> findAllByWorkspaceIdOrderByCreatedAt(UUID workspaceId);
+	long countByWorkspaceIdAndOrganizationUnitIdAndStatus(UUID workspaceId, UUID organizationUnitId, String status);
 
 	Optional<WorkspaceMembershipEntity> findByUserIdAndWorkspaceIdAndStatus(
 			UUID userId,

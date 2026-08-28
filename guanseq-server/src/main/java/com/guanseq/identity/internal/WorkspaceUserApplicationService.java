@@ -96,7 +96,7 @@ public class WorkspaceUserApplicationService {
 				normalizedUsername,
 				request.displayName().trim());
 		WorkspaceMembershipEntity membership = new WorkspaceMembershipEntity(
-				UUID.randomUUID(), user.getId(), access.workspaceId(), request.roleCode());
+				UUID.randomUUID(), user.getId(), access.workspaceId(), access.operatingOrganizationId(), request.roleCode());
 		try {
 			userRepository.saveAndFlush(user);
 			membershipRepository.saveAndFlush(membership);

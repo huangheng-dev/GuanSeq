@@ -3382,3 +3382,9 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, a:focus-visib
 @media (max-width: 560px) {
   .inventoryControlTasks > .sectionTitleCompact { align-items: stretch; flex-direction: column; }
 }
+.organizationSectionNote {
+  margin: 4px 0 0;
+  color: var(--gs-ink-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}

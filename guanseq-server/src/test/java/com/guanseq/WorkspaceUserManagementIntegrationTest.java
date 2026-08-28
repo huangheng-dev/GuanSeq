@@ -81,7 +81,7 @@ class WorkspaceUserManagementIntegrationTest {
 				.andExpect(status().isOk())
 				.andExpect(header().string("X-Request-Id", "role-permissions-list-0001"))
 				.andExpect(jsonPath("$.workspaceId").value(EAST_WORKSPACE_ID))
-				.andExpect(jsonPath("$.catalogVersion").value("2026-08-28.1"))
+				.andExpect(jsonPath("$.catalogVersion").value("2026-08-28.2"))
 				.andExpect(jsonPath("$.roles.length()").value(13))
 				.andExpect(jsonPath("$.groups[?(@.moduleCode == 'IDENTITY')].moduleName").value("身份与工作区"))
 				.andExpect(jsonPath("$.groups[*].permissions[*].code", org.hamcrest.Matchers.hasItem("FINANCE_ACCOUNTING_PERIOD_REOPEN")))

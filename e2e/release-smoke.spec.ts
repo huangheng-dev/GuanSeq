@@ -41,10 +41,23 @@ test("发行冒烟：初始化、IAM、主闭环、退货与失败恢复", async
     await expect(members).toContainText("系统管理员");
   });
 
+  await test.step("最小组织层级在当前工作区边界内受控维护", async () => {
+    await openFormalPage(page, "/settings/organization/structure", "组织架构");
+    await expect(page.getByRole("table", { name: "组织单元列表" })).toContainText("华东制造中心");
+    await expect(page.getByText("治理范围由当前工作区锁定")).toBeVisible();
+    await page.getByRole("button", { name: "建立现场单元" }).click();
+    const dialog = await activeDialog(page, "建立直属现场单元");
+    await dialog.getByLabel("现场编码").fill("E2E-SITE-01");
+    await dialog.getByLabel("名称").fill("E2E 总装现场");
+    await submitAndClose(dialog, "保存");
+    await expect(page.getByRole("table", { name: "组织单元列表" })).toContainText("E2E 总装现场");
+  });
+
   await test.step("角色权限矩阵只读呈现后端实际门禁", async () => {
     await openFormalPage(page, "/settings/roles", "角色权限");
     const matrix = page.getByRole("region", { name: "后端角色权限矩阵" });
     await expect(matrix).toContainText("查看角色权限矩阵");
+    await expect(matrix).toContainText("维护当前工作区组织");
     await expect(matrix).toContainText("重开会计期间");
     await expect(page.getByText("受控内置角色")).toBeVisible();
     await expect(page.getByRole("button", { name: "新建角色" })).toHaveCount(0);

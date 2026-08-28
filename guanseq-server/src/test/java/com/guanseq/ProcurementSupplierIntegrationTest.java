@@ -129,9 +129,10 @@ class ProcurementSupplierIntegrationTest {
 				VALUES (cast(? as uuid), 'BUYER-WS', '采购专员工作台', cast(? as uuid), cast(? as uuid), 'ACTIVE')
 				""", wsId, TENANT, EAST_PLANT);
 		jdbc.update("""
-				INSERT INTO identity.workspace_memberships (id, user_id, workspace_id, role_code, status)
-				VALUES (cast(? as uuid), cast(? as uuid), cast(? as uuid), 'PROCUREMENT_BUYER', 'ACTIVE')
-				""", memberId, USER_ID, wsId);
+				INSERT INTO identity.workspace_memberships
+						(id, user_id, workspace_id, organization_unit_id, role_code, status)
+				VALUES (cast(? as uuid), cast(? as uuid), cast(? as uuid), cast(? as uuid), 'PROCUREMENT_BUYER', 'ACTIVE')
+				""", memberId, USER_ID, wsId, EAST_PLANT);
 		jdbc.update("""
 				UPDATE identity.user_workspace_preferences SET current_workspace_id = cast(? as uuid) WHERE user_id = cast(? as uuid)
 				""", wsId, USER_ID);

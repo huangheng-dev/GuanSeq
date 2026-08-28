@@ -17,7 +17,7 @@ class WorkspacePermissionCatalogTest {
 	@Test
 	void containsOnlyControlledRolesAndKeepsAdministratorOnEveryPermission() {
 		assertThat(WorkspaceRoleCatalog.roles()).hasSize(13);
-		assertThat(WorkspacePermission.catalog()).hasSize(52);
+		assertThat(WorkspacePermission.catalog()).hasSize(53);
 		assertThat(WorkspacePermission.catalog())
 				.allSatisfy(permission -> {
 					assertThat(permission.roleCodes()).contains(WorkspaceRoleCatalog.ADMIN);

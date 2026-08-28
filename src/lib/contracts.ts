@@ -143,6 +143,29 @@ export const workspaceUserPageSchema = z.object({
   totalPages: z.number().int().nonnegative(),
 });
 
+export const organizationUnitSchema = z.object({
+  id: z.string().uuid(), code: z.string(), name: z.string(), unitType: z.enum(["COMPANY", "PLANT", "SITE"]),
+  parentId: z.string().uuid().nullable(), status: z.enum(["ACTIVE", "INACTIVE"]),
+  responsibleUserId: z.string().uuid().nullable(), responsibleUserName: z.string().nullable(),
+  version: z.number().int().nonnegative(), createdAt: z.string().datetime(), updatedAt: z.string().datetime(),
+});
+export const organizationWorkspaceSchema = z.object({
+  id: z.string().uuid(), code: z.string(), name: z.string(), status: z.enum(["ACTIVE", "INACTIVE"]),
+  operatingOrganizationId: z.string().uuid(), responsibleUserId: z.string().uuid().nullable(),
+  responsibleUserName: z.string().nullable(), version: z.number().int().nonnegative(),
+  createdAt: z.string().datetime(), updatedAt: z.string().datetime(),
+});
+export const organizationMemberSchema = z.object({
+  userId: z.string().uuid(), username: z.string(), displayName: z.string(), roleCode: workspaceRoleCodeSchema,
+  membershipStatus: z.enum(["ACTIVE", "INACTIVE"]), organizationUnitId: z.string().uuid(),
+  organizationUnitName: z.string(), membershipVersion: z.number().int().nonnegative(),
+});
+export const organizationStructurePageSchema = z.object({
+  currentUserId: z.string().uuid(), company: organizationUnitSchema, operatingUnit: organizationUnitSchema,
+  siteUnits: z.array(organizationUnitSchema), workspace: organizationWorkspaceSchema,
+  members: z.array(organizationMemberSchema), scopeDescription: z.string().min(1),
+});
+
 export const equipmentAssetCategorySchema = z.enum(["PRODUCTION", "QUALITY", "UTILITY", "LOGISTICS", "OTHER"]);
 export const equipmentOperatingStatusSchema = z.enum(["IDLE", "RUNNING", "DOWN", "MAINTENANCE", "INACTIVE"]);
 export const equipmentAssetActionSchema = z.enum(["START", "STOP", "REPORT_BREAKDOWN", "START_MAINTENANCE", "COMPLETE_MAINTENANCE", "INACTIVATE"]);
@@ -1636,6 +1659,10 @@ export type WorkspacePermissionGroup = z.infer<typeof workspacePermissionGroupSc
 export type WorkspaceRolePermissionPage = z.infer<typeof workspaceRolePermissionPageSchema>;
 export type WorkspaceUser = z.infer<typeof workspaceUserSchema>;
 export type WorkspaceUserPage = z.infer<typeof workspaceUserPageSchema>;
+export type OrganizationUnit = z.infer<typeof organizationUnitSchema>;
+export type OrganizationWorkspace = z.infer<typeof organizationWorkspaceSchema>;
+export type OrganizationMember = z.infer<typeof organizationMemberSchema>;
+export type OrganizationStructurePage = z.infer<typeof organizationStructurePageSchema>;
 export type EquipmentAssetCategory = z.infer<typeof equipmentAssetCategorySchema>;
 export type EquipmentOperatingStatus = z.infer<typeof equipmentOperatingStatusSchema>;
 export type EquipmentAssetAction = z.infer<typeof equipmentAssetActionSchema>;

@@ -34,6 +34,18 @@ class OrganizationUnitEntity {
 
 	private String status;
 
+	@Column(name = "responsible_user_id")
+	private UUID responsibleUserId;
+
+	@Version
+	private long version;
+
+	@Column(name = "created_at")
+	private Instant createdAt;
+
+	@Column(name = "updated_at")
+	private Instant updatedAt;
+
 	protected OrganizationUnitEntity() {
 	}
 
@@ -44,6 +56,8 @@ class OrganizationUnitEntity {
 		this.unitType = unitType;
 		this.parentId = parentId;
 		this.status = "ACTIVE";
+		this.createdAt = Instant.now();
+		this.updatedAt = this.createdAt;
 	}
 
 	UUID getId() {
@@ -52,6 +66,26 @@ class OrganizationUnitEntity {
 
 	String getName() {
 		return name;
+	}
+
+	String getCode() { return code; }
+	String getUnitType() { return unitType; }
+	UUID getParentId() { return parentId; }
+	String getStatus() { return status; }
+	UUID getResponsibleUserId() { return responsibleUserId; }
+	long getVersion() { return version; }
+	Instant getCreatedAt() { return createdAt; }
+	Instant getUpdatedAt() { return updatedAt; }
+
+	void update(String nextName, UUID nextResponsibleUserId) {
+		this.name = nextName;
+		this.responsibleUserId = nextResponsibleUserId;
+		this.updatedAt = Instant.now();
+	}
+
+	void changeStatus(String nextStatus) {
+		this.status = nextStatus;
+		this.updatedAt = Instant.now();
 	}
 }
 
@@ -76,6 +110,18 @@ class WorkspaceEntity {
 
 	private String status;
 
+	@Column(name = "responsible_user_id")
+	private UUID responsibleUserId;
+
+	@Version
+	private long version;
+
+	@Column(name = "created_at")
+	private Instant createdAt;
+
+	@Column(name = "updated_at")
+	private Instant updatedAt;
+
 	protected WorkspaceEntity() {
 	}
 
@@ -91,6 +137,8 @@ class WorkspaceEntity {
 		this.tenantOrganization = tenantOrganization;
 		this.operatingOrganization = operatingOrganization;
 		this.status = "ACTIVE";
+		this.createdAt = Instant.now();
+		this.updatedAt = this.createdAt;
 	}
 
 	UUID getId() {
@@ -115,6 +163,17 @@ class WorkspaceEntity {
 
 	String getStatus() {
 		return status;
+	}
+
+	UUID getResponsibleUserId() { return responsibleUserId; }
+	long getVersion() { return version; }
+	Instant getCreatedAt() { return createdAt; }
+	Instant getUpdatedAt() { return updatedAt; }
+
+	void update(String nextName, UUID nextResponsibleUserId) {
+		this.name = nextName;
+		this.responsibleUserId = nextResponsibleUserId;
+		this.updatedAt = Instant.now();
 	}
 }
 
@@ -213,6 +272,9 @@ class WorkspaceMembershipEntity {
 
 	private String status;
 
+	@Column(name = "organization_unit_id")
+	private UUID organizationUnitId;
+
 	@Version
 	private long version;
 
@@ -225,10 +287,11 @@ class WorkspaceMembershipEntity {
 	protected WorkspaceMembershipEntity() {
 	}
 
-	WorkspaceMembershipEntity(UUID id, UUID userId, UUID workspaceId, String roleCode) {
+	WorkspaceMembershipEntity(UUID id, UUID userId, UUID workspaceId, UUID organizationUnitId, String roleCode) {
 		this.id = id;
 		this.userId = userId;
 		this.workspaceId = workspaceId;
+		this.organizationUnitId = organizationUnitId;
 		this.roleCode = roleCode;
 		this.status = "ACTIVE";
 		this.createdAt = Instant.now();
@@ -255,6 +318,8 @@ class WorkspaceMembershipEntity {
 		return status;
 	}
 
+	UUID getOrganizationUnitId() { return organizationUnitId; }
+
 	long getVersion() {
 		return version;
 	}
@@ -274,6 +339,11 @@ class WorkspaceMembershipEntity {
 
 	void changeStatus(String nextStatus) {
 		this.status = nextStatus;
+		this.updatedAt = Instant.now();
+	}
+
+	void assignOrganization(UUID nextOrganizationUnitId) {
+		this.organizationUnitId = nextOrganizationUnitId;
 		this.updatedAt = Instant.now();
 	}
 }

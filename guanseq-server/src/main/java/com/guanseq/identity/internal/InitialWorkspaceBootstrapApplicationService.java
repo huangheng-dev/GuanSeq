@@ -96,7 +96,7 @@ public class InitialWorkspaceBootstrapApplicationService {
 				request.externalUsername(),
 				request.displayName()));
 		membershipRepository.save(new WorkspaceMembershipEntity(
-				UUID.randomUUID(), user.getId(), workspace.getId(), "ADMIN"));
+				UUID.randomUUID(), user.getId(), workspace.getId(), plant.getId(), "ADMIN"));
 		preferenceRepository.save(new UserWorkspacePreferenceEntity(user.getId(), workspace.getId()));
 
 		Map<String, Object> details = new LinkedHashMap<>();

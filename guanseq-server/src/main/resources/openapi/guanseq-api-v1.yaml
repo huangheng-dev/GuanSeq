@@ -220,6 +220,116 @@ paths:
         "401": { $ref: "#/components/responses/AuthenticationRequired" }
         "403": { $ref: "#/components/responses/AccessDenied" }
         "422": { $ref: "#/components/responses/BusinessRuleViolation" }
+  /api/v1/identity/organization-structure:
+    get:
+      operationId: getCurrentWorkspaceOrganizationStructure
+      summary: 查询当前工作区组织层级、负责人和成员归属
+      description: 仅当前工作区 ADMIN 可读；范围限定为公司根、当前所在组织及其直属 SITE，不返回其他工作区治理入口。
+      tags: [Identity]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: 当前工作区最小组织治理页
+          headers: { X-Request-Id: { $ref: "#/components/headers/RequestId" } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OrganizationStructurePage" }
+        "401": { $ref: "#/components/responses/AuthenticationRequired" }
+        "403": { $ref: "#/components/responses/AccessDenied" }
+  /api/v1/identity/organization-structure/units:
+    post:
+      operationId: createCurrentWorkspaceSiteUnit
+      summary: 在当前工厂下创建直属现场单元
+      tags: [Identity]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateOrganizationSiteRequest" }
+      responses:
+        "201":
+          description: 现场单元已创建并返回刷新后的组织页
+          content: { application/json: { schema: { $ref: "#/components/schemas/OrganizationStructurePage" } } }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "403": { $ref: "#/components/responses/AccessDenied" }
+        "409": { $ref: "#/components/responses/BusinessConflict" }
+        "422": { $ref: "#/components/responses/BusinessRuleViolation" }
+  /api/v1/identity/organization-structure/units/{unitId}:
+    put:
+      operationId: updateCurrentWorkspaceOrganizationUnit
+      summary: 更新当前所在组织或直属现场单元的名称与负责人
+      tags: [Identity]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: unitId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/UpdateOrganizationUnitRequest" } } }
+      responses:
+        "200": { description: 组织已更新, content: { application/json: { schema: { $ref: "#/components/schemas/OrganizationStructurePage" } } } }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "403": { $ref: "#/components/responses/AccessDenied" }
+        "404": { $ref: "#/components/responses/ResourceNotFound" }
+        "409": { $ref: "#/components/responses/BusinessConflict" }
+  /api/v1/identity/organization-structure/units/{unitId}/actions:
+    post:
+      operationId: changeCurrentWorkspaceSiteUnitStatus
+      summary: 停用或恢复直属现场单元
+      tags: [Identity]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: unitId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/OrganizationUnitActionRequest" } } }
+      responses:
+        "200": { description: 现场单元状态已更新, content: { application/json: { schema: { $ref: "#/components/schemas/OrganizationStructurePage" } } } }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "403": { $ref: "#/components/responses/AccessDenied" }
+        "404": { $ref: "#/components/responses/ResourceNotFound" }
+        "409": { $ref: "#/components/responses/BusinessConflict" }
+  /api/v1/identity/organization-structure/workspace:
+    put:
+      operationId: updateCurrentWorkspaceOrganizationProfile
+      summary: 更新当前工作区名称与负责人
+      tags: [Identity]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/UpdateOrganizationWorkspaceRequest" } } }
+      responses:
+        "200": { description: 工作区已更新, content: { application/json: { schema: { $ref: "#/components/schemas/OrganizationStructurePage" } } } }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "403": { $ref: "#/components/responses/AccessDenied" }
+        "409": { $ref: "#/components/responses/BusinessConflict" }
+  /api/v1/identity/organization-structure/members/{userId}:
+    put:
+      operationId: assignCurrentWorkspaceMemberOrganization
+      summary: 调整当前工作区成员的组织归属
+      tags: [Identity]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/AssignMemberOrganizationRequest" } } }
+      responses:
+        "200": { description: 成员归属已更新, content: { application/json: { schema: { $ref: "#/components/schemas/OrganizationStructurePage" } } } }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "403": { $ref: "#/components/responses/AccessDenied" }
+        "404": { $ref: "#/components/responses/ResourceNotFound" }
+        "409": { $ref: "#/components/responses/BusinessConflict" }
+        "422": { $ref: "#/components/responses/BusinessRuleViolation" }
   /api/v1/masterdata/customers:
     get:
       operationId: listCustomers
@@ -5478,6 +5588,106 @@ components:
       required: [action, expectedMembershipVersion, reason]
       properties:
         action: { type: string, enum: [ACTIVATE, DEACTIVATE] }
+        expectedMembershipVersion: { type: integer, format: int64, minimum: 0 }
+        reason: { type: string, minLength: 4, maxLength: 300 }
+    OrganizationStructurePage:
+      type: object
+      additionalProperties: false
+      required: [currentUserId, company, operatingUnit, siteUnits, workspace, members, scopeDescription]
+      properties:
+        currentUserId: { type: string, format: uuid }
+        company: { $ref: "#/components/schemas/OrganizationUnit" }
+        operatingUnit: { $ref: "#/components/schemas/OrganizationUnit" }
+        siteUnits:
+          type: array
+          items: { $ref: "#/components/schemas/OrganizationUnit" }
+        workspace: { $ref: "#/components/schemas/OrganizationWorkspace" }
+        members:
+          type: array
+          items: { $ref: "#/components/schemas/OrganizationMember" }
+        scopeDescription: { type: string }
+    OrganizationUnit:
+      type: object
+      additionalProperties: false
+      required: [id, code, name, unitType, status, version, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string }
+        name: { type: string }
+        unitType: { type: string, enum: [COMPANY, PLANT, SITE] }
+        parentId: { type: [string, "null"], format: uuid }
+        status: { type: string, enum: [ACTIVE, INACTIVE] }
+        responsibleUserId: { type: [string, "null"], format: uuid }
+        responsibleUserName: { type: [string, "null"] }
+        version: { type: integer, format: int64, minimum: 0 }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    OrganizationWorkspace:
+      type: object
+      additionalProperties: false
+      required: [id, code, name, status, operatingOrganizationId, version, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string }
+        name: { type: string }
+        status: { type: string, enum: [ACTIVE, INACTIVE] }
+        operatingOrganizationId: { type: string, format: uuid }
+        responsibleUserId: { type: [string, "null"], format: uuid }
+        responsibleUserName: { type: [string, "null"] }
+        version: { type: integer, format: int64, minimum: 0 }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    OrganizationMember:
+      type: object
+      additionalProperties: false
+      required: [userId, username, displayName, roleCode, membershipStatus, organizationUnitId, organizationUnitName, membershipVersion]
+      properties:
+        userId: { type: string, format: uuid }
+        username: { type: string }
+        displayName: { type: string }
+        roleCode: { $ref: "#/components/schemas/WorkspaceRoleCode" }
+        membershipStatus: { type: string, enum: [ACTIVE, INACTIVE] }
+        organizationUnitId: { type: string, format: uuid }
+        organizationUnitName: { type: string }
+        membershipVersion: { type: integer, format: int64, minimum: 0 }
+    CreateOrganizationSiteRequest:
+      type: object
+      additionalProperties: false
+      required: [code, name]
+      properties:
+        code: { type: string, pattern: "^[A-Z0-9][A-Z0-9_-]*$", maxLength: 40 }
+        name: { type: string, minLength: 1, maxLength: 120 }
+        responsibleUserId: { type: [string, "null"], format: uuid }
+    UpdateOrganizationUnitRequest:
+      type: object
+      additionalProperties: false
+      required: [name, expectedVersion]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        responsibleUserId: { type: [string, "null"], format: uuid }
+        expectedVersion: { type: integer, format: int64, minimum: 0 }
+    OrganizationUnitActionRequest:
+      type: object
+      additionalProperties: false
+      required: [action, expectedVersion, reason]
+      properties:
+        action: { type: string, enum: [ACTIVATE, DEACTIVATE] }
+        expectedVersion: { type: integer, format: int64, minimum: 0 }
+        reason: { type: string, minLength: 4, maxLength: 300 }
+    UpdateOrganizationWorkspaceRequest:
+      type: object
+      additionalProperties: false
+      required: [name, expectedVersion]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        responsibleUserId: { type: [string, "null"], format: uuid }
+        expectedVersion: { type: integer, format: int64, minimum: 0 }
+    AssignMemberOrganizationRequest:
+      type: object
+      additionalProperties: false
+      required: [organizationUnitId, expectedMembershipVersion, reason]
+      properties:
+        organizationUnitId: { type: string, format: uuid }
         expectedMembershipVersion: { type: integer, format: int64, minimum: 0 }
         reason: { type: string, minLength: 4, maxLength: 300 }
     WorkspaceSession:
