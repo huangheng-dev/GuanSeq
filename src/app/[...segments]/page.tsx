@@ -124,6 +124,7 @@ export default async function RoutePage({ params }: RoutePageProps) {
     accountingPeriod: accountingPeriodPage,
     grirAccrual: grirAccrualPage,
     advance: advancePage,
+    workspaceUser: workspaceUserPage,
     equipmentAsset: equipmentAssetPage,
     equipmentWorkOrder: equipmentWorkOrderPage,
     equipmentSparePart: equipmentSparePartPage,

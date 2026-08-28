@@ -20,7 +20,7 @@ async function submitAndClose(dialog: Locator, buttonName: string | RegExp) {
   await expect(dialog).toBeHidden({ timeout: 60_000 });
 }
 
-test("R0 发行冒烟：初始化、登录、主闭环、退货与失败恢复", async ({ page }) => {
+test("发行冒烟：初始化、IAM、主闭环、退货与失败恢复", async ({ page }) => {
   await test.step("空库迁移后的开发身份登录入口可进入正式工作台", async () => {
     const health = await page.request.get("/api/health");
     expect(health.ok()).toBeTruthy();
@@ -32,6 +32,13 @@ test("R0 发行冒烟：初始化、登录、主闭环、退货与失败恢复",
     await expect(page).toHaveURL(/\/sales\/orders\/list$/);
     await expect(page.getByRole("heading", { name: "销售订单", exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: /林浩 计划主管/ })).toBeVisible();
+  });
+
+  await test.step("工作区用户管理以正式后端事实呈现", async () => {
+    await openFormalPage(page, "/settings/organization/users", "用户管理");
+    const members = page.getByRole("table", { name: "工作区成员列表" });
+    await expect(members).toContainText("林浩");
+    await expect(members).toContainText("系统管理员");
   });
 
   await test.step("采购到货、来料检验与供应商退货形成真实库存闭环", async () => {

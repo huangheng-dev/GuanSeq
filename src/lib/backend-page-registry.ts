@@ -40,6 +40,7 @@ export const backendPageDataKeyByPath = {
   "/finance/accounting-periods": "accountingPeriod",
   "/finance/purchase-settlement/grir-accruals": "grirAccrual",
   "/finance/advances": "advance",
+  "/settings/organization/users": "workspaceUser",
   "/equipment/assets": "equipmentAsset",
   "/equipment/status": "equipmentAsset",
   "/equipment/inspections": "equipmentWorkOrder",

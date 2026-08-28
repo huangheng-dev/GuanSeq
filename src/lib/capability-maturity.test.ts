@@ -9,11 +9,12 @@ describe("product capability maturity", () => {
     const maturities = paths.map(getCapabilityMaturity);
 
     expect(maturities).not.toContain(null);
-    expect(getCapabilityMaturitySummary(paths)).toEqual({ backend: 50, mock: 174, planned: 12 });
+    expect(getCapabilityMaturitySummary(paths)).toEqual({ backend: 51, mock: 173, planned: 12 });
   });
 
   it("keeps formal, mock and planned routes semantically distinct", () => {
     expect(getCapabilityMaturity("/sales/orders/list")).toBe("backend");
+    expect(getCapabilityMaturity("/settings/organization/users")).toBe("backend");
     expect(getCapabilityMaturity("/sales/orders/approvals")).toBe("mock");
     expect(getCapabilityMaturity("/settings/integrations/logs")).toBe("planned");
     expect(getCapabilityMaturity("/not-a-product-route")).toBeNull();
