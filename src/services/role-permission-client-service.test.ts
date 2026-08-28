@@ -7,7 +7,7 @@ const page = {
   workspaceCode: "EAST-MFG",
   workspaceName: "华东制造中心",
   companyName: "示例精工制造有限公司",
-  catalogVersion: "2026-08-28.2",
+  catalogVersion: "2026-08-28.3",
   scopeDescription: "只展示后端显式角色门禁。",
   roles: [{ code: "ADMIN" as const, name: "系统管理员", description: "全部已接入业务动作" }],
   groups: [{

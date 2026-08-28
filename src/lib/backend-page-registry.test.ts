@@ -4,7 +4,7 @@ import { backendPageDataKeyByPath, getBackendPageDataKey, isBackendPageUnavailab
 
 describe("backend page registry", () => {
   it("keeps every formal backend route unique and explicitly registered", () => {
-    expect(Object.keys(backendPageDataKeyByPath)).toHaveLength(53);
+    expect(Object.keys(backendPageDataKeyByPath)).toHaveLength(54);
     expect(getBackendPageDataKey("/sales/orders/list")).toBe("salesOrder");
     expect(getBackendPageDataKey("/sales/returns")).toBe("salesReturn");
     expect(getBackendPageDataKey("/procurement/returns")).toBe("purchaseReturn");

@@ -97,6 +97,48 @@ interface UserWorkspacePreferenceRepository extends JpaRepository<UserWorkspaceP
 }
 
 interface AuditEventRepository extends JpaRepository<AuditEventEntity, UUID> {
+	@Query(value = """
+			select event from AuditEventEntity event
+			where event.workspaceId = :workspaceId
+			and event.occurredAt >= :occurredFrom
+			and event.occurredAt <= :occurredTo
+			and (:eventType = '' or event.eventType = :eventType)
+			and (:objectType = '' or event.objectType = :objectType)
+			and (:actorId is null or event.userId = :actorId)
+			and (:query = ''
+				or lower(coalesce(event.requestId, '')) like lower(concat('%', :query, '%'))
+				or lower(coalesce(event.objectId, '')) like lower(concat('%', :query, '%')))
+			""",
+			countQuery = """
+			select count(event) from AuditEventEntity event
+			where event.workspaceId = :workspaceId
+			and event.occurredAt >= :occurredFrom
+			and event.occurredAt <= :occurredTo
+			and (:eventType = '' or event.eventType = :eventType)
+			and (:objectType = '' or event.objectType = :objectType)
+			and (:actorId is null or event.userId = :actorId)
+			and (:query = ''
+				or lower(coalesce(event.requestId, '')) like lower(concat('%', :query, '%'))
+				or lower(coalesce(event.objectId, '')) like lower(concat('%', :query, '%')))
+			""")
+	Page<AuditEventEntity> findWorkspacePage(
+			@Param("workspaceId") UUID workspaceId,
+			@Param("occurredFrom") java.time.Instant occurredFrom,
+			@Param("occurredTo") java.time.Instant occurredTo,
+			@Param("eventType") String eventType,
+			@Param("objectType") String objectType,
+			@Param("actorId") UUID actorId,
+			@Param("query") String query,
+			Pageable pageable);
+
+	@Query("select distinct event.eventType from AuditEventEntity event where event.workspaceId = :workspaceId order by event.eventType")
+	List<String> findEventTypes(@Param("workspaceId") UUID workspaceId);
+
+	@Query("select distinct event.objectType from AuditEventEntity event where event.workspaceId = :workspaceId order by event.objectType")
+	List<String> findObjectTypes(@Param("workspaceId") UUID workspaceId);
+
+	@Query("select distinct event.userId from AuditEventEntity event where event.workspaceId = :workspaceId and event.userId is not null")
+	List<UUID> findActorIds(@Param("workspaceId") UUID workspaceId);
 }
 
 interface SystemBootstrapRepository extends JpaRepository<SystemBootstrapEntity, Boolean> {

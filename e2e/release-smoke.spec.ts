@@ -63,6 +63,23 @@ test("发行冒烟：初始化、IAM、主闭环、退货与失败恢复", async
     await expect(page.getByRole("button", { name: "新建角色" })).toHaveCount(0);
   });
 
+  await test.step("系统操作审计按当前工作区查询治理证据", async () => {
+    await openFormalPage(page, "/settings/audit", "操作审计");
+    const audit = page.getByRole("region", { name: "系统操作审计" });
+    await expect(audit).toContainText("创建现场单元");
+    await expect(page.getByText("只读后端事实 · 当前工作区隔离")).toBeVisible();
+    await audit.locator(".auditEventTableRow").first().click();
+    const dialog = await activeDialog(page, "创建现场单元");
+    await expect(dialog).toContainText("E2E-SITE-01");
+    await expect(dialog).toContainText("E2E 总装现场");
+    await dialog.getByRole("button", { name: "关闭审计详情" }).click();
+    await expect(dialog).toBeHidden();
+    const requestId = await audit.locator(".auditEventTableRow code").first().innerText();
+    await audit.getByLabel("搜索请求或对象编号").fill(requestId.slice(0, 16));
+    await audit.getByRole("button", { name: "查询", exact: true }).click();
+    await expect(audit.locator(".auditEventTableRow")).toHaveCount(1);
+  });
+
   await test.step("采购到货、来料检验与供应商退货形成真实库存闭环", async () => {
     await openFormalPage(page, "/procurement/receipts", "采购到货协同");
     await page.getByRole("button", { name: "登记到货", exact: true }).click();

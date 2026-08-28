@@ -43,6 +43,7 @@ export const backendPageDataKeyByPath = {
   "/settings/organization/users": "workspaceUser",
   "/settings/organization/structure": "organizationStructure",
   "/settings/roles": "rolePermission",
+  "/settings/audit": "auditEvent",
   "/equipment/assets": "equipmentAsset",
   "/equipment/status": "equipmentAsset",
   "/equipment/inspections": "equipmentWorkOrder",

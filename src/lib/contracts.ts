@@ -115,6 +115,43 @@ export const workspaceRolePermissionPageSchema = z.object({
   groups: z.array(workspacePermissionGroupSchema).min(1),
 });
 
+export const workspaceAuditEventSchema = z.object({
+  id: z.string().uuid(),
+  eventType: z.string().min(1),
+  objectType: z.string().min(1),
+  objectId: z.string().nullable(),
+  requestId: z.string().nullable(),
+  actorId: z.string().uuid().nullable(),
+  actorUsername: z.string().nullable(),
+  actorDisplayName: z.string().nullable(),
+  details: z.record(z.string(), z.unknown()),
+  occurredAt: z.string().datetime(),
+});
+
+export const workspaceAuditActorSchema = z.object({
+  id: z.string().uuid(),
+  username: z.string().min(1),
+  displayName: z.string().min(1),
+});
+
+export const workspaceAuditPageSchema = z.object({
+  workspaceId: z.string().uuid(),
+  workspaceCode: z.string().min(1),
+  workspaceName: z.string().min(1),
+  companyName: z.string().min(1),
+  scopeDescription: z.string().min(1),
+  occurredFrom: z.string().datetime(),
+  occurredTo: z.string().datetime(),
+  items: z.array(workspaceAuditEventSchema),
+  totalElements: z.number().int().nonnegative(),
+  page: z.number().int().nonnegative(),
+  size: z.number().int().min(1).max(100),
+  totalPages: z.number().int().nonnegative(),
+  eventTypes: z.array(z.string()),
+  objectTypes: z.array(z.string()),
+  actors: z.array(workspaceAuditActorSchema),
+});
+
 export const workspaceUserSchema = z.object({
   userId: z.string().uuid(),
   username: z.string(),
@@ -1657,6 +1694,9 @@ export type WorkspacePermissionRisk = z.infer<typeof workspacePermissionRiskSche
 export type WorkspacePermission = z.infer<typeof workspacePermissionSchema>;
 export type WorkspacePermissionGroup = z.infer<typeof workspacePermissionGroupSchema>;
 export type WorkspaceRolePermissionPage = z.infer<typeof workspaceRolePermissionPageSchema>;
+export type WorkspaceAuditEvent = z.infer<typeof workspaceAuditEventSchema>;
+export type WorkspaceAuditActor = z.infer<typeof workspaceAuditActorSchema>;
+export type WorkspaceAuditPage = z.infer<typeof workspaceAuditPageSchema>;
 export type WorkspaceUser = z.infer<typeof workspaceUserSchema>;
 export type WorkspaceUserPage = z.infer<typeof workspaceUserPageSchema>;
 export type OrganizationUnit = z.infer<typeof organizationUnitSchema>;

@@ -220,6 +220,48 @@ paths:
         "401": { $ref: "#/components/responses/AuthenticationRequired" }
         "403": { $ref: "#/components/responses/AccessDenied" }
         "422": { $ref: "#/components/responses/BusinessRuleViolation" }
+  /api/v1/identity/audit-events:
+    get:
+      operationId: listCurrentWorkspaceAuditEvents
+      summary: 分页查询当前工作区治理操作审计
+      description: 仅当前工作区 ADMIN 可读；只返回 identity.audit_events 中的身份、成员、角色、组织和工作区治理证据，不跨模块聚合业务单据事件。默认最近 30 天，单次最长 90 天。
+      tags: [Identity]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - name: size
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+        - name: eventType
+          in: query
+          schema: { type: string, maxLength: 80 }
+        - name: objectType
+          in: query
+          schema: { type: string, maxLength: 80 }
+        - name: actorId
+          in: query
+          schema: { type: string, format: uuid }
+        - name: query
+          in: query
+          description: 按请求编号或对象编号模糊查询
+          schema: { type: string, maxLength: 120 }
+        - name: occurredFrom
+          in: query
+          schema: { type: string, format: date-time }
+        - name: occurredTo
+          in: query
+          schema: { type: string, format: date-time }
+      responses:
+        "200":
+          description: 当前工作区治理操作审计分页
+          headers: { X-Request-Id: { $ref: "#/components/headers/RequestId" } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WorkspaceAuditPage" }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "401": { $ref: "#/components/responses/AuthenticationRequired" }
+        "403": { $ref: "#/components/responses/AccessDenied" }
+        "422": { $ref: "#/components/responses/BusinessRuleViolation" }
   /api/v1/identity/organization-structure:
     get:
       operationId: getCurrentWorkspaceOrganizationStructure
@@ -5529,6 +5571,59 @@ components:
           minItems: 1
           uniqueItems: true
           items: { $ref: "#/components/schemas/WorkspaceRoleCode" }
+    WorkspaceAuditPage:
+      type: object
+      additionalProperties: false
+      required: [workspaceId, workspaceCode, workspaceName, companyName, scopeDescription, occurredFrom, occurredTo, items, totalElements, page, size, totalPages, eventTypes, objectTypes, actors]
+      properties:
+        workspaceId: { type: string, format: uuid }
+        workspaceCode: { type: string }
+        workspaceName: { type: string }
+        companyName: { type: string }
+        scopeDescription: { type: string }
+        occurredFrom: { type: string, format: date-time }
+        occurredTo: { type: string, format: date-time }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/WorkspaceAuditEvent" }
+        totalElements: { type: integer, format: int64, minimum: 0 }
+        page: { type: integer, minimum: 0 }
+        size: { type: integer, minimum: 1, maximum: 100 }
+        totalPages: { type: integer, minimum: 0 }
+        eventTypes:
+          type: array
+          items: { type: string }
+        objectTypes:
+          type: array
+          items: { type: string }
+        actors:
+          type: array
+          items: { $ref: "#/components/schemas/WorkspaceAuditActor" }
+    WorkspaceAuditEvent:
+      type: object
+      additionalProperties: false
+      required: [id, eventType, objectType, details, occurredAt]
+      properties:
+        id: { type: string, format: uuid }
+        eventType: { type: string }
+        objectType: { type: string }
+        objectId: { type: [string, "null"] }
+        requestId: { type: [string, "null"] }
+        actorId: { type: [string, "null"], format: uuid }
+        actorUsername: { type: [string, "null"] }
+        actorDisplayName: { type: [string, "null"] }
+        details:
+          type: object
+          additionalProperties: true
+        occurredAt: { type: string, format: date-time }
+    WorkspaceAuditActor:
+      type: object
+      additionalProperties: false
+      required: [id, username, displayName]
+      properties:
+        id: { type: string, format: uuid }
+        username: { type: string }
+        displayName: { type: string }
     WorkspaceUser:
       type: object
       additionalProperties: false

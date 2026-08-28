@@ -106,6 +106,8 @@ import type { OrganizationStructurePageData } from "@/services/organization-stru
 import { OrganizationStructureWorkspace } from "./organization-structure-workspace";
 import type { RolePermissionPageData } from "@/services/role-permission-server-service";
 import { RolePermissionWorkspace } from "./role-permission-workspace";
+import type { AuditEventPageData } from "@/services/audit-event-server-service";
+import { AuditEventWorkspace } from "./audit-event-workspace";
 import type { EquipmentAssetPageData } from "@/services/equipment-asset-server-service";
 import { EquipmentAssetWorkspace } from "./equipment-asset-workspace";
 import type { EquipmentWorkOrderPageData } from "@/services/equipment-work-order-server-service";
@@ -155,6 +157,7 @@ type ManufacturingWorkspaceProps = {
   initialWorkspaceUserPage?: WorkspaceUserPageData | null;
   initialOrganizationStructurePage?: OrganizationStructurePageData | null;
   initialRolePermissionPage?: RolePermissionPageData | null;
+  initialAuditEventPage?: AuditEventPageData | null;
   initialEquipmentAssetPage?: EquipmentAssetPageData | null;
   initialEquipmentWorkOrderPage?: EquipmentWorkOrderPageData | null;
   initialEquipmentSparePartPage?: EquipmentSparePartPageData | null;
@@ -501,6 +504,7 @@ export function ManufacturingWorkspace({
   initialWorkspaceUserPage,
   initialOrganizationStructurePage,
   initialRolePermissionPage,
+  initialAuditEventPage,
   initialEquipmentAssetPage,
   initialEquipmentWorkOrderPage,
   initialEquipmentSparePartPage,
@@ -548,6 +552,7 @@ export function ManufacturingWorkspace({
       initialWorkspaceUserPage={initialWorkspaceUserPage}
       initialOrganizationStructurePage={initialOrganizationStructurePage}
       initialRolePermissionPage={initialRolePermissionPage}
+      initialAuditEventPage={initialAuditEventPage}
       initialEquipmentAssetPage={initialEquipmentAssetPage}
       initialEquipmentWorkOrderPage={initialEquipmentWorkOrderPage}
       initialEquipmentSparePartPage={initialEquipmentSparePartPage}
@@ -595,6 +600,7 @@ function ManufacturingWorkspaceContent({
   initialWorkspaceUserPage,
   initialOrganizationStructurePage,
   initialRolePermissionPage,
+  initialAuditEventPage,
   initialEquipmentAssetPage,
   initialEquipmentWorkOrderPage,
   initialEquipmentSparePartPage,
@@ -1633,6 +1639,8 @@ function ManufacturingWorkspaceContent({
           <WorkspaceUserWorkspace initialData={initialWorkspaceUserPage} />
         ) : pathname === "/settings/roles" && initialRolePermissionPage ? (
           <RolePermissionWorkspace initialData={initialRolePermissionPage} />
+        ) : pathname === "/settings/audit" && initialAuditEventPage ? (
+          <AuditEventWorkspace initialData={initialAuditEventPage} />
         ) : pathname === "/sales/deliveries/pending" &&
           initialSalesShipmentPage ? (
           <SalesShipmentWorkspace initialData={initialSalesShipmentPage} />

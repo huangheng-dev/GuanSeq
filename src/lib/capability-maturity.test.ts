@@ -9,7 +9,7 @@ describe("product capability maturity", () => {
     const maturities = paths.map(getCapabilityMaturity);
 
     expect(maturities).not.toContain(null);
-    expect(getCapabilityMaturitySummary(paths)).toEqual({ backend: 53, mock: 171, planned: 12 });
+    expect(getCapabilityMaturitySummary(paths)).toEqual({ backend: 54, mock: 170, planned: 12 });
   });
 
   it("keeps formal, mock and planned routes semantically distinct", () => {

@@ -440,4 +440,14 @@ class AuditEventEntity {
 		this.details = details;
 		this.occurredAt = Instant.now();
 	}
+
+	UUID getId() { return id; }
+	UUID getUserId() { return userId; }
+	UUID getWorkspaceId() { return workspaceId; }
+	String getEventType() { return eventType; }
+	String getObjectType() { return objectType; }
+	String getObjectId() { return objectId; }
+	String getRequestId() { return requestId; }
+	Map<String, Object> getDetails() { return details; }
+	Instant getOccurredAt() { return occurredAt; }
 }

@@ -18,7 +18,7 @@ import com.guanseq.identity.api.WorkspaceRolePermissionPage;
 @Service
 public class WorkspaceRolePermissionApplicationService {
 
-	private static final String CATALOG_VERSION = "2026-08-28.2";
+	private static final String CATALOG_VERSION = "2026-08-28.3";
 	private static final String SCOPE_DESCRIPTION = "只展示后端显式角色门禁；租户、工作区、对象状态、本人范围、并发版本和字段规则仍由具体用例继续校验。";
 
 	private final CurrentWorkspaceProvider workspaceProvider;

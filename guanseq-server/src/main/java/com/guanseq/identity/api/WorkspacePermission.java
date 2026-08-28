@@ -7,6 +7,7 @@ public enum WorkspacePermission {
 	IDENTITY_MEMBER_MANAGE("IDENTITY", "身份与工作区", "维护工作区成员", "创建成员、调整单一受控角色、停用或恢复当前工作区访问", Risk.CRITICAL, "ADMIN"),
 	IDENTITY_ORGANIZATION_MANAGE("IDENTITY", "身份与工作区", "维护当前工作区组织", "维护当前工作区所在组织、直属现场单元和成员归属", Risk.CRITICAL, "ADMIN"),
 	IDENTITY_ROLE_MATRIX_READ("IDENTITY", "身份与工作区", "查看角色权限矩阵", "读取当前受控角色及后端角色门禁目录", Risk.SENSITIVE, "ADMIN"),
+	IDENTITY_AUDIT_READ("IDENTITY", "身份与工作区", "查看系统操作审计", "查询当前工作区身份与系统治理操作证据", Risk.SENSITIVE, "ADMIN"),
 
 	SALES_ORDER_APPROVE_RELEASE("SALES", "销售", "审核与下达销售订单", "审核、驳回和下达销售订单", Risk.SENSITIVE, "SALES_MANAGER", "PLANNING_MANAGER", "ADMIN"),
 	SALES_SHIPMENT_REGISTER("SALES", "销售", "登记销售发货", "按已下达订单登记成品出库与发货证据", Risk.CRITICAL, "WAREHOUSE_MANAGER", "INVENTORY_CONTROLLER", "SALES_MANAGER", "ADMIN"),
