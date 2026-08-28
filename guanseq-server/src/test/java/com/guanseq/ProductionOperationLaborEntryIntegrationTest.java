@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,7 +55,7 @@ class ProductionOperationLaborEntryIntegrationTest {
 		String taskId = tasks.get(0).path("id").asText();
 		startTask(taskId, "labor-task-start-001");
 
-		String createBody = laborBody(taskId, LocalDate.now(), 95);
+		String createBody = laborBody(taskId, LocalDate.now(ZoneOffset.UTC), 95);
 		MvcResult created = mockMvc.perform(post("/api/v1/production/operation-labor-entries")
 				.with(httpBasic(USERNAME, PASSWORD)).header("X-Request-Id", "labor-record-001")
 				.contentType(MediaType.APPLICATION_JSON).content(createBody))
@@ -116,20 +117,20 @@ class ProductionOperationLaborEntryIntegrationTest {
 
 		mockMvc.perform(post("/api/v1/production/operation-labor-entries")
 				.with(httpBasic(USERNAME, PASSWORD)).header("X-Request-Id", "labor-before-start")
-				.contentType(MediaType.APPLICATION_JSON).content(laborBody(taskId, LocalDate.now(), 30)))
+				.contentType(MediaType.APPLICATION_JSON).content(laborBody(taskId, LocalDate.now(ZoneOffset.UTC), 30)))
 				.andExpect(status().isUnprocessableEntity());
 
 		startTask(taskId, "labor-task-start-002");
 		mockMvc.perform(post("/api/v1/production/operation-labor-entries")
 				.with(httpBasic(USERNAME, PASSWORD)).header("X-Request-Id", "labor-future-date")
-				.contentType(MediaType.APPLICATION_JSON).content(laborBody(taskId, LocalDate.now().plusDays(1), 30)))
+				.contentType(MediaType.APPLICATION_JSON).content(laborBody(taskId, LocalDate.now(ZoneOffset.UTC).plusDays(1), 30)))
 				.andExpect(status().isUnprocessableEntity());
 
 		jdbcTemplate.update("update identity.workspace_memberships set role_code = 'SALES_CLERK' where id = '30000000-0000-4000-8000-000000000101'");
 		try {
 			mockMvc.perform(post("/api/v1/production/operation-labor-entries")
 					.with(httpBasic(USERNAME, PASSWORD)).header("X-Request-Id", "labor-forbidden")
-					.contentType(MediaType.APPLICATION_JSON).content(laborBody(taskId, LocalDate.now(), 30)))
+					.contentType(MediaType.APPLICATION_JSON).content(laborBody(taskId, LocalDate.now(ZoneOffset.UTC), 30)))
 					.andExpect(status().isForbidden());
 		} finally {
 			jdbcTemplate.update("update identity.workspace_memberships set role_code = 'ADMIN' where id = '30000000-0000-4000-8000-000000000101'");
@@ -137,7 +138,7 @@ class ProductionOperationLaborEntryIntegrationTest {
 	}
 
 	private String createAndReleaseOrder(String createRequestId, String releaseRequestId) throws Exception {
-		LocalDate start = LocalDate.now();
+		LocalDate start = LocalDate.now(ZoneOffset.UTC);
 		MvcResult created = mockMvc.perform(post("/api/v1/production/orders").with(httpBasic(USERNAME, PASSWORD))
 				.header("X-Request-Id", createRequestId).contentType(MediaType.APPLICATION_JSON)
 				.content(orderBody(start, start.plusDays(5))))

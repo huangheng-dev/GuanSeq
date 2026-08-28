@@ -193,7 +193,8 @@ public class SalesOrderApplicationService {
 				order.getOwner(), order.getStatus(), order.getTotalNetAmount(), order.getTotalTaxAmount(), order.getTotalGrossAmount(),
 				order.getRejectionReason(), order.getVersion(), order.getUpdatedAt(),
 				order.getLines().stream().sorted(java.util.Comparator.comparingInt(SalesOrderLineEntity::getLineNumber)).map(line -> new SalesOrderRecord.Line(
-						line.getId(), line.getLineNumber(), line.getMaterialId(), line.getMaterialCode(), line.getMaterialName(), line.getMaterialSpecification(), line.getUnit(), line.getQuantity(), line.getUnitPrice(), line.getNetAmount(), line.getTaxAmount(), line.getGrossAmount(), line.getDeliveredQuantity())).toList());
+						line.getId(), line.getLineNumber(), line.getMaterialId(), line.getMaterialCode(), line.getMaterialName(), line.getMaterialSpecification(), line.getUnit(), line.getQuantity(), line.getUnitPrice(), line.getNetAmount(), line.getTaxAmount(), line.getGrossAmount(),
+						line.getDeliveredQuantity(), line.getReturnedQuantity(), line.getNetDeliveredQuantity())).toList());
 	}
 
 	private String nextOrderNumber() {

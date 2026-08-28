@@ -18,7 +18,7 @@ server:
 
 guanseq:
   build:
-    version: ${GUANSEQ_BUILD_VERSION:0.1.0-SNAPSHOT}
+    version: ${GUANSEQ_BUILD_VERSION:0.1.0-alpha.1}
   bootstrap:
     enabled: false
     token: disabled
@@ -27,3 +27,8 @@ guanseq:
     development-username: disabled
     development-password: disabled
     oidc-username-claim: preferred_username
+  telemetry:
+    polling-enabled: ${GUANSEQ_TELEMETRY_POLLING_ENABLED:false}
+    dispatch-delay-ms: ${GUANSEQ_TELEMETRY_DISPATCH_DELAY_MS:1000}
+    retention-scheduler-enabled: ${GUANSEQ_TELEMETRY_RETENTION_SCHEDULER_ENABLED:false}
+    retention-dispatch-delay-ms: ${GUANSEQ_TELEMETRY_RETENTION_DISPATCH_DELAY_MS:60000}

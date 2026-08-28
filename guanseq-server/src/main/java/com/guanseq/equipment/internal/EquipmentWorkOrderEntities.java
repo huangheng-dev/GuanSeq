@@ -1,6 +1,7 @@
 package com.guanseq.equipment.internal;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Map;
 import java.util.UUID;
 
@@ -24,6 +25,8 @@ class EquipmentWorkOrderEntity {
 	@Column(name = "work_type") private String workType;
 	@Column(name = "source_type") private String sourceType;
 	@Column(name = "source_work_order_id") private UUID sourceWorkOrderId;
+	@Column(name = "source_plan_id") private UUID sourcePlanId;
+	@Column(name = "source_due_date") private LocalDate sourceDueDate;
 	@Column(name = "asset_id") private UUID assetId;
 	@Column(name = "asset_code_snapshot") private String assetCodeSnapshot;
 	@Column(name = "asset_name_snapshot") private String assetNameSnapshot;
@@ -51,6 +54,14 @@ class EquipmentWorkOrderEntity {
 	EquipmentWorkOrderEntity(UUID tenantId, UUID organizationId, UUID workspaceId, String number, String creationRequestId, String workType,
 			String sourceType, UUID sourceWorkOrderId, EquipmentAssetEntity asset, String title, String description,
 			String priority, Instant plannedStartAt, Instant dueAt, String assignee, UUID actorId) {
+		this(tenantId, organizationId, workspaceId, number, creationRequestId, workType, sourceType,
+				sourceWorkOrderId, null, null, asset, title, description, priority, plannedStartAt, dueAt, assignee, actorId);
+	}
+
+	EquipmentWorkOrderEntity(UUID tenantId, UUID organizationId, UUID workspaceId, String number, String creationRequestId,
+			String workType, String sourceType, UUID sourceWorkOrderId, UUID sourcePlanId, LocalDate sourceDueDate,
+			EquipmentAssetEntity asset, String title, String description, String priority, Instant plannedStartAt,
+			Instant dueAt, String assignee, UUID actorId) {
 		this.id = UUID.randomUUID();
 		this.tenantOrganizationId = tenantId;
 		this.owningOrganizationId = organizationId;
@@ -60,6 +71,8 @@ class EquipmentWorkOrderEntity {
 		this.workType = workType;
 		this.sourceType = sourceType;
 		this.sourceWorkOrderId = sourceWorkOrderId;
+		this.sourcePlanId = sourcePlanId;
+		this.sourceDueDate = sourceDueDate;
 		this.assetId = asset.getId();
 		this.assetCodeSnapshot = asset.getAssetCode();
 		this.assetNameSnapshot = asset.getAssetName();
@@ -104,6 +117,8 @@ class EquipmentWorkOrderEntity {
 	String getWorkType() { return workType; }
 	String getSourceType() { return sourceType; }
 	UUID getSourceWorkOrderId() { return sourceWorkOrderId; }
+	UUID getSourcePlanId() { return sourcePlanId; }
+	LocalDate getSourceDueDate() { return sourceDueDate; }
 	String getAssetCodeSnapshot() { return assetCodeSnapshot; }
 	String getAssetNameSnapshot() { return assetNameSnapshot; }
 	String getAssetLocationSnapshot() { return assetLocationSnapshot; }

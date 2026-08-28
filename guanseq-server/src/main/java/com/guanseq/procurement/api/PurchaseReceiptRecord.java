@@ -9,12 +9,13 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record PurchaseReceiptRecord(
 		UUID id, String receiptNumber, UUID purchaseOrderId, String orderNumber, UUID supplierId,
 		String supplierCode, String supplierName, UUID warehouseId, String warehouseCode, String warehouseName,
-		UUID locationId, String locationCode, String locationName, String note, String status,
+		UUID locationId, String locationCode, String locationName, String note, String source, String status,
 		BigDecimal totalReceivedQuantity, BigDecimal acceptedQuantity, BigDecimal rejectedQuantity,
 		long version, Instant createdAt, List<Line> lines) {
 
@@ -30,7 +31,8 @@ public record PurchaseReceiptRecord(
 			@NotNull UUID warehouseId,
 			@NotNull UUID locationId,
 			@Size(max = 500) String note,
-			@Valid @NotNull @Size(min = 1, max = 100) List<LineInput> lines) { }
+			@Pattern(regexp = "DESKTOP_FORM|MOBILE_SCAN") String source,
+			@NotNull @Size(min = 1, max = 100) List<@Valid LineInput> lines) { }
 
 	public record LineInput(
 			@NotNull UUID orderLineId,

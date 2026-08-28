@@ -76,15 +76,16 @@ public class SalesShipmentApplicationService {
 	public SalesShipmentReferenceData referenceData(String username) {
 		CurrentWorkspaceAccess access = workspaceProvider.resolve(username);
 		List<SalesShipmentReferenceData.ReleasedOrder> orders = orderRepository
-				.findByTenantOrganizationIdAndStatusIn(access.tenantOrganizationId(), List.of("RELEASED", "PARTIALLY_SHIPPED"),
+				.findByTenantOrganizationIdAndStatusIn(access.tenantOrganizationId(),
+						List.of("RELEASED", "PARTIALLY_SHIPPED", "PARTIALLY_RETURNED", "RETURNED"),
 						Sort.by(Sort.Order.asc("promisedDeliveryDate").nullsLast(), Sort.Order.asc("orderNumber"))).stream()
 				.map(order -> new SalesShipmentReferenceData.ReleasedOrder(order.getId(), order.getOrderNumber(), order.getCustomerId(),
 						order.getCustomerCode(), order.getCustomerName(), order.getPromisedDeliveryDate(),
 						order.getLines().stream().sorted(java.util.Comparator.comparingInt(SalesOrderLineEntity::getLineNumber))
 								.map(line -> new SalesShipmentReferenceData.ReleasedLine(line.getId(), line.getLineNumber(),
 										line.getMaterialId(), line.getMaterialCode(), line.getMaterialName(), line.getMaterialSpecification(),
-										line.getUnit(), line.getQuantity(), line.getDeliveredQuantity(),
-										line.getQuantity().subtract(line.getDeliveredQuantity()))).toList()))
+										line.getUnit(), line.getQuantity(), line.getDeliveredQuantity(), line.getReturnedQuantity(),
+										line.getNetDeliveredQuantity(), line.getQuantity().subtract(line.getNetDeliveredQuantity()))).toList()))
 				.toList();
 		List<SalesShipmentReferenceData.WarehouseOption> warehouses = warehouseProvider.listActiveWarehouses(access.tenantOrganizationId()).stream()
 				.map(item -> new SalesShipmentReferenceData.WarehouseOption(item.id(), item.code(), item.name())).toList();
@@ -101,7 +102,8 @@ public class SalesShipmentApplicationService {
 		if (request.plannedShippingDate().isBefore(LocalDate.now())) throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "计划发货日期不能早于今天");
 		SalesOrderEntity order = orderRepository.findByIdAndTenantOrganizationId(request.salesOrderId(), access.tenantOrganizationId())
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "销售订单不存在或不在当前租户范围"));
-		if (!Set.of("RELEASED", "PARTIALLY_SHIPPED").contains(order.getStatus())) throw conflict("只有已下达或部分发货的销售订单可以发货");
+		if (!Set.of("RELEASED", "PARTIALLY_SHIPPED", "PARTIALLY_RETURNED", "RETURNED").contains(order.getStatus()))
+			throw conflict("只有已下达、部分发货或发生退货的销售订单可以继续发货");
 		var warehouse = warehouseProvider.listActiveWarehouses(access.tenantOrganizationId()).stream().filter(item -> item.id().equals(request.warehouseId())).findFirst()
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "发货仓库不存在、未启用或不在当前租户范围"));
 		Map<UUID, SalesOrderLineEntity> orderLines = order.getLines().stream().collect(Collectors.toMap(SalesOrderLineEntity::getId, item -> item));
@@ -112,7 +114,7 @@ public class SalesShipmentApplicationService {
 			if (!uniqueLineIds.add(input.orderLineId())) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "同一销售订单行不能重复发货，请合并数量");
 			SalesOrderLineEntity line = orderLines.get(input.orderLineId());
 			if (line == null) throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "发货行不属于所选销售订单");
-			BigDecimal outstanding = line.getQuantity().subtract(line.getDeliveredQuantity());
+			BigDecimal outstanding = line.getQuantity().subtract(line.getNetDeliveredQuantity());
 			if (input.shippedQuantity().compareTo(outstanding) > 0) throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "物料 " + line.getMaterialCode() + " 本次发货数量超过未发数量");
 			shippedByLine.put(line.getId(), input.shippedQuantity());
 			total = total.add(input.shippedQuantity());

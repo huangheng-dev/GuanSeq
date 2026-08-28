@@ -48,7 +48,9 @@ public record SalesOrderRecord(
 			BigDecimal netAmount,
 			BigDecimal taxAmount,
 			BigDecimal grossAmount,
-		BigDecimal deliveredQuantity) {
+		BigDecimal deliveredQuantity,
+		BigDecimal returnedQuantity,
+		BigDecimal netDeliveredQuantity) {
 	}
 
 	public record LineInput(

@@ -10,6 +10,8 @@ const mutation = z.object({
   operatorName: z.string().max(80).nullable().optional(),
   completedQuantity: z.number().positive().nullable().optional(),
   note: z.string().max(500).nullable().optional(),
+  source: z.enum(["DESKTOP_FORM", "MOBILE_SCAN"]).optional(),
+  operatorBadge: z.string().max(120).nullable().optional(),
 });
 
 export async function POST(request: Request) {

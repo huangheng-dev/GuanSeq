@@ -46,6 +46,61 @@ class ProductionOperationTaskIntegrationTest {
 
 	@Test
 	@Transactional
+	void scansCurrentOperatorExecutesTasksAndCreatesMobileWorkReportExactlyOnce() throws Exception {
+		String orderId = createAndReleaseOrder();
+		JsonNode tasks = readArray(getByOrder(orderId));
+		String firstId = tasks.get(0).path("id").asText();
+		String secondId = tasks.get(1).path("id").asText();
+		String finalId = tasks.get(2).path("id").asText();
+		String finalNumber = tasks.get(2).path("taskNumber").asText();
+
+		mockMvc.perform(post("/api/v1/production/operation-tasks/{id}/actions", secondId).with(httpBasic(USERNAME, PASSWORD))
+				.header("X-Request-Id", "mobile-wrong-operator").contentType(MediaType.APPLICATION_JSON)
+				.content(mobileTaskBody("START", 0, null, "someone.else")))
+				.andExpect(status().isForbidden());
+
+		for (String taskId : java.util.List.of(firstId, secondId, finalId)) {
+			String suffix = taskId.substring(0, 8);
+			mockMvc.perform(post("/api/v1/production/operation-tasks/{id}/actions", taskId).with(httpBasic(USERNAME, PASSWORD))
+					.header("X-Request-Id", "mobile-start-" + suffix).contentType(MediaType.APPLICATION_JSON)
+					.content(mobileTaskBody("START", 0, null, USERNAME)))
+					.andExpect(status().isOk()).andExpect(jsonPath("$.status").value("IN_PROGRESS"))
+					.andExpect(jsonPath("$.operatorName").value(USERNAME))
+					.andExpect(jsonPath("$.events[0].source").value("MOBILE_SCAN"));
+			mockMvc.perform(post("/api/v1/production/operation-tasks/{id}/actions", taskId).with(httpBasic(USERNAME, PASSWORD))
+					.header("X-Request-Id", "mobile-complete-" + suffix).contentType(MediaType.APPLICATION_JSON)
+					.content(mobileTaskBody("COMPLETE", 1, 2, USERNAME)))
+					.andExpect(status().isOk()).andExpect(jsonPath("$.status").value("COMPLETED"))
+					.andExpect(jsonPath("$.events[0].source").value("MOBILE_SCAN"));
+		}
+
+		String requestId = "mobile-production-report-001";
+		String body = mobileReportBody(orderId, finalId, 2, 2, USERNAME);
+		MvcResult created = mockMvc.perform(post("/api/v1/production/work-reports").with(httpBasic(USERNAME, PASSWORD))
+				.header("X-Request-Id", requestId).contentType(MediaType.APPLICATION_JSON).content(body))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.source").value("MOBILE_SCAN"))
+				.andExpect(jsonPath("$.operationTaskId").value(finalId))
+				.andExpect(jsonPath("$.operationTaskNumber").value(finalNumber))
+				.andExpect(jsonPath("$.operatorName").value(USERNAME))
+				.andExpect(jsonPath("$.status").value("PENDING_INSPECTION")).andReturn();
+		String reportId = MAPPER.readTree(created.getResponse().getContentAsString()).path("id").asText();
+
+		mockMvc.perform(post("/api/v1/production/work-reports").with(httpBasic(USERNAME, PASSWORD))
+				.header("X-Request-Id", requestId).contentType(MediaType.APPLICATION_JSON).content(body))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.id").value(reportId));
+
+		var evidence = jdbcTemplate.queryForMap("""
+				select source, operation_task_id::text as operation_task_id,
+				       (select count(*) from production.operation_events e where e.task_id = r.operation_task_id and e.source = 'MOBILE_SCAN') as mobile_event_count
+				from production.work_reports r where r.id = cast(? as uuid)
+				""", reportId);
+		org.assertj.core.api.Assertions.assertThat(evidence.get("source")).isEqualTo("MOBILE_SCAN");
+		org.assertj.core.api.Assertions.assertThat(evidence.get("operation_task_id")).isEqualTo(finalId);
+		org.assertj.core.api.Assertions.assertThat(((Number) evidence.get("mobile_event_count")).longValue()).isEqualTo(2);
+	}
+
+	@Test
+	@Transactional
 	void releasesCreatesTasksExecutesAndGuardsWorkReport() throws Exception {
 		String orderId = createAndReleaseOrder();
 		mockMvc.perform(get("/api/v1/production/orders/{orderId}/operation-tasks", orderId).with(httpBasic(USERNAME, PASSWORD)))
@@ -177,6 +232,19 @@ class ProductionOperationTaskIntegrationTest {
 		return """
 				{"orderId":"%s","quantity":%d,"shiftName":"白班","operatorName":"陈磊","note":"全部工序完成后报工","expectedOrderVersion":%d}
 				""".formatted(orderId, quantity, expectedOrderVersion);
+	}
+
+	private static String mobileTaskBody(String action, long expectedVersion, Integer quantity, String operatorBadge) {
+		String completedQuantity = quantity == null ? "null" : quantity.toString();
+		return """
+				{"action":"%s","expectedVersion":%d,"completedQuantity":%s,"shiftName":"白班","note":"移动扫码工序动作","source":"MOBILE_SCAN","operatorBadge":"%s"}
+				""".formatted(action, expectedVersion, completedQuantity, operatorBadge);
+	}
+
+	private static String mobileReportBody(String orderId, String taskId, int quantity, long expectedOrderVersion, String operatorBadge) {
+		return """
+				{"orderId":"%s","quantity":%d,"shiftName":"白班","note":"移动扫码完工报工","expectedOrderVersion":%d,"source":"MOBILE_SCAN","operationTaskId":"%s","operatorBadge":"%s"}
+				""".formatted(orderId, quantity, expectedOrderVersion, taskId, operatorBadge);
 	}
 }
 

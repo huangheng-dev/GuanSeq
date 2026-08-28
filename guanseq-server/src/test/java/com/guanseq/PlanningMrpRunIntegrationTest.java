@@ -16,7 +16,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import jakarta.persistence.EntityManager;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -52,8 +51,14 @@ class PlanningMrpRunIntegrationTest {
 	@Transactional
 	void freezesSupplyAndCompletesTimePhasedNettingWhenFactsAreReady() throws Exception {
 		LocalDate today = LocalDate.now();
-		jdbcTemplate.update("update planning.independent_demands set required_date = ? where id = cast(? as uuid)",
+		int firstDemandUpdated = jdbcTemplate.update(
+				"update planning.independent_demands set required_date = ? where id = cast(? as uuid)",
 				today, "53000000-0000-4000-8000-000000000001");
+		int thirdDemandUpdated = jdbcTemplate.update(
+				"update planning.independent_demands set required_date = ? where id = cast(? as uuid)",
+				today.plusDays(1), "53000000-0000-4000-8000-000000000003");
+		assertThat(firstDemandUpdated).isEqualTo(1);
+		assertThat(thirdDemandUpdated).isEqualTo(1);
 		MvcResult created = mockMvc.perform(post("/api/v1/planning/mrp-runs")
 					.with(httpBasic(USERNAME, PASSWORD))
 					.header("X-Request-Id", "mrp-ready-check-0001")
@@ -68,13 +73,13 @@ class PlanningMrpRunIntegrationTest {
 				.andExpect(jsonPath("$.exceptions").isEmpty())
 				.andExpect(jsonPath("$.exceptions[?(@.code == 'STOCK_POSITION_UNAVAILABLE')]").doesNotExist())
 				.andExpect(jsonPath("$.supplies[?(@.materialCode == 'GS-800' && @.availableQuantity == 6)]").exists())
-				.andExpect(jsonPath("$.supplies[?(@.materialCode == 'BR-6204' && @.availableQuantity == 400)]").exists())
+				.andExpect(jsonPath("$.supplies[?(@.materialCode == 'BR-6204' && @.availableQuantity == 412)]").exists())
 				.andExpect(jsonPath("$.exceptions[?(@.code == 'BOM_UNAVAILABLE' && @.materialCode == 'GS-800')]").doesNotExist())
 				.andExpect(jsonPath("$.exceptions[?(@.code == 'LEAD_TIME_UNAVAILABLE' && @.materialCode == 'BR-6204')]").doesNotExist())
 				.andExpect(jsonPath("$.scheduledReceipts[?(@.sourceOrderNumber == 'PO-260815-001' && @.materialCode == 'BR-6204' && @.outstandingQuantity == 600)]").exists())
 				.andExpect(jsonPath("$.scheduledReceipts[?(@.sourceOrderNumber == 'MO-260815-012' && @.sourceType == 'PRODUCTION_ORDER' && @.outstandingQuantity == 6)]").exists())
 				.andExpect(jsonPath("$.netRequirements[?(@.materialCode == 'GS-800' && @.netQuantity == 0 && @.recommendationType == 'NONE')]").exists())
-				.andExpect(jsonPath("$.netRequirements[?(@.materialCode == 'BR-6204' && @.netQuantity == 0 && @.scheduledReceiptConsumed == 400)]").exists())
+				.andExpect(jsonPath("$.netRequirements[?(@.materialCode == 'BR-6204' && @.netQuantity == 0 && @.scheduledReceiptConsumed == 388)]").exists())
 				.andExpect(jsonPath("$.requestId").value("mrp-ready-check-0001"))
 				.andReturn();
 

@@ -23,4 +23,9 @@ describe("销售应收契约", () => {
     const data = receivableReferenceDataSchema.parse({ orders: [{ salesOrderId: ids.order, orderNumber: "SO-001", customerId: ids.customer, customerCode: "C-001", customerName: "华东客户", currency: "CNY", taxRate: 0.13, orderStatus: "PARTIALLY_SHIPPED", deliveredAmount: 200, invoicedAmount: 100, remainingAmount: 100, lines: [{ salesOrderLineId: ids.line, lineNumber: 1, materialId: ids.material, materialCode: "FG-001", materialName: "成品", materialSpecification: null, unit: "台", deliveredQuantity: 2, invoicedQuantity: 1, remainingQuantity: 1, unitPrice: 100 }] }] });
     expect(data.orders[0].lines[0].remainingQuantity).toBe(1);
   });
+
+  it.each(["PARTIALLY_RETURNED", "RETURNED"] as const)("解析退货后的 %s 应收引用订单", (orderStatus) => {
+    const data = receivableReferenceDataSchema.parse({ orders: [{ salesOrderId: ids.order, orderNumber: "SO-001", customerId: ids.customer, customerCode: "C-001", customerName: "华东客户", currency: "CNY", taxRate: 0.13, orderStatus, deliveredAmount: 100, invoicedAmount: 100, remainingAmount: 0, lines: [{ salesOrderLineId: ids.line, lineNumber: 1, materialId: ids.material, materialCode: "FG-001", materialName: "成品", materialSpecification: null, unit: "台", deliveredQuantity: 1, invoicedQuantity: 1, remainingQuantity: 0, unitPrice: 100 }] }] });
+    expect(data.orders[0].orderStatus).toBe(orderStatus);
+  });
 });

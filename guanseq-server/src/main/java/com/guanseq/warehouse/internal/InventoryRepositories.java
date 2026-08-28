@@ -8,6 +8,7 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -22,6 +23,9 @@ interface StorageLocationRepository extends JpaRepository<StorageLocationEntity,
 }
 
 interface StockBalanceRepository extends JpaRepository<StockBalanceEntity, UUID> {
+	@Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+	@Query("select b from StockBalanceEntity b where b.id=:id and b.tenantOrganizationId=:tenantId")
+	Optional<StockBalanceEntity> findForUpdate(@Param("id") UUID id, @Param("tenantId") UUID tenantId);
 	@Query("""
 			select b from StockBalanceEntity b where b.tenantOrganizationId = :tenantId
 			and (:quality = '' or b.qualityStatus = :quality)
@@ -36,11 +40,15 @@ interface StockBalanceRepository extends JpaRepository<StockBalanceEntity, UUID>
 			@Param("quality") String quality, @Param("warehouse") String warehouse, Pageable pageable);
 
 	Optional<StockBalanceEntity> findByIdAndTenantOrganizationId(UUID id, UUID tenantId);
+	Page<StockBalanceEntity> findByTenantOrganizationIdAndOnHandQuantityGreaterThan(UUID tenantId,
+			java.math.BigDecimal quantity, Pageable pageable);
 	Optional<StockBalanceEntity> findByTenantOrganizationIdAndWarehouseIdAndLocationIdAndMaterialIdAndLotNumberAndQualityStatus(
 			UUID tenantId, UUID warehouseId, UUID locationId, UUID materialId, String lotNumber, String qualityStatus);
 	List<StockBalanceEntity> findByTenantOrganizationIdAndMaterialIdIn(UUID tenantId, Collection<UUID> materialIds);
 	List<StockBalanceEntity> findByTenantOrganizationIdAndWarehouseIdAndMaterialIdIn(UUID tenantId, UUID warehouseId,
 			Collection<UUID> materialIds);
+	List<StockBalanceEntity> findByTenantOrganizationIdAndWarehouseIdInAndMaterialIdInAndQualityStatus(
+			UUID tenantId, Collection<UUID> warehouseIds, Collection<UUID> materialIds, String qualityStatus);
 	List<StockBalanceEntity> findByTenantOrganizationIdAndWarehouseIdAndMaterialIdAndQualityStatusOrderByLocationCodeAscLotNumberAscUpdatedAtAsc(
 		UUID tenantId, UUID warehouseId, UUID materialId, String qualityStatus);
 }

@@ -1,6 +1,7 @@
 name: Verify
 
 on:
+  workflow_call:
   pull_request:
   push:
     branches: [main]
@@ -21,6 +22,7 @@ jobs:
           cache: pnpm
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
+      - run: pnpm release:check
       - run: pnpm check
 
   backend:
@@ -37,3 +39,27 @@ jobs:
         working-directory: guanseq-server
       - run: ./mvnw verify
         working-directory: guanseq-server
+
+  browser-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.18.0
+          cache: pnpm
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm e2e
+      - name: Upload Playwright failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-failure-evidence
+          path: |
+            output/playwright/report
+            output/playwright/test-results
+          if-no-files-found: ignore
+          retention-days: 7

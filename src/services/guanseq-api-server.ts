@@ -1,11 +1,36 @@
 import "server-only";
 
+import type { BackendHealthStatus } from "@/lib/health-status";
 import { getSecurityMode } from "@/lib/security-mode";
 import { readOidcAccessToken } from "@/services/oidc-session-server";
 
 const backendBaseUrl = process.env.GUANSEQ_API_BASE_URL ?? "http://localhost:8080";
 const developmentUsername = process.env.GUANSEQ_DEV_USERNAME ?? "lin.hao";
 const developmentPassword = process.env.GUANSEQ_DEV_PASSWORD ?? "guanseq_dev";
+
+export async function checkGuanSeqApiHealth(
+  timeoutMs = 2000,
+): Promise<BackendHealthStatus | null> {
+  try {
+    const response = await fetch(`${backendBaseUrl}/api/v1/platform/status`, {
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    if (!response.ok) return null;
+    const payload = (await response.json()) as Partial<BackendHealthStatus>;
+    if (
+      payload.service !== "guanseq-server" ||
+      payload.status !== "UP" ||
+      typeof payload.version !== "string"
+    ) {
+      return null;
+    }
+    return payload as BackendHealthStatus;
+  } catch {
+    return null;
+  }
+}
 
 export async function requestGuanSeqApi(
   path: string,

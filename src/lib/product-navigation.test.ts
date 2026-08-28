@@ -6,7 +6,7 @@ describe("product navigation routes", () => {
   it("resolves every declared navigation path", () => {
     const paths = allProductPaths();
     expect(new Set(paths).size).toBe(paths.length);
-    expect(paths).toHaveLength(234);
+    expect(paths).toHaveLength(236);
     for (const path of paths) expect(resolveProductRoute(path), path).not.toBeNull();
   });
 

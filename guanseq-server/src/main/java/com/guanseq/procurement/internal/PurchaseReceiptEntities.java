@@ -38,6 +38,7 @@ class PurchaseReceiptEntity {
 	@Column(name = "location_code") private String locationCode;
 	@Column(name = "location_name") private String locationName;
 	private String note;
+	private String source;
 	private String status;
 	@Column(name = "total_received_quantity") private BigDecimal totalReceivedQuantity;
 	@Column(name = "accepted_quantity") private BigDecimal acceptedQuantity;
@@ -54,13 +55,13 @@ class PurchaseReceiptEntity {
 	protected PurchaseReceiptEntity() { }
 	PurchaseReceiptEntity(UUID tenantId, UUID organizationId, UUID workspaceId, String number,
 			PurchaseOrderEntity order, WarehouseSnapshot warehouse, StorageLocationSnapshot location, String note,
-			String requestId, UUID actorId) {
+			String source, String requestId, UUID actorId) {
 		this.id = UUID.randomUUID(); this.tenantOrganizationId = tenantId; this.owningOrganizationId = organizationId;
 		this.workspaceId = workspaceId; this.receiptNumber = number; this.purchaseOrderId = order.getId();
 		this.orderNumber = order.getOrderNumber(); this.supplierId = order.getSupplierId(); this.supplierCode = order.getSupplierCode();
 		this.supplierName = order.getSupplierName(); this.warehouseId = warehouse.id(); this.warehouseCode = warehouse.code();
 		this.warehouseName = warehouse.name(); this.locationId = location.id(); this.locationCode = location.code();
-		this.locationName = location.name(); this.note = note; this.totalReceivedQuantity = BigDecimal.ZERO;
+		this.locationName = location.name(); this.note = note; this.source = source; this.totalReceivedQuantity = BigDecimal.ZERO;
 		this.acceptedQuantity = BigDecimal.ZERO; this.rejectedQuantity = BigDecimal.ZERO; this.requestId = requestId;
 		this.createdBy = actorId; this.createdAt = Instant.now(); this.updatedBy = actorId; this.updatedAt = this.createdAt;
 	}
@@ -96,7 +97,7 @@ class PurchaseReceiptEntity {
 	UUID getSupplierId() { return supplierId; } String getSupplierCode() { return supplierCode; } String getSupplierName() { return supplierName; }
 	UUID getWarehouseId() { return warehouseId; } String getWarehouseCode() { return warehouseCode; } String getWarehouseName() { return warehouseName; }
 	UUID getLocationId() { return locationId; } String getLocationCode() { return locationCode; } String getLocationName() { return locationName; }
-	String getNote() { return note; } String getStatus() { return status; } BigDecimal getTotalReceivedQuantity() { return totalReceivedQuantity; }
+	String getNote() { return note; } String getSource() { return source; } String getStatus() { return status; } BigDecimal getTotalReceivedQuantity() { return totalReceivedQuantity; }
 	BigDecimal getAcceptedQuantity() { return acceptedQuantity; } BigDecimal getRejectedQuantity() { return rejectedQuantity; }
 	String getRequestId() { return requestId; } long getVersion() { return version; } Instant getCreatedAt() { return createdAt; }
 	List<PurchaseReceiptLineEntity> getLines() { return lines; }

@@ -27,7 +27,9 @@ interface OperationTaskRepository extends JpaRepository<OperationTaskEntity, UUI
 			@Param("status") String status, Pageable pageable);
 
 	Optional<OperationTaskEntity> findByIdAndTenantOrganizationId(UUID id, UUID tenantId);
+	Page<OperationTaskEntity> findByTenantOrganizationId(UUID tenantId, Pageable pageable);
 	List<OperationTaskEntity> findByTenantOrganizationIdAndOrderIdOrderBySequenceNumberAsc(UUID tenantId, UUID orderId);
+	Optional<OperationTaskEntity> findFirstByTenantOrganizationIdAndOrderIdOrderBySequenceNumberDesc(UUID tenantId, UUID orderId);
 	boolean existsByTenantOrganizationIdAndOrderId(UUID tenantId, UUID orderId);
 	boolean existsByTenantOrganizationIdAndOrderIdAndStatusNot(UUID tenantId, UUID orderId, String status);
 }

@@ -64,6 +64,7 @@ public class ProductionWorkReportApplicationService {
 	public ProductionWorkReportRecord create(String username, ProductionWorkReportRecord.CreateRequest request) {
 		CurrentWorkspaceAccess access = workspaceProvider.resolve(username); requireReportRole(access);
 		String requestId = requestId("production-report-");
+		String source = normalizeSource(request.source());
 		var duplicate = reportRepository.findByTenantOrganizationIdAndRequestId(access.tenantOrganizationId(), requestId);
 		if (duplicate.isPresent()) return toRecord(access, duplicate.get());
 		ProductionOrderEntity order = requireOrder(access, request.orderId());
@@ -72,13 +73,31 @@ public class ProductionWorkReportApplicationService {
 			throw conflict("生产订单缺少工序执行快照，请联系计划员重新下达或补录工艺路线");
 		if (operationTaskRepository.existsByTenantOrganizationIdAndOrderIdAndStatusNot(access.tenantOrganizationId(), order.getId(), "COMPLETED"))
 			throw conflict("仍有工序未完成，不能提交完工报工");
+		UUID operationTaskId = null;
+		String operator;
+		if ("MOBILE_SCAN".equals(source)) {
+			String badge = requireText(request.operatorBadge(), "移动扫码报工必须扫描当前操作人员标签");
+			if (!badge.equalsIgnoreCase(access.username())) throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+					"人员标签与当前登录账号不一致，不能代替他人提交生产报工");
+			OperationTaskEntity task = request.operationTaskId() == null ? null
+					: operationTaskRepository.findByIdAndTenantOrganizationId(request.operationTaskId(), access.tenantOrganizationId()).orElse(null);
+			if (task == null || !task.getOrderId().equals(order.getId())) throw conflict("扫码工序不属于当前生产订单");
+			if (!"COMPLETED".equals(task.getStatus())) throw conflict("扫码工序尚未完工，不能提交生产报工");
+			OperationTaskEntity finalTask = operationTaskRepository
+					.findFirstByTenantOrganizationIdAndOrderIdOrderBySequenceNumberDesc(access.tenantOrganizationId(), order.getId())
+					.orElseThrow(() -> conflict("生产订单缺少最后一道工序快照"));
+			if (!finalTask.getId().equals(task.getId())) throw conflict("生产扫码报工必须扫描该订单最后一道已完工工序");
+			operationTaskId = task.getId(); operator = access.username();
+		} else {
+			operator = requireText(request.operatorName(), "生产报工必须填写操作人");
+		}
 		if (order.getVersion() != request.expectedOrderVersion()) throw conflict("生产订单已被其他用户更新，请刷新后重试");
 		try { order.reserveReport(request.quantity(), access.userId()); }
 		catch (IllegalStateException exception) { throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
 				"报工数量超过当前可报数量，请核对在检与已完工数量", exception); }
 		ProductionWorkReportEntity report = new ProductionWorkReportEntity(access.tenantOrganizationId(),
 				access.operatingOrganizationId(), access.workspaceId(), nextNumber(), order, request.quantity(),
-				request.shiftName(), request.operatorName(), request.note(), requestId, access.userId());
+				request.shiftName(), operator, request.note(), requestId, access.userId(), operationTaskId, source);
 		reportRepository.saveAndFlush(report);
 		Inspection inspection = inspectionProvider.create(new FinalInspectionProvider.CreateCommand(
 				access.tenantOrganizationId(), access.operatingOrganizationId(), access.workspaceId(), access.userId(),
@@ -86,10 +105,13 @@ public class ProductionWorkReportApplicationService {
 				order.getMaterialCode(), order.getMaterialName(), order.getMaterialSpecification(), order.getUnit(),
 				request.quantity(), requestId));
 		report.attachInspection(inspection.id()); reportRepository.saveAndFlush(report); orderRepository.saveAndFlush(order);
+		Map<String, Object> eventDetails = new java.util.LinkedHashMap<>();
+		eventDetails.put("reportNumber", report.getReportNumber()); eventDetails.put("quantity", request.quantity());
+		eventDetails.put("inspectionNumber", inspection.inspectionNumber()); eventDetails.put("source", source);
+		if (operationTaskId != null) eventDetails.put("operationTaskId", operationTaskId.toString());
 		orderEventRepository.save(new ProductionOrderEventEntity(access.tenantOrganizationId(), access.workspaceId(),
 				access.userId(), order.getId(), "REPORTED", "IN_PROGRESS", "IN_PROGRESS", requestId, request.note(),
-				Map.of("reportNumber", report.getReportNumber(), "quantity", request.quantity(),
-						"inspectionNumber", inspection.inspectionNumber())));
+				eventDetails));
 		return toRecord(access, report);
 	}
 
@@ -136,12 +158,16 @@ public class ProductionWorkReportApplicationService {
 				: receiptService.findBySource(access.tenantOrganizationId(), item.getId());
 		String warehouse = receipt.map(FinishedGoodsReceiptService.Receipt::warehouseName).orElse(null);
 		String location = receipt.map(FinishedGoodsReceiptService.Receipt::locationName).orElse(null);
+		String operationTaskNumber = item.getOperationTaskId() == null ? null
+				: operationTaskRepository.findByIdAndTenantOrganizationId(item.getOperationTaskId(), access.tenantOrganizationId())
+						.map(OperationTaskEntity::getTaskNumber).orElse(null);
 		return new ProductionWorkReportRecord(item.getId(), item.getReportNumber(), item.getOrderId(), item.getOrderNumber(),
 				item.getMaterialId(), item.getMaterialCode(), item.getMaterialName(), item.getMaterialSpecification(), item.getUnit(),
 				item.getWorkshop(), item.getShiftName(), item.getOperatorName(), item.getReportedQuantity(), item.getNote(),
 				item.getInspectionId(), inspection.inspectionNumber(), inspection.status(), inspection.result(),
 				inspection.acceptedQuantity(), inspection.rejectedQuantity(), item.getReceiptBalanceId(), item.getReceiptMovementId(),
-				warehouse, location, item.getLotNumber(), effectiveStatus, item.getVersion(), item.getCreatedAt(), item.getSettledAt());
+				warehouse, location, item.getLotNumber(), effectiveStatus, item.getOperationTaskId(), operationTaskNumber,
+				item.getSource(), item.getVersion(), item.getCreatedAt(), item.getSettledAt());
 	}
 
 	private Inspection requireInspection(CurrentWorkspaceAccess access, ProductionWorkReportEntity report) {
@@ -158,5 +184,10 @@ public class ProductionWorkReportApplicationService {
 	private static void requireReportRole(CurrentWorkspaceAccess access) { if (!REPORT_ROLES.contains(access.roleCode())) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "当前角色无权提交或结算生产报工"); }
 	private static String normalize(String value) { return value == null ? "" : value.trim(); }
 	private static String normalizeStatus(String value) { return value == null || value.isBlank() || "ALL".equalsIgnoreCase(value) ? "" : value.trim().toUpperCase(); }
+	private static String normalizeSource(String value) { return value == null || value.isBlank() ? "DESKTOP_FORM" : value.trim(); }
+	private static String requireText(String value, String message) {
+		if (value == null || value.isBlank()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
+		return value.trim();
+	}
 	private static ResponseStatusException conflict(String message) { return new ResponseStatusException(HttpStatus.CONFLICT, message); }
 }

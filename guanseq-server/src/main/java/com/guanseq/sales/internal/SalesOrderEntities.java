@@ -104,10 +104,41 @@ class SalesOrderEntity {
 			BigDecimal shipped = shippedByLine.getOrDefault(line.getId(), BigDecimal.ZERO);
 			if (shipped.signum() != 0) line.applyShippedQuantity(shipped);
 		}
-		boolean allShipped = lines.stream().allMatch(line -> line.getDeliveredQuantity().compareTo(line.getQuantity()) >= 0);
-		this.status = allShipped ? "SHIPPED" : "PARTIALLY_SHIPPED";
+		updateFulfillmentStatus();
 		this.updatedBy = actorUserId;
 		this.updatedAt = Instant.now();
+	}
+
+	void applyReturn(java.util.Map<UUID, BigDecimal> returnedByLine, UUID actorUserId) {
+		for (SalesOrderLineEntity line : lines) {
+			BigDecimal returned = returnedByLine.getOrDefault(line.getId(), BigDecimal.ZERO);
+			if (returned.signum() != 0) line.applyReturnedQuantity(returned);
+		}
+		updateFulfillmentStatus();
+		this.updatedBy = actorUserId;
+		this.updatedAt = Instant.now();
+	}
+
+	void reverseReturn(java.util.Map<UUID, BigDecimal> returnedByLine, UUID actorUserId) {
+		for (SalesOrderLineEntity line : lines) {
+			BigDecimal returned = returnedByLine.getOrDefault(line.getId(), BigDecimal.ZERO);
+			if (returned.signum() != 0) line.reverseReturnedQuantity(returned);
+		}
+		updateFulfillmentStatus();
+		this.updatedBy = actorUserId;
+		this.updatedAt = Instant.now();
+	}
+
+	private void updateFulfillmentStatus() {
+		boolean anyGrossShipment = lines.stream().anyMatch(line -> line.getDeliveredQuantity().signum() > 0);
+		boolean anyNetShipment = lines.stream().anyMatch(line -> line.getNetDeliveredQuantity().signum() > 0);
+		boolean anyReturn = lines.stream().anyMatch(line -> line.getReturnedQuantity().signum() > 0);
+		boolean allShipped = lines.stream().allMatch(line -> line.getNetDeliveredQuantity().compareTo(line.getQuantity()) >= 0);
+		if (allShipped) this.status = "SHIPPED";
+		else if (!anyNetShipment && anyGrossShipment) this.status = "RETURNED";
+		else if (anyReturn) this.status = "PARTIALLY_RETURNED";
+		else if (anyNetShipment) this.status = "PARTIALLY_SHIPPED";
+		else this.status = "RELEASED";
 	}
 
 	UUID getId() { return id; }
@@ -152,6 +183,7 @@ class SalesOrderLineEntity {
 	@Column(name = "tax_amount") private BigDecimal taxAmount;
 	@Column(name = "gross_amount") private BigDecimal grossAmount;
 	@Column(name = "delivered_quantity") private BigDecimal deliveredQuantity = BigDecimal.ZERO.setScale(4, RoundingMode.HALF_UP);
+	@Column(name = "returned_quantity") private BigDecimal returnedQuantity = BigDecimal.ZERO.setScale(4, RoundingMode.HALF_UP);
 
 	protected SalesOrderLineEntity() {
 	}
@@ -186,7 +218,19 @@ class SalesOrderLineEntity {
 	BigDecimal getTaxAmount() { return taxAmount; }
 	BigDecimal getGrossAmount() { return grossAmount; }
 	BigDecimal getDeliveredQuantity() { return deliveredQuantity; }
+	BigDecimal getReturnedQuantity() { return returnedQuantity; }
+	BigDecimal getNetDeliveredQuantity() { return deliveredQuantity.subtract(returnedQuantity).setScale(4, RoundingMode.HALF_UP); }
 	void applyShippedQuantity(BigDecimal quantity) { this.deliveredQuantity = this.deliveredQuantity.add(quantity).setScale(4, RoundingMode.HALF_UP); }
+	void applyReturnedQuantity(BigDecimal quantity) {
+		BigDecimal next = returnedQuantity.add(quantity).setScale(4, RoundingMode.HALF_UP);
+		if (next.compareTo(deliveredQuantity) > 0) throw new IllegalStateException("累计退货数量不能超过累计毛发货数量");
+		this.returnedQuantity = next;
+	}
+	void reverseReturnedQuantity(BigDecimal quantity) {
+		BigDecimal next = returnedQuantity.subtract(quantity).setScale(4, RoundingMode.HALF_UP);
+		if (next.signum() < 0) throw new IllegalStateException("累计退货数量不能小于零");
+		this.returnedQuantity = next;
+	}
 }
 
 @Entity

@@ -11,6 +11,106 @@ INSERT INTO equipment.assets (
     ('a1000000-0000-4000-8000-000000000099', '99999999-9999-4999-8999-999999999999', '99999999-9999-4999-8999-999999999998', '99999999-9999-4999-8999-999999999996', 'EQ-TENANT-HIDDEN', '隔离租户设备', 'PRODUCTION', NULL, NULL, NULL, NULL, NULL, '隔离工厂', '隔离责任人', NULL, 'IDLE', '2026-08-25 00:00:00+00', 0, '99999999-9999-4999-8999-999999999997', '2026-08-20 01:25:00+00', '99999999-9999-4999-8999-999999999997', '2026-08-20 01:25:00+00')
 ON CONFLICT (id) DO NOTHING;
 
+INSERT INTO equipment.oee_records (
+    id, tenant_organization_id, owning_organization_id, workspace_id, record_number,
+    asset_id, asset_code_snapshot, asset_name_snapshot, work_center_code_snapshot, work_center_name_snapshot,
+    location_snapshot, window_start, window_end, planned_production_minutes, downtime_minutes, run_minutes,
+    ideal_cycle_seconds, total_count, good_count, availability_rate, performance_rate, quality_rate, oee_rate,
+    shift_name, production_reference, source_type, source_reference, status, rejection_reason, version,
+    creation_request_id, created_by, created_at, submitted_by, submitted_at, approved_by, approved_at,
+    rejected_by, rejected_at, updated_by, updated_at
+) VALUES
+    ('ee000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000001',
+     '00000000-0000-4000-8000-000000000101', '10000000-0000-4000-8000-000000000101', 'OEE-20260825-CNC-01',
+     'a1000000-0000-4000-8000-000000000001', 'EQ-CNC-001', '一号精密加工中心', 'WC-CNC-01', '数控加工中心',
+     '机加车间 A-01', '2026-08-25 00:00:00+00', '2026-08-25 08:00:00+00', 450.00, 35.00, 415.00,
+     60.0000, 380, 372, 92.2222, 91.5663, 97.8947, 82.6667, '白班', 'MO-20260825-CNC',
+     'MANUAL_VERIFIED', '机加白班纸质核实表 20260825', 'APPROVED', NULL, 3,
+     'seed-equipment-oee-cnc-created', '20000000-0000-4000-8000-000000000001', '2026-08-25 08:10:00+00',
+     '20000000-0000-4000-8000-000000000001', '2026-08-25 08:20:00+00',
+     '20000000-0000-4000-8000-000000000001', '2026-08-25 08:30:00+00', NULL, NULL,
+     '20000000-0000-4000-8000-000000000001', '2026-08-25 08:30:00+00'),
+    ('ee000000-0000-4000-8000-000000000002', '00000000-0000-4000-8000-000000000001',
+     '00000000-0000-4000-8000-000000000101', '10000000-0000-4000-8000-000000000101', 'OEE-20260826-ASM-01',
+     'a1000000-0000-4000-8000-000000000002', 'EQ-ASM-002', '二号装配工位', 'WC-ASM-01', '总装工作中心',
+     '总装一车间 B-02', '2026-08-26 00:00:00+00', '2026-08-26 08:00:00+00', 480.00, 20.00, 460.00,
+     90.0000, 280, 275, 95.8333, 91.3043, 98.2143, 85.9375, '白班', 'MO-20260826-ASM',
+     'MANUAL_VERIFIED', '总装白班电子核实表 20260826', 'DRAFT', NULL, 1,
+     'seed-equipment-oee-asm-created', '20000000-0000-4000-8000-000000000001', '2026-08-26 08:10:00+00',
+     NULL, NULL, NULL, NULL, NULL, NULL, '20000000-0000-4000-8000-000000000001', '2026-08-26 08:15:00+00')
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO equipment.oee_downtimes (
+    id, tenant_organization_id, workspace_id, oee_record_id, started_at, ended_at, duration_minutes,
+    reason_category, responsible_party, description, created_by, created_at, updated_by, updated_at
+) VALUES
+    ('ef000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000001',
+     '10000000-0000-4000-8000-000000000101', 'ee000000-0000-4000-8000-000000000001',
+     '2026-08-25 02:10:00+00', '2026-08-25 02:30:00+00', 20.00, 'EQUIPMENT_FAILURE', '设备组',
+     '主轴润滑压力波动，停机检查并恢复。', '20000000-0000-4000-8000-000000000001', '2026-08-25 08:12:00+00',
+     '20000000-0000-4000-8000-000000000001', '2026-08-25 08:12:00+00'),
+    ('ef000000-0000-4000-8000-000000000002', '00000000-0000-4000-8000-000000000001',
+     '10000000-0000-4000-8000-000000000101', 'ee000000-0000-4000-8000-000000000001',
+     '2026-08-25 05:40:00+00', '2026-08-25 05:55:00+00', 15.00, 'SETUP_CHANGEOVER', '生产组',
+     '切换产品型号并完成首件参数确认。', '20000000-0000-4000-8000-000000000001', '2026-08-25 08:14:00+00',
+     '20000000-0000-4000-8000-000000000001', '2026-08-25 08:14:00+00'),
+    ('ef000000-0000-4000-8000-000000000003', '00000000-0000-4000-8000-000000000001',
+     '10000000-0000-4000-8000-000000000101', 'ee000000-0000-4000-8000-000000000002',
+     '2026-08-26 03:00:00+00', '2026-08-26 03:20:00+00', 20.00, 'MATERIAL_WAIT', '物料组',
+     '等待紧固件补料配送至装配工位。', '20000000-0000-4000-8000-000000000001', '2026-08-26 08:15:00+00',
+     '20000000-0000-4000-8000-000000000001', '2026-08-26 08:15:00+00')
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO equipment.oee_events (
+    id, tenant_organization_id, workspace_id, actor_user_id, oee_record_id, action, from_status,
+    to_status, reason, request_id, details, occurred_at
+) VALUES
+    ('ea000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000101',
+     '20000000-0000-4000-8000-000000000001', 'ee000000-0000-4000-8000-000000000001', 'CREATED', NULL, 'DRAFT',
+     '建立机加白班人工核实 OEE 记录', 'seed-equipment-oee-cnc-created', '{"sourceType":"MANUAL_VERIFIED"}', '2026-08-25 08:10:00+00'),
+    ('ea000000-0000-4000-8000-000000000002', '00000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000101',
+     '20000000-0000-4000-8000-000000000001', 'ee000000-0000-4000-8000-000000000001', 'DOWNTIME_ADDED', 'DRAFT', 'DRAFT',
+     '登记设备故障与换型停机证据', 'seed-equipment-oee-cnc-downtime', '{"downtimeCount":2}', '2026-08-25 08:14:00+00'),
+    ('ea000000-0000-4000-8000-000000000003', '00000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000101',
+     '20000000-0000-4000-8000-000000000001', 'ee000000-0000-4000-8000-000000000001', 'SUBMITTED', 'DRAFT', 'SUBMITTED',
+     '班组确认时间、节拍与产量口径', 'seed-equipment-oee-cnc-submitted', '{}', '2026-08-25 08:20:00+00'),
+    ('ea000000-0000-4000-8000-000000000004', '00000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000101',
+     '20000000-0000-4000-8000-000000000001', 'ee000000-0000-4000-8000-000000000001', 'APPROVED', 'SUBMITTED', 'APPROVED',
+     '生产经理复核通过并冻结指标', 'seed-equipment-oee-cnc-approved', '{}', '2026-08-25 08:30:00+00'),
+    ('ea000000-0000-4000-8000-000000000005', '00000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000101',
+     '20000000-0000-4000-8000-000000000001', 'ee000000-0000-4000-8000-000000000002', 'CREATED', NULL, 'DRAFT',
+     '建立总装白班人工核实 OEE 记录', 'seed-equipment-oee-asm-created', '{"sourceType":"MANUAL_VERIFIED"}', '2026-08-26 08:10:00+00'),
+    ('ea000000-0000-4000-8000-000000000006', '00000000-0000-4000-8000-000000000001', '10000000-0000-4000-8000-000000000101',
+     '20000000-0000-4000-8000-000000000001', 'ee000000-0000-4000-8000-000000000002', 'DOWNTIME_ADDED', 'DRAFT', 'DRAFT',
+     '登记物料等待停机证据', 'seed-equipment-oee-asm-downtime', '{"downtimeCount":1}', '2026-08-26 08:15:00+00')
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO equipment.maintenance_plans (
+    id, tenant_organization_id, owning_organization_id, workspace_id, plan_code, creation_request_id,
+    name, work_type, asset_id, asset_code_snapshot, asset_name_snapshot, asset_location_snapshot,
+    description, priority, interval_days, lead_days, first_due_date, next_due_date,
+    planned_start_time, due_time, assignee, status, version, created_by, created_at, updated_by, updated_at
+) VALUES
+    ('d1000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000001',
+     '00000000-0000-4000-8000-000000000101', '10000000-0000-4000-8000-000000000101',
+     'PLAN-CNC-WEEKLY', 'seed-equipment-plan-cnc-created', '加工中心每周安全点检', 'INSPECTION',
+     'a1000000-0000-4000-8000-000000000001', 'EQ-CNC-001', '一号精密加工中心', '机加车间 A-01',
+     '检查防护门联锁、主轴润滑液位、急停与异常振动。', 'MEDIUM', 7, 3, '2026-08-27', '2026-08-27',
+     '08:30:00', '11:30:00', '周凯', 'ACTIVE', 0, '20000000-0000-4000-8000-000000000001',
+     '2026-08-25 02:00:00+00', '20000000-0000-4000-8000-000000000001', '2026-08-25 02:00:00+00')
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO equipment.maintenance_plan_events (
+    id, tenant_organization_id, workspace_id, actor_user_id, plan_id, action, from_status, to_status,
+    reason, request_id, details, occurred_at
+) VALUES
+    ('d2000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000001',
+     '10000000-0000-4000-8000-000000000101', '20000000-0000-4000-8000-000000000001',
+     'd1000000-0000-4000-8000-000000000001', 'CREATED', NULL, 'ACTIVE', '建立加工中心每周安全点检模板',
+     'seed-equipment-plan-cnc-event-created', '{"intervalDays":7,"leadDays":3,"firstDueDate":"2026-08-27"}',
+     '2026-08-25 02:00:00+00')
+ON CONFLICT (id) DO NOTHING;
+
 INSERT INTO equipment.spare_parts (
     id, tenant_organization_id, owning_organization_id, workspace_id, creation_request_id, material_id,
     material_code_snapshot, material_name_snapshot, material_specification_snapshot, unit_snapshot,

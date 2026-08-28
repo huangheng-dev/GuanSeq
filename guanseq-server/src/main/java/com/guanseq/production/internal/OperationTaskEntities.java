@@ -137,20 +137,22 @@ class OperationEventEntity {
 	@Column(name = "to_status") private String toStatus;
 	@Column(name = "request_id") private String requestId;
 	private String comment;
+	private String source;
 	@JdbcTypeCode(SqlTypes.JSON) private Map<String, Object> details;
 	@Column(name = "occurred_at") private Instant occurredAt;
 
 	protected OperationEventEntity() { }
 	OperationEventEntity(UUID tenantId, UUID workspaceId, UUID actorId, UUID taskId, UUID orderId, String action,
-			String fromStatus, String toStatus, String requestId, String comment, Map<String, Object> details) {
+			String fromStatus, String toStatus, String requestId, String comment, String source, Map<String, Object> details) {
 		this.id = UUID.randomUUID(); this.tenantOrganizationId = tenantId; this.workspaceId = workspaceId;
 		this.actorUserId = actorId; this.taskId = taskId; this.orderId = orderId; this.action = action;
-		this.fromStatus = fromStatus; this.toStatus = toStatus; this.requestId = requestId; this.comment = comment;
+		this.fromStatus = fromStatus; this.toStatus = toStatus; this.requestId = requestId; this.comment = comment; this.source = source;
 		this.details = details == null ? Map.of() : details; this.occurredAt = Instant.now();
 	}
 
 	UUID getId() { return id; } UUID getTaskId() { return taskId; } String getAction() { return action; }
 	String getFromStatus() { return fromStatus; } String getToStatus() { return toStatus; }
 	String getRequestId() { return requestId; } String getComment() { return comment; }
+	String getSource() { return source; }
 	Instant getOccurredAt() { return occurredAt; }
 }

@@ -1,6 +1,8 @@
 package com.guanseq.equipment.internal;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -29,7 +31,8 @@ public class EquipmentWorkOrderApplicationService {
 	private static final Set<String> MAINTENANCE_ROLES = Set.of("MAINTENANCE_MANAGER", "PRODUCTION_MANAGER", "ADMIN");
 	private static final Set<String> TYPES = Set.of("INSPECTION", "PREVENTIVE_MAINTENANCE", "REPAIR");
 	private static final Set<String> STATUSES = Set.of("PLANNED", "IN_PROGRESS", "WAITING_ACCEPTANCE", "COMPLETED", "CANCELLED");
-	private static final DateTimeFormatter NUMBER_DATE = DateTimeFormatter.BASIC_ISO_DATE.withZone(ZoneOffset.UTC);
+	private static final DateTimeFormatter NUMBER_DATE = DateTimeFormatter.BASIC_ISO_DATE;
+	private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Shanghai");
 
 	private final CurrentWorkspaceProvider workspaceProvider;
 	private final EquipmentAssetRepository assetRepository;
@@ -146,6 +149,24 @@ public class EquipmentWorkOrderApplicationService {
 		return repair;
 	}
 
+	EquipmentWorkOrderEntity createGeneratedPlanOrder(CurrentWorkspaceAccess access, EquipmentMaintenancePlanEntity plan,
+			EquipmentAssetEntity asset, LocalDate dueDate, String reason, String requestId) {
+		var existing = workOrderRepository.findBySourcePlanIdAndSourceDueDate(plan.getId(), dueDate);
+		if (existing.isPresent()) return existing.get();
+		Instant plannedStartAt = dueDate.atTime(plan.getPlannedStartTime()).atZone(BUSINESS_ZONE).toInstant();
+		Instant dueAt = dueDate.atTime(plan.getDueTime()).atZone(BUSINESS_ZONE).toInstant();
+		String creationRequestId = "PLAN-" + plan.getId() + "-" + dueDate;
+		EquipmentWorkOrderEntity order = new EquipmentWorkOrderEntity(access.tenantOrganizationId(),
+				access.operatingOrganizationId(), access.workspaceId(), nextNumber(plan.getWorkType()), creationRequestId,
+				plan.getWorkType(), "MAINTENANCE_PLAN", null, plan.getId(), dueDate, asset, plan.getName(),
+				plan.getDescription(), plan.getPriority(), plannedStartAt, dueAt, plan.getAssignee(), access.userId());
+		workOrderRepository.saveAndFlush(order);
+		auditWorkOrder(access, order, "CREATED", null, "PLANNED", reason, null, requestId,
+				Map.of("sourceType", "MAINTENANCE_PLAN", "sourcePlanId", plan.getId().toString(),
+						"sourcePlanCode", plan.getPlanCode(), "sourceDueDate", dueDate.toString()));
+		return order;
+	}
+
 	private void start(CurrentWorkspaceAccess access, EquipmentWorkOrderEntity order, EquipmentAssetEntity asset,
 			String reason, String requestId) {
 		requireStatus(order, "PLANNED");
@@ -250,7 +271,8 @@ public class EquipmentWorkOrderApplicationService {
 						event.getFromStatus(), event.getToStatus(), event.getReason(), event.getOutcome(), event.getRequestId(),
 						event.getDetails(), event.getOccurredAt())).toList() : List.<EquipmentWorkOrderRecord.Event>of();
 		return new EquipmentWorkOrderRecord(order.getId(), order.getWorkOrderNumber(), order.getWorkType(),
-				order.getSourceType(), order.getSourceWorkOrderId(), order.getAssetId(), order.getAssetCodeSnapshot(),
+				order.getSourceType(), order.getSourceWorkOrderId(), order.getSourcePlanId(), order.getSourceDueDate(),
+				order.getAssetId(), order.getAssetCodeSnapshot(),
 				order.getAssetNameSnapshot(), order.getAssetLocationSnapshot(), asset.getOperatingStatus(), asset.getVersion(),
 				order.getTitle(), order.getDescription(), order.getPriority(), order.getStatus(), order.getPlannedStartAt(),
 				order.getDueAt(), order.getAssignee(), order.getOutcome(), order.getCompletionNotes(), order.getStartedAt(),
@@ -334,7 +356,8 @@ public class EquipmentWorkOrderApplicationService {
 
 	private static String nextNumber(String type) {
 		String prefix = switch (type) { case "INSPECTION" -> "INSP"; case "PREVENTIVE_MAINTENANCE" -> "PM"; default -> "WO"; };
-		return prefix + "-" + NUMBER_DATE.format(Instant.now()) + "-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+		return prefix + "-" + NUMBER_DATE.format(LocalDate.now(ZoneOffset.UTC)) + "-"
+				+ UUID.randomUUID().toString().substring(0, 8).toUpperCase();
 	}
 
 	private static String eventAction(String action) {

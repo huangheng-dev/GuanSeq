@@ -17,6 +17,8 @@ const statusLabels: Record<SalesOrderRecord["status"], string> = {
   RELEASED: "已下达",
   PARTIALLY_SHIPPED: "部分发货",
   SHIPPED: "已发货",
+  PARTIALLY_RETURNED: "部分退货",
+  RETURNED: "已全部退货",
 };
 
 const actionLabels = { SUBMIT: "提交审核", APPROVE: "通过审核", REJECT: "驳回订单", RELEASE: "下达订单" } as const;
@@ -31,6 +33,8 @@ function statusTone(status: SalesOrderRecord["status"]) {
   if (status === "RELEASED") return "good";
   if (status === "PARTIALLY_SHIPPED") return "warn";
   if (status === "SHIPPED") return "good";
+  if (status === "PARTIALLY_RETURNED") return "warn";
+  if (status === "RETURNED") return "info";
   if (status === "REJECTED") return "risk";
   if (status === "PENDING_APPROVAL") return "warn";
   return "info";

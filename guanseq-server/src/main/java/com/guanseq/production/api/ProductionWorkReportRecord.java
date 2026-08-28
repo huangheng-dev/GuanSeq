@@ -7,6 +7,7 @@ import java.util.UUID;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record ProductionWorkReportRecord(
@@ -15,11 +16,14 @@ public record ProductionWorkReportRecord(
 		String operatorName, BigDecimal reportedQuantity, String note, UUID inspectionId, String inspectionNumber,
 		String inspectionStatus, String qualityResult, BigDecimal acceptedQuantity, BigDecimal rejectedQuantity,
 		UUID receiptBalanceId, UUID receiptMovementId, String receiptWarehouse, String receiptLocation,
-		String lotNumber, String status, long version, Instant createdAt, Instant settledAt) {
+		String lotNumber, String status, UUID operationTaskId, String operationTaskNumber, String source,
+		long version, Instant createdAt, Instant settledAt) {
 
 	public record CreateRequest(@NotNull UUID orderId, @NotNull @DecimalMin("0.0001") BigDecimal quantity,
-			@NotBlank @Size(max = 80) String shiftName, @NotBlank @Size(max = 80) String operatorName,
-			@Size(max = 500) String note, long expectedOrderVersion) { }
+			@NotBlank @Size(max = 80) String shiftName, @Size(max = 80) String operatorName,
+			@Size(max = 500) String note, long expectedOrderVersion,
+			@Pattern(regexp = "DESKTOP_FORM|MOBILE_SCAN") String source,
+			UUID operationTaskId, @Size(max = 120) String operatorBadge) { }
 
 	public record SettleRequest(UUID warehouseId, UUID locationId, @Size(max = 80) String lotNumber,
 			long expectedVersion) { }

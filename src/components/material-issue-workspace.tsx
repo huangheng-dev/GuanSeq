@@ -115,7 +115,7 @@ function IssueDialog({ issue, onClose, onSaved }: {
         }
         setPending(true);
         try {
-            onSaved(await submitMaterialIssueAction({ id: issue.id, action: "ISSUE", expectedVersion: issue.version, comment: comment.trim() || "生产领料", lines }, requestId));
+            onSaved(await submitMaterialIssueAction({ id: issue.id, action: "ISSUE", expectedVersion: issue.version, comment: comment.trim() || "生产领料", source: "DESKTOP_FORM", lines }, requestId));
         }
         catch (cause) {
             setError(cause instanceof Error ? cause.message : "生产发料失败");

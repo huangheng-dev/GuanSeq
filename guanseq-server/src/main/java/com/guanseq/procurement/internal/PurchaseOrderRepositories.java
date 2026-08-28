@@ -42,7 +42,7 @@ interface SupplierEventRepository extends JpaRepository<SupplierEventEntity, UUI
 interface PurchaseOrderRepository extends JpaRepository<PurchaseOrderEntity, UUID> {
 	@Query("""
 		select distinct o from PurchaseOrderEntity o join fetch o.lines l
-		where o.tenantOrganizationId = :tenantId and l.receivedQuantity > 0
+		where o.tenantOrganizationId = :tenantId and l.receivedQuantity - l.returnedQuantity > 0
 		order by o.orderNumber asc
 		""")
 	List<PurchaseOrderEntity> findReceivedOrders(@Param("tenantId") UUID tenantId);
@@ -51,7 +51,7 @@ interface PurchaseOrderRepository extends JpaRepository<PurchaseOrderEntity, UUI
 		select distinct o from PurchaseOrderEntity o join fetch o.lines l
 		where o.id = :id and o.tenantOrganizationId = :tenantId
 		and exists (select 1 from PurchaseOrderLineEntity receivedLine
-			where receivedLine.order = o and receivedLine.receivedQuantity > 0)
+			where receivedLine.order = o and receivedLine.receivedQuantity - receivedLine.returnedQuantity > 0)
 		""")
 	Optional<PurchaseOrderEntity> findReceivedOrder(@Param("id") UUID id, @Param("tenantId") UUID tenantId);
 
@@ -73,7 +73,7 @@ interface PurchaseOrderRepository extends JpaRepository<PurchaseOrderEntity, UUI
 		select distinct o from PurchaseOrderEntity o join fetch o.lines l
 		where o.tenantOrganizationId = :tenantId and o.status = 'RELEASED'
 		and o.promisedReceiptDate <= :horizonEnd and l.materialId in :materialIds
-		and l.receivedQuantity < l.orderedQuantity
+		and l.receivedQuantity - l.returnedQuantity < l.orderedQuantity
 		""")
 	List<PurchaseOrderEntity> findReleasedReceipts(@Param("tenantId") UUID tenantId,
 			@Param("materialIds") Collection<UUID> materialIds, @Param("horizonEnd") LocalDate horizonEnd);

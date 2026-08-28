@@ -57,7 +57,7 @@ describe("manufacturing service", () => {
   it("covers every declared route with a professional page definition", async () => {
     const pages = await Promise.all(allProductPaths().map((pathname) => getBusinessPage(pathname)));
 
-    expect(pages).toHaveLength(234);
+    expect(pages).toHaveLength(236);
     expect(pages.every(Boolean)).toBe(true);
     expect(pages.every((page) => page?.definitionId !== "legacy-generic")).toBe(true);
     expect(new Set(pages.map((page) => page?.definitionId)).size).toBeGreaterThanOrEqual(20);
@@ -85,5 +85,16 @@ describe("manufacturing service", () => {
     expect(contract?.primaryActionMode).toBe("form");
     expect(traceability?.primaryActionMode).toBe("query");
     expect(audit?.primaryActionMode).toBe("export");
+  });
+
+  it("describes the replaceable telemetry path without claiming field acceptance", async () => {
+    const telemetry = await getBusinessPage("/equipment/telemetry");
+
+    expect(telemetry?.planned).toBe(false);
+    expect(telemetry?.primaryAction).toBe("接入设备");
+    expect(telemetry?.context.summary).toContain("只替换端点和点位配置");
+    expect(telemetry?.context.items.map((item) => item.value)).toEqual(["真实 API", "只读", "已建模", "待完成"]);
+    expect(telemetry?.attentionTitle).toBe("设备采集真实边界");
+    expect(JSON.stringify(telemetry)).not.toMatch(/46 台|684|91\.3%|主轴负载 68%/);
   });
 });

@@ -10,11 +10,12 @@ export type CreatePurchaseReceiptPayload = {
   warehouseId: string;
   locationId: string;
   note?: string | null;
+  source?: "DESKTOP_FORM" | "MOBILE_SCAN";
   lines: Array<{ orderLineId: string; receivedQuantity: number; lotNumber: string }>;
 };
 
 export async function getPurchaseReceiptPageData(pathname: string): Promise<PurchaseReceiptPageData | null> {
-  if (pathname !== "/procurement/receipts") return null;
+  if (pathname !== "/procurement/receipts" && pathname !== "/procurement/mobile-receiving") return null;
   const requestId = `web-purchase-receipt-list-${randomUUID()}`;
   const [receiptsResponse, referencesResponse] = await Promise.all([
     requestGuanSeqApi("/api/v1/procurement/receipts?page=0&size=100&status=ALL", requestId),

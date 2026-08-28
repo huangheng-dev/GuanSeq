@@ -388,9 +388,11 @@ export function createBusinessPageModel(route: ResolvedProductRoute, snapshot: M
 
   if (!specializedModel.planned) return specializedModel;
 
+  const isEquipmentTelemetry = specializedModel.pathname === "/equipment/telemetry";
+
   return {
     ...specializedModel,
-    primaryAction: "提交规划反馈",
+    primaryAction: isEquipmentTelemetry ? "提交现场需求" : "提交规划反馈",
     primaryActionMode: "feedback",
     metrics: [
       { label: "当前阶段", value: "能力定义", note: "尚未进入实施", tone: "info" },
@@ -411,9 +413,9 @@ export function createBusinessPageModel(route: ResolvedProductRoute, snapshot: M
         description: `${specializedModel.title}的能力规划记录，不代表接口、设备或后端服务已经运行。`,
       };
     }),
-    views: ["能力边界", "依赖条件", "验收标准"],
-    attentionTitle: `${specializedModel.title}启用前置条件`,
-    attentionItems: [
+    views: isEquipmentTelemetry ? ["现场清单", "数据质量", "验收标准"] : ["能力边界", "依赖条件", "验收标准"],
+    attentionTitle: isEquipmentTelemetry ? specializedModel.attentionTitle : `${specializedModel.title}启用前置条件`,
+    attentionItems: isEquipmentTelemetry ? specializedModel.attentionItems : [
       { title: "确认业务规则与数据责任", detail: "明确对象、状态、权限、审计与异常处理边界后才能进入接口设计。", owner: "业务负责人", tone: "warn" },
       { title: "完成接口与运行责任评审", detail: "确认后端服务、数据来源、监控告警和故障恢复方案。", owner: "平台架构组", tone: "info" },
     ],

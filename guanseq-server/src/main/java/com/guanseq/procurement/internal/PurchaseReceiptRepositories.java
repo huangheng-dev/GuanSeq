@@ -1,6 +1,7 @@
 package com.guanseq.procurement.internal;
 
 import java.util.Optional;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -28,6 +29,7 @@ interface PurchaseReceiptRepository extends JpaRepository<PurchaseReceiptEntity,
 }
 
 interface PurchaseReceiptLineRepository extends JpaRepository<PurchaseReceiptLineEntity, UUID> {
+	List<PurchaseReceiptLineEntity> findByTenantOrganizationId(UUID tenantId);
 	@Query("select l from PurchaseReceiptLineEntity l join fetch l.receipt r where l.inspectionId = :inspectionId and l.tenantOrganizationId = :tenantId")
 	Optional<PurchaseReceiptLineEntity> findByTenantOrganizationIdAndInspectionId(@Param("tenantId") UUID tenantId, @Param("inspectionId") UUID inspectionId);
 }

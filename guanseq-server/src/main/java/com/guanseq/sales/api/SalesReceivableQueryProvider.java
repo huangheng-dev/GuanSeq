@@ -32,6 +32,8 @@ public interface SalesReceivableQueryProvider {
 			String materialSpecification,
 			String unit,
 			BigDecimal orderedQuantity,
+			BigDecimal grossDeliveredQuantity,
+			BigDecimal returnedQuantity,
 			BigDecimal deliveredQuantity,
 			BigDecimal unitPrice) { }
 }

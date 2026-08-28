@@ -25,7 +25,7 @@ export type ProductionExecutionPageData = {
 export type FinalInspectionPageData = { source: "backend"; inspections: FinalInspectionRecord[] };
 
 export type ProductionExecutionMutation =
-  | { operation: "report"; orderId: string; quantity: number; shiftName: string; operatorName: string; note: string | null; expectedOrderVersion: number }
+  | { operation: "report"; orderId: string; quantity: number; shiftName: string; operatorName: string | null; note: string | null; expectedOrderVersion: number; source?: "DESKTOP_FORM" | "MOBILE_SCAN"; operationTaskId?: string | null; operatorBadge?: string | null }
   | { operation: "settle"; id: string; warehouseId: string | null; locationId: string | null; lotNumber: string | null; expectedVersion: number };
 
 export type FinalInspectionMutation = {
@@ -71,7 +71,8 @@ export async function getFinalInspectionPageData(pathname: string): Promise<Fina
 export async function mutateProductionExecution(input: ProductionExecutionMutation, requestId: string) {
   const path = input.operation === "report" ? "/api/v1/production/work-reports" : `/api/v1/production/work-reports/${input.id}/settle`;
   const body = input.operation === "report"
-    ? { orderId: input.orderId, quantity: input.quantity, shiftName: input.shiftName, operatorName: input.operatorName, note: input.note, expectedOrderVersion: input.expectedOrderVersion }
+    ? { orderId: input.orderId, quantity: input.quantity, shiftName: input.shiftName, operatorName: input.operatorName, note: input.note, expectedOrderVersion: input.expectedOrderVersion,
+      source: input.source ?? "DESKTOP_FORM", operationTaskId: input.operationTaskId ?? null, operatorBadge: input.operatorBadge ?? null }
     : { warehouseId: input.warehouseId, locationId: input.locationId, lotNumber: input.lotNumber, expectedVersion: input.expectedVersion };
   const response = await requestGuanSeqApi(path, requestId, { method: "POST", body: JSON.stringify(body) });
   if (!response) throw new GuanSeqApiError("生产执行服务暂时不可用，未保存任何更改", 503);

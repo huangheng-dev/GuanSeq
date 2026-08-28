@@ -4,7 +4,7 @@ import { equipmentWorkOrderPageSchema, equipmentWorkOrderSchema } from "./contra
 
 const workOrder = {
   id: "b1000000-0000-4000-8000-000000000001", workOrderNumber: "WO-20260825-0001", workType: "REPAIR",
-  sourceType: "INSPECTION_FAILURE", sourceWorkOrderId: "b1000000-0000-4000-8000-000000000002",
+  sourceType: "INSPECTION_FAILURE", sourceWorkOrderId: "b1000000-0000-4000-8000-000000000002", sourcePlanId: null, sourceDueDate: null,
   assetId: "a1000000-0000-4000-8000-000000000001", assetCode: "EQ-CNC-001", assetName: "加工中心",
   assetLocation: "机加车间", assetOperatingStatus: "MAINTENANCE", assetVersion: 2, title: "温升异常维修",
   description: "检查温度传感器和主轴润滑", priority: "HIGH", status: "WAITING_ACCEPTANCE",

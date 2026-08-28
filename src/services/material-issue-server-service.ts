@@ -10,8 +10,8 @@ import {
 } from "@/lib/contracts";
 import { GuanSeqApiError, readApiError, requestGuanSeqApi } from "@/services/guanseq-api-server";
 
-const MATERIAL_ISSUE_PATHS = new Set(["/warehouse/staging", "/warehouse/material-issues"]);
-const emptyReferences: MaterialIssueReferenceData = { productionOrders: [], warehouses: [], locations: [] };
+const MATERIAL_ISSUE_PATHS = new Set(["/warehouse/staging", "/warehouse/material-issues", "/production/mobile-operations/material-scan"]);
+const emptyReferences: MaterialIssueReferenceData = { canControl: false, productionOrders: [], warehouses: [], locations: [], availableStocks: [] };
 
 export type MaterialIssuePageData = {
   source: "backend" | "unavailable";
@@ -30,7 +30,8 @@ export type MaterialIssueActionInput = {
   action: "ISSUE" | "CANCEL";
   expectedVersion: number;
   comment?: string | null;
-  lines?: { lineId: string; quantity: number; expectedLineVersion: number }[];
+  source?: "DESKTOP_FORM" | "MOBILE_SCAN";
+  lines?: { lineId: string; quantity: number; expectedLineVersion: number; stockBalanceId?: string | null; expectedStockVersion?: number | null }[];
 };
 
 export type MaterialIssueReturnInput = {
@@ -80,7 +81,8 @@ export async function createMaterialIssue(input: CreateMaterialIssueInput, reque
 export async function actOnMaterialIssue(input: MaterialIssueActionInput, requestId: string) {
   const response = await requestGuanSeqApi(`/api/v1/production/material-issues/${input.id}/actions`, requestId, {
     method: "POST",
-    body: JSON.stringify({ action: input.action, expectedVersion: input.expectedVersion, comment: input.comment ?? null, lines: input.lines ?? [] }),
+    body: JSON.stringify({ action: input.action, expectedVersion: input.expectedVersion, comment: input.comment ?? null,
+      source: input.source ?? "DESKTOP_FORM", lines: input.lines ?? [] }),
   }, 10000);
   if (!response) throw new GuanSeqApiError("生产备料服务暂时不可用，未保存发料动作", 503);
   if (!response.ok) await readApiError(response, "生产领料动作无法完成");

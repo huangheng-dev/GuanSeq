@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.UUID;
 
 public record PurchaseReceiptReferenceData(
+		boolean canCreate,
 		List<ReleasedOrder> releasedOrders,
 		List<WarehouseOption> warehouses,
 		List<LocationOption> locations) {

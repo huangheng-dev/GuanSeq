@@ -2,7 +2,10 @@ import { z } from "zod";
 import { GuanSeqApiError } from "@/services/guanseq-api-server";
 import { actOnMaterialIssue, createMaterialReturn } from "@/services/material-issue-server-service";
 
-const issueLineSchema = z.object({ lineId: z.string().uuid(), quantity: z.number().positive(), expectedLineVersion: z.number().int().nonnegative() });
+const issueLineSchema = z.object({
+  lineId: z.string().uuid(), quantity: z.number().positive(), expectedLineVersion: z.number().int().nonnegative(),
+  stockBalanceId: z.string().uuid().nullable().optional(), expectedStockVersion: z.number().int().nonnegative().nullable().optional(),
+});
 const returnLineSchema = z.object({ lineId: z.string().uuid(), quantity: z.number().positive(), expectedLineVersion: z.number().int().nonnegative(), reason: z.string().max(500).nullable().optional() });
 
 const mutation = z.discriminatedUnion("operation", [
@@ -12,6 +15,7 @@ const mutation = z.discriminatedUnion("operation", [
     action: z.enum(["ISSUE", "CANCEL"]),
     expectedVersion: z.number().int().nonnegative(),
     comment: z.string().max(500).nullable().optional(),
+    source: z.enum(["DESKTOP_FORM", "MOBILE_SCAN"]).optional(),
     lines: z.array(issueLineSchema).max(200).optional(),
   }),
   z.object({

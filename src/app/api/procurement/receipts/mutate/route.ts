@@ -8,6 +8,7 @@ const schema = z.object({
   warehouseId: z.string().uuid(),
   locationId: z.string().uuid(),
   note: z.string().max(500).nullable().optional(),
+  source: z.enum(["DESKTOP_FORM", "MOBILE_SCAN"]).optional(),
   lines: z.array(line).min(1).max(100),
 });
 

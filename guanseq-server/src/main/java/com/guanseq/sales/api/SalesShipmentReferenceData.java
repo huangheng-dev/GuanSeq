@@ -26,6 +26,8 @@ public record SalesShipmentReferenceData(List<ReleasedOrder> releasedOrders, Lis
 			String materialSpecification,
 			String unit,
 			BigDecimal orderedQuantity,
+			BigDecimal grossDeliveredQuantity,
+			BigDecimal returnedQuantity,
 			BigDecimal deliveredQuantity,
 			BigDecimal outstandingQuantity) {
 	}

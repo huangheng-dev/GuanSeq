@@ -75,7 +75,7 @@ export const productAreas: ProductArea[] = [
   {
     id: "procurement", slug: "procurement", label: "采购与供应", icon: "local_shipping", capability: "SCM",
     description: "供应商、采购需求、订单、到货与委外协同",
-    modules: [moduleItem("供应商", "suppliers", [child("供应商列表", "list")]), moduleItem("采购申请", "requisitions"), moduleItem("询价比价", "sourcing", [child("询价单", "inquiries"), child("比价决策", "comparisons")]), moduleItem("采购合同", "contracts"), moduleItem("采购价格", "pricing"), moduleItem("采购订单", "orders"), moduleItem("委外加工", "subcontracts"), moduleItem("到货协同", "receipts"), moduleItem("采购退货", "returns"), moduleItem("供应商协同", "supplier-collaboration", undefined, "已规划"), moduleItem("供应商绩效", "supplier-performance")],
+    modules: [moduleItem("供应商", "suppliers", [child("供应商列表", "list")]), moduleItem("采购申请", "requisitions"), moduleItem("询价比价", "sourcing", [child("询价单", "inquiries"), child("比价决策", "comparisons")]), moduleItem("采购合同", "contracts"), moduleItem("采购价格", "pricing"), moduleItem("采购订单", "orders"), moduleItem("委外加工", "subcontracts"), moduleItem("到货协同", "receipts"), moduleItem("扫码收货", "mobile-receiving"), moduleItem("采购退货", "returns"), moduleItem("供应商协同", "supplier-collaboration", undefined, "已规划"), moduleItem("供应商绩效", "supplier-performance")],
   },
   {
     id: "warehouse", slug: "warehouse", label: "仓储物流", icon: "inventory_2", capability: "WMS",
@@ -119,7 +119,7 @@ export const productAreas: ProductArea[] = [
   {
     id: "equipment", slug: "equipment", label: "设备与资产", icon: "manufacturing", capability: "EAM",
     description: "设备台账、点检、保养、维修与工装模具",
-    modules: [moduleItem("设备台账", "assets"), moduleItem("设备状态", "status"), moduleItem("点检计划", "inspections"), moduleItem("保养计划", "maintenance"), moduleItem("维修工单", "work-orders"), moduleItem("备件管理", "spare-parts"), moduleItem("工装模具", "tooling"), moduleItem("计量抄表", "meters"), moduleItem("OEE 与停机", "oee"), moduleItem("故障知识库", "fault-knowledge"), moduleItem("设备采集", "telemetry", undefined, "已规划")],
+    modules: [moduleItem("设备台账", "assets"), moduleItem("设备状态", "status"), moduleItem("点检计划", "inspections"), moduleItem("保养计划", "maintenance"), moduleItem("维修工单", "work-orders"), moduleItem("备件管理", "spare-parts"), moduleItem("工装模具", "tooling"), moduleItem("计量抄表", "meters"), moduleItem("报警处置", "alerts"), moduleItem("OEE 与停机", "oee"), moduleItem("故障知识库", "fault-knowledge"), moduleItem("设备采集", "telemetry")],
   },
   {
     id: "finance", slug: "finance", label: "成本与结算", icon: "account_balance_wallet", capability: "ERP",

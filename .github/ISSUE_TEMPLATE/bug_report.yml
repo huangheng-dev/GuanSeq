@@ -1,0 +1,59 @@
+name: 缺陷报告
+description: 报告可复现的软件缺陷；安全漏洞请勿使用此模板
+title: "[Bug] "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: 安全漏洞请按 SECURITY.md 使用私密报告流程，并确认内容不包含凭据、个人或工厂敏感数据。
+  - type: input
+    id: version
+    attributes:
+      label: 版本或提交
+      placeholder: 例如 0.1.0 / commit SHA
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: 环境
+      description: 操作系统、浏览器、Node/Java/PostgreSQL 版本和部署方式。
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 最小复现步骤
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望结果
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际结果与证据
+      description: 可附脱敏日志、请求编号或截图。
+    validations:
+      required: true
+  - type: dropdown
+    id: maturity
+    attributes:
+      label: 页面能力状态
+      options:
+        - 正式后端
+        - Mock
+        - 规划
+        - 不适用或不确定
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 提交确认
+      options:
+        - label: 我已搜索现有 Issue，并已移除敏感信息。
+          required: true

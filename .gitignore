@@ -11,10 +11,13 @@ coverage/
 # Env
 .env*
 !.env.example
+!.env.production.example
+backups/
 
 # Playwright / audits
 .playwright-cli/
 output/
+outputs/
 
 # Logs
 *.log

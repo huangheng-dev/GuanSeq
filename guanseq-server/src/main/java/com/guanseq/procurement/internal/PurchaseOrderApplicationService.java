@@ -192,7 +192,7 @@ public class PurchaseOrderApplicationService implements ScheduledReceiptProvider
 				order.getUpdatedAt(), order.getLines().stream().sorted(java.util.Comparator.comparingInt(PurchaseOrderLineEntity::getLineNumber))
 						.map(line -> new PurchaseOrderRecord.Line(line.getId(), line.getLineNumber(), line.getMaterialId(),
 								line.getMaterialCode(), line.getMaterialName(), line.getMaterialSpecification(), line.getUnit(),
-								line.getOrderedQuantity(), line.getReceivedQuantity(), line.getOutstandingQuantity(), line.getUnitPrice(),
+								line.getOrderedQuantity(), line.getNetReceivedQuantity(), line.getOutstandingQuantity(), line.getUnitPrice(),
 								line.getNetAmount(), line.getTaxAmount(), line.getGrossAmount())).toList());
 	}
 

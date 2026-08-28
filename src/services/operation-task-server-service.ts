@@ -39,6 +39,8 @@ export type OperationTaskActionInput = {
   operatorName?: string | null;
   completedQuantity?: number | null;
   note?: string | null;
+  source?: "DESKTOP_FORM" | "MOBILE_SCAN";
+  operatorBadge?: string | null;
 };
 
 function unavailable(response?: Response | null): OperationTaskPageData {
@@ -78,6 +80,8 @@ export async function actOnOperationTask(input: OperationTaskActionInput, reques
       operatorName: input.operatorName ?? null,
       completedQuantity: input.completedQuantity ?? null,
       note: input.note ?? null,
+      source: input.source ?? "DESKTOP_FORM",
+      operatorBadge: input.operatorBadge ?? null,
     }),
   }, 10000);
   if (!response) throw new GuanSeqApiError("车间工序执行服务暂时不可用，未保存工序动作", 503);

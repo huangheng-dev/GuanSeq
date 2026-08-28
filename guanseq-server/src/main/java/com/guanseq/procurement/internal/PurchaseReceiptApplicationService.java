@@ -89,10 +89,10 @@ public class PurchaseReceiptApplicationService {
 							boolean inspectionRequired = material != null && material.incomingInspectionRequired();
 							return new PurchaseReceiptReferenceData.ReleasedLine(line.getId(), line.getLineNumber(), line.getMaterialId(),
 									line.getMaterialCode(), line.getMaterialName(), line.getMaterialSpecification(), line.getUnit(),
-									line.getOrderedQuantity(), line.getReceivedQuantity(), line.getOutstandingQuantity(), inspectionRequired);
+									line.getOrderedQuantity(), line.getNetReceivedQuantity(), line.getOutstandingQuantity(), inspectionRequired);
 						}).toList()))
 				.filter(order -> !order.lines().isEmpty()).toList();
-		return new PurchaseReceiptReferenceData(orders,
+		return new PurchaseReceiptReferenceData(RECEIPT_ROLES.contains(access.roleCode()), orders,
 				warehouseProvider.listActiveWarehouses(access.tenantOrganizationId()).stream().map(item -> new PurchaseReceiptReferenceData.WarehouseOption(item.id(), item.code(), item.name())).toList(),
 				warehouseProvider.listActiveLocations(access.tenantOrganizationId()).stream().map(item -> new PurchaseReceiptReferenceData.LocationOption(item.id(), item.warehouseId(), item.code(), item.name(), item.locationType())).toList());
 	}
@@ -110,13 +110,14 @@ public class PurchaseReceiptApplicationService {
 		if (!"RELEASED".equals(order.getStatus())) throw conflict("只有已下达采购订单可以登记到货");
 		WarehouseOption warehouse = requireWarehouse(access, request.warehouseId());
 		LocationOption location = requireLocation(access, request.locationId(), warehouse.id());
+		String source = request.source() == null || request.source().isBlank() ? "DESKTOP_FORM" : request.source();
 		Map<UUID, PurchaseOrderLineEntity> orderLines = order.getLines().stream().collect(Collectors.toMap(PurchaseOrderLineEntity::getId, Function.identity()));
 		Set<UUID> uniqueLines = new HashSet<>();
 		PurchaseReceiptEntity receipt = new PurchaseReceiptEntity(access.tenantOrganizationId(), access.operatingOrganizationId(),
 				access.workspaceId(), nextReceiptNumber(), order,
 				new PurchaseReceiptEntity.WarehouseSnapshot(warehouse.id(), warehouse.code(), warehouse.name()),
 				new PurchaseReceiptEntity.StorageLocationSnapshot(location.id(), location.code(), location.name()),
-				request.note() == null || request.note().isBlank() ? null : request.note().trim(), requestId, access.userId());
+				request.note() == null || request.note().isBlank() ? null : request.note().trim(), source, requestId, access.userId());
 		for (PurchaseReceiptRecord.LineInput input : request.lines()) {
 			if (!uniqueLines.add(input.orderLineId())) throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "同一采购订单行不能重复登记到货");
 			PurchaseOrderLineEntity orderLine = orderLines.get(input.orderLineId());
@@ -150,7 +151,7 @@ public class PurchaseReceiptApplicationService {
 		}
 		orderRepository.saveAndFlush(order);
 		receiptRepository.saveAndFlush(receipt);
-		audit(access, receipt, null, null, "CREATED", null, Map.of("lineCount", receipt.getLines().size()));
+		audit(access, receipt, null, null, "CREATED", null, Map.of("lineCount", receipt.getLines().size(), "source", source));
 		return toRecord(receipt);
 	}
 
@@ -182,7 +183,7 @@ public class PurchaseReceiptApplicationService {
 		return new PurchaseReceiptRecord(receipt.getId(), receipt.getReceiptNumber(), receipt.getPurchaseOrderId(), receipt.getOrderNumber(),
 				receipt.getSupplierId(), receipt.getSupplierCode(), receipt.getSupplierName(), receipt.getWarehouseId(),
 				receipt.getWarehouseCode(), receipt.getWarehouseName(), receipt.getLocationId(), receipt.getLocationCode(),
-				receipt.getLocationName(), receipt.getNote(), receipt.getStatus(), receipt.getTotalReceivedQuantity(),
+				receipt.getLocationName(), receipt.getNote(), receipt.getSource(), receipt.getStatus(), receipt.getTotalReceivedQuantity(),
 				receipt.getAcceptedQuantity(), receipt.getRejectedQuantity(), receipt.getVersion(), receipt.getCreatedAt(),
 				receipt.getLines().stream().sorted(java.util.Comparator.comparingInt(PurchaseReceiptLineEntity::getLineNumber))
 						.map(line -> new PurchaseReceiptRecord.Line(line.getId(), line.getLineNumber(), line.getPurchaseOrderLineId(),

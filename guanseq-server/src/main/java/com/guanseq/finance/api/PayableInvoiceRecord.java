@@ -35,6 +35,7 @@ public record PayableInvoiceRecord(
 		BigDecimal outstandingAmount,
 		BigDecimal creditBalance,
 		String status,
+		String purchaseReturnImpactStatus,
 		long version,
 		Instant createdAt,
 		List<Line> lines,

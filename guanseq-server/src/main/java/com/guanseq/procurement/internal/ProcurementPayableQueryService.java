@@ -43,11 +43,11 @@ class ProcurementPayableQueryService implements ProcurementPayableQueryProvider 
 	private PayableOrder toOrder(PurchaseOrderEntity order) {
 		return new PayableOrder(order.getId(), order.getOrderNumber(), order.getSupplierId(), order.getSupplierCode(),
 				order.getSupplierName(), order.getCurrency(), order.getTaxRate(), order.getStatus(), order.getLines().stream()
-						.filter(line -> line.getReceivedQuantity().signum() > 0)
+						.filter(line -> line.getNetReceivedQuantity().signum() > 0)
 						.sorted(Comparator.comparingInt(PurchaseOrderLineEntity::getLineNumber))
 						.map(line -> new PayableLine(line.getId(), line.getLineNumber(), line.getMaterialId(),
 								line.getMaterialCode(), line.getMaterialName(), line.getMaterialSpecification(), line.getUnit(),
-								line.getOrderedQuantity(), line.getReceivedQuantity(), line.getUnitPrice()))
+								line.getOrderedQuantity(), line.getNetReceivedQuantity(), line.getUnitPrice()))
 						.toList());
 	}
 }

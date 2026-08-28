@@ -129,6 +129,8 @@ class StockBalanceEntity {
 
 	UUID getId() { return id; }
 	UUID getTenantOrganizationId() { return tenantOrganizationId; }
+	UUID getOwningOrganizationId() { return owningOrganizationId; }
+	UUID getWorkspaceId() { return workspaceId; }
 	UUID getWarehouseId() { return warehouseId; }
 	String getWarehouseCode() { return warehouseCode; }
 	String getWarehouseName() { return warehouseName; }

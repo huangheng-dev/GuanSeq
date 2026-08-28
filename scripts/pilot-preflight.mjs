@@ -1,4 +1,13 @@
+import { resolve } from "node:path";
+import { loadEnvFile } from "node:process";
+
 import { inspectOidcProvider, validatePilotEnvironment } from "./pilot-validation.mjs";
+
+const envFileIndex = process.argv.indexOf("--env-file");
+if (envFileIndex >= 0) {
+  if (!process.argv[envFileIndex + 1]) throw new Error("--env-file 后必须提供环境文件路径");
+  loadEnvFile(resolve(process.argv[envFileIndex + 1]));
+}
 
 const validation = validatePilotEnvironment(process.env);
 const network = validation.errors.length === 0

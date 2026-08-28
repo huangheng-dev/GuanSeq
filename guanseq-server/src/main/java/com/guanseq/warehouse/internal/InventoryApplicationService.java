@@ -1,6 +1,7 @@
 package com.guanseq.warehouse.internal;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -27,14 +28,19 @@ import com.guanseq.identity.api.CurrentWorkspaceProvider;
 import com.guanseq.warehouse.api.InventoryPage;
 import com.guanseq.warehouse.api.InventoryRecord;
 import com.guanseq.warehouse.api.InventoryReferenceData;
+import com.guanseq.warehouse.api.LabelStockBalanceReferenceProvider;
 import com.guanseq.warehouse.api.ProductionMaterialStockService;
 import com.guanseq.warehouse.api.PurchaseReceiptStockService;
+import com.guanseq.warehouse.api.PurchaseReturnStockService;
+import com.guanseq.warehouse.api.SalesReturnStockService;
 import com.guanseq.warehouse.api.FinishedGoodsReceiptService;
 import com.guanseq.warehouse.api.StockPositionProvider;
 import com.guanseq.warehouse.api.WarehouseReferenceProvider;
 
 @Service
-public class InventoryApplicationService implements StockPositionProvider, FinishedGoodsReceiptService, ProductionMaterialStockService, PurchaseReceiptStockService, WarehouseReferenceProvider {
+public class InventoryApplicationService implements StockPositionProvider, FinishedGoodsReceiptService, ProductionMaterialStockService,
+		PurchaseReceiptStockService, PurchaseReturnStockService, SalesReturnStockService, WarehouseReferenceProvider,
+		LabelStockBalanceReferenceProvider {
 
 	private static final Set<String> MOVEMENT_ROLES = Set.of("WAREHOUSE_MANAGER", "INVENTORY_CONTROLLER", "ADMIN");
 
@@ -66,7 +72,7 @@ public class InventoryApplicationService implements StockPositionProvider, Finis
 		return locationRepository.findByTenantOrganizationIdAndStatusOrderByCodeAsc(tenantOrganizationId, "ACTIVE").stream()
 				.map(item -> new LocationOption(item.getId(), item.getWarehouseId(), item.getCode(), item.getName(), item.getLocationType())).toList();
 	}
-@Transactional(readOnly = true)
+	@Transactional(readOnly = true)
 	public InventoryPage list(String username, String query, String qualityStatus, String warehouseCode, int page, int size) {
 		CurrentWorkspaceAccess access = workspaceProvider.resolve(username);
 		var result = balanceRepository.search(access.tenantOrganizationId(), normalize(query), normalizeFilter(qualityStatus),
@@ -192,6 +198,27 @@ public class InventoryApplicationService implements StockPositionProvider, Finis
 
 	@Override
 	@Transactional(readOnly = true)
+	public java.util.Optional<StockBalanceLabelReference> findLabelStock(UUID tenantOrganizationId, UUID balanceId) {
+		return balanceRepository.findByIdAndTenantOrganizationId(balanceId, tenantOrganizationId)
+				.filter(item -> item.getOnHandQuantity().signum() > 0).map(InventoryApplicationService::labelReference);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<StockBalanceLabelReference> listLabelStocks(UUID tenantOrganizationId, int limit) {
+		return balanceRepository.findByTenantOrganizationIdAndOnHandQuantityGreaterThan(tenantOrganizationId, BigDecimal.ZERO,
+				PageRequest.of(0, Math.min(100, Math.max(1, limit)), Sort.by(Sort.Direction.DESC, "updatedAt")))
+				.stream().map(InventoryApplicationService::labelReference).toList();
+	}
+
+	private static StockBalanceLabelReference labelReference(StockBalanceEntity item) {
+		return new StockBalanceLabelReference(item.getId(), item.getVersion(), item.getMaterialCode(), item.getMaterialName(),
+				item.getWarehouseCode(), item.getLocationCode(), item.getLotNumber(), item.getQualityStatus(),
+				item.getOnHandQuantity(), item.getUnit());
+	}
+
+	@Override
+	@Transactional(readOnly = true)
 	public List<WarehouseStockPosition> getWarehousePositions(UUID tenantOrganizationId, UUID warehouseId,
 			Collection<UUID> materialIds) {
 		Map<UUID, MutablePosition> positions = new LinkedHashMap<>();
@@ -225,6 +252,24 @@ public class InventoryApplicationService implements StockPositionProvider, Finis
 	}
 
 	@Override
+	@Transactional(readOnly = true)
+	public List<AvailableBalance> listAvailableBalances(UUID tenantOrganizationId, Collection<UUID> warehouseIds,
+			Collection<UUID> materialIds) {
+		if (warehouseIds == null || warehouseIds.isEmpty() || materialIds == null || materialIds.isEmpty()) return List.of();
+		return balanceRepository.findByTenantOrganizationIdAndWarehouseIdInAndMaterialIdInAndQualityStatus(
+				tenantOrganizationId, warehouseIds, materialIds, "AVAILABLE").stream()
+				.filter(balance -> balance.availableQuantity().signum() > 0)
+				.sorted(java.util.Comparator.comparing(StockBalanceEntity::getWarehouseCode)
+						.thenComparing(StockBalanceEntity::getLocationCode)
+						.thenComparing(StockBalanceEntity::getLotNumber)
+						.thenComparing(StockBalanceEntity::getUpdatedAt))
+				.map(balance -> new AvailableBalance(balance.getId(), balance.getWarehouseId(), balance.getWarehouseCode(),
+						balance.getLocationId(), balance.getLocationCode(), balance.getLocationName(), balance.getMaterialId(),
+						balance.getMaterialCode(), balance.getLotNumber(), balance.availableQuantity(), balance.getVersion()))
+				.toList();
+	}
+
+	@Override
 	@Transactional
 	public IssueResult issueMaterials(IssueCommand command) {
 		if (command.lines() == null || command.lines().isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "发料行不能为空");
@@ -234,9 +279,23 @@ public class InventoryApplicationService implements StockPositionProvider, Finis
 			IssueLine line = command.lines().get(lineIndex);
 			if (line.quantity() == null || line.quantity().signum() <= 0) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "发料数量必须大于零");
 			BigDecimal remaining = line.quantity();
-			List<StockBalanceEntity> balances = balanceRepository
-					.findByTenantOrganizationIdAndWarehouseIdAndMaterialIdAndQualityStatusOrderByLocationCodeAscLotNumberAscUpdatedAtAsc(
-							command.tenantOrganizationId(), warehouse.getId(), line.materialId(), "AVAILABLE");
+			List<StockBalanceEntity> balances;
+			if (line.stockBalanceId() == null) {
+				balances = balanceRepository
+						.findByTenantOrganizationIdAndWarehouseIdAndMaterialIdAndQualityStatusOrderByLocationCodeAscLotNumberAscUpdatedAtAsc(
+								command.tenantOrganizationId(), warehouse.getId(), line.materialId(), "AVAILABLE");
+			} else {
+				StockBalanceEntity selected = balanceRepository.findByIdAndTenantOrganizationId(line.stockBalanceId(), command.tenantOrganizationId())
+						.orElseThrow(() -> new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "扫码库存不存在或不在当前租户范围"));
+				if (!selected.getWarehouseId().equals(warehouse.getId()) || !selected.getMaterialId().equals(line.materialId())
+						|| !"AVAILABLE".equals(selected.getQualityStatus()))
+					throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "扫码库存与领料仓库、组件或质量状态不匹配");
+				if (line.expectedStockVersion() == null)
+					throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "扫码领料必须提交库存版本");
+				if (selected.getVersion() != line.expectedStockVersion())
+					throw new ResponseStatusException(HttpStatus.CONFLICT, "扫码库存已被其他用户修改，请重新扫描");
+				balances = List.of(selected);
+			}
 			int movementIndex = 0;
 			for (StockBalanceEntity balance : balances) {
 				if (remaining.signum() <= 0) break;
@@ -267,7 +326,7 @@ public class InventoryApplicationService implements StockPositionProvider, Finis
 
 	@Override
 	@Transactional
-	public ReturnResult returnMaterials(ReturnCommand command) {
+	public ReturnResult returnMaterials(ProductionMaterialStockService.ReturnCommand command) {
 		if (command.lines() == null || command.lines().isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "退料行不能为空");
 		WarehouseEntity warehouse = requireActiveWarehouse(command.tenantOrganizationId(), command.warehouseId(), "退料仓库不存在、已停用或不在当前租户范围");
 		StorageLocationEntity location = locationRepository.findByIdAndTenantOrganizationIdAndStatus(command.locationId(),
@@ -356,6 +415,187 @@ public class InventoryApplicationService implements StockPositionProvider, Finis
 					"来料检验不合格隔离 · " + command.sourceNumber(), command.requestId() + "-REJECT", command.sourceId(),
 					command.sourceNumber(), UUID.randomUUID());
 		return new Settlement(accepted, rejected);
+	}
+
+	@Override
+	@Transactional
+	public ReturnStockReceipt receiveSalesReturn(SalesReturnStockService.ReceiptCommand command) {
+		var existing = movementRepository.findByTenantOrganizationIdAndSourceTypeAndSourceIdAndSourceLineId(
+				command.tenantOrganizationId(), "SALES_RETURN_LINE", command.sourceId(), command.sourceLineId());
+		if (existing.isPresent()) return salesReturnReceiptForMovement(command.tenantOrganizationId(), existing.get());
+		WarehouseEntity warehouse = requireActiveWarehouse(command.tenantOrganizationId(), command.warehouseId(),
+				"销售退货仓库不存在、已停用或不在当前租户范围");
+		StorageLocationEntity location = locationRepository.findByIdAndTenantOrganizationIdAndStatus(command.locationId(),
+				command.tenantOrganizationId(), "ACTIVE").orElseThrow(() -> new ResponseStatusException(
+						HttpStatus.UNPROCESSABLE_ENTITY, "销售退货库位不存在、已停用或不在当前租户范围"));
+		if (!location.getWarehouseId().equals(warehouse.getId()))
+			throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "销售退货库位不属于所选仓库");
+		return receiveSalesReturnToBalance(command.tenantOrganizationId(), command.owningOrganizationId(), command.workspaceId(),
+				command.actorUserId(), warehouse, location, command.materialId(), command.materialCode(), command.materialName(),
+				command.materialSpecification(), command.unit(), command.lotNumber(), "INSPECTION", command.quantity(),
+				"销售退货待检入库 · " + command.sourceNumber(), command.requestId() + "-RECEIPT", command.sourceId(),
+				command.sourceNumber(), command.sourceLineId());
+	}
+
+	@Override
+	@Transactional
+	public InspectionSettlement inspectSalesReturn(SalesReturnStockService.InspectionCommand command) {
+		var existingIssue = movementRepository.findByTenantOrganizationIdAndRequestId(command.tenantOrganizationId(),
+				command.requestId() + "-INSPECTION-ISSUE");
+		if (existingIssue.isPresent()) {
+			var accepted = movementRepository.findByTenantOrganizationIdAndRequestId(command.tenantOrganizationId(),
+					command.requestId() + "-ACCEPT").map(item -> salesReturnReceiptForMovement(command.tenantOrganizationId(), item)).orElse(null);
+			var rejected = movementRepository.findByTenantOrganizationIdAndRequestId(command.tenantOrganizationId(),
+					command.requestId() + "-REJECT").map(item -> salesReturnReceiptForMovement(command.tenantOrganizationId(), item)).orElse(null);
+			return new InspectionSettlement(accepted, rejected);
+		}
+		BigDecimal total = command.acceptedQuantity().add(command.rejectedQuantity());
+		if (total.signum() <= 0) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "销售退货质量判定数量必须大于零");
+		StockBalanceEntity inspection = balanceRepository.findByIdAndTenantOrganizationId(command.inspectionBalanceId(),
+				command.tenantOrganizationId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+						"销售退货待检库存不存在或不在当前租户范围"));
+		if (!"INSPECTION".equals(inspection.getQualityStatus()))
+			throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "只有待检库存可以提交销售退货质量判定");
+		WarehouseEntity warehouse = requireActiveWarehouse(command.tenantOrganizationId(), inspection.getWarehouseId(),
+				"销售退货仓库不存在、已停用或不在当前租户范围");
+		StorageLocationEntity location = locationRepository.findByIdAndTenantOrganizationIdAndStatus(inspection.getLocationId(),
+				command.tenantOrganizationId(), "ACTIVE").orElseThrow(() -> new ResponseStatusException(
+						HttpStatus.UNPROCESSABLE_ENTITY, "销售退货库位不存在、已停用或不在当前租户范围"));
+		StockBalanceEntity.Change issueChange;
+		try { issueChange = inspection.apply("ISSUE", total, command.actorUserId()); }
+		catch (IllegalStateException exception) {
+			throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "销售退货待检库存不足，无法完成质量判定", exception);
+		}
+		balanceRepository.saveAndFlush(inspection);
+		StockMovementEntity issue = new StockMovementEntity(command.tenantOrganizationId(), command.workspaceId(),
+				command.actorUserId(), inspection.getId(), nextMovementNumber(), "ISSUE", total,
+				"销售退货质量判定 · " + command.sourceNumber(), command.requestId() + "-INSPECTION-ISSUE", issueChange);
+		issue.attachSource("SALES_RETURN_LINE", command.sourceId(), command.sourceNumber(),
+				derivedSourceLineId(command.sourceLineId(), "INSPECTION-ISSUE"));
+		movementRepository.saveAndFlush(issue);
+		ReturnStockReceipt accepted = null;
+		if (command.acceptedQuantity().signum() > 0)
+			accepted = receiveSalesReturnToBalance(command.tenantOrganizationId(), command.owningOrganizationId(),
+					command.workspaceId(), command.actorUserId(), warehouse, location, command.materialId(), command.materialCode(),
+					command.materialName(), command.materialSpecification(), command.unit(), command.lotNumber(), "AVAILABLE",
+					command.acceptedQuantity(), "销售退货检验合格 · " + command.sourceNumber(), command.requestId() + "-ACCEPT",
+					command.sourceId(), command.sourceNumber(), derivedSourceLineId(command.sourceLineId(), "ACCEPT"));
+		ReturnStockReceipt rejected = null;
+		if (command.rejectedQuantity().signum() > 0)
+			rejected = receiveSalesReturnToBalance(command.tenantOrganizationId(), command.owningOrganizationId(),
+					command.workspaceId(), command.actorUserId(), warehouse, location, command.materialId(), command.materialCode(),
+					command.materialName(), command.materialSpecification(), command.unit(), command.lotNumber(), "BLOCKED",
+					command.rejectedQuantity(), "销售退货检验不合格隔离 · " + command.sourceNumber(), command.requestId() + "-REJECT",
+					command.sourceId(), command.sourceNumber(), derivedSourceLineId(command.sourceLineId(), "REJECT"));
+		return new InspectionSettlement(accepted, rejected);
+	}
+
+	@Override
+	@Transactional
+	public ReturnStockReceipt reverseSalesReturnReceipt(SalesReturnStockService.ReverseCommand command) {
+		var duplicate = movementRepository.findByTenantOrganizationIdAndRequestId(command.tenantOrganizationId(),
+				command.requestId() + "-REVERSE");
+		if (duplicate.isPresent()) return salesReturnReceiptForMovement(command.tenantOrganizationId(), duplicate.get());
+		StockBalanceEntity inspection = balanceRepository.findByIdAndTenantOrganizationId(command.inspectionBalanceId(),
+				command.tenantOrganizationId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+						"销售退货待检库存不存在或不在当前租户范围"));
+		if (!"INSPECTION".equals(inspection.getQualityStatus()))
+			throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "只有待检销售退货库存可以冲回收货");
+		StockBalanceEntity.Change change;
+		try { change = inspection.apply("ISSUE", command.quantity(), command.actorUserId()); }
+		catch (IllegalStateException exception) {
+			throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "销售退货待检库存不足，不能冲回收货", exception);
+		}
+		balanceRepository.saveAndFlush(inspection);
+		StockMovementEntity movement = new StockMovementEntity(command.tenantOrganizationId(), command.workspaceId(),
+				command.actorUserId(), inspection.getId(), nextMovementNumber(), "ISSUE", command.quantity(), command.reason(),
+				command.requestId() + "-REVERSE", change);
+		movement.attachSource("SALES_RETURN_LINE", command.sourceId(), command.sourceNumber(),
+				derivedSourceLineId(command.sourceLineId(), "REVERSE"));
+		movementRepository.saveAndFlush(movement);
+		return salesReturnReceiptForMovement(command.tenantOrganizationId(), movement);
+	}
+
+	private ReturnStockReceipt receiveSalesReturnToBalance(UUID tenantId, UUID organizationId, UUID workspaceId,
+			UUID actorId, WarehouseEntity warehouse, StorageLocationEntity location, UUID materialId, String materialCode,
+			String materialName, String specification, String unit, String lot, String qualityStatus, BigDecimal quantity,
+			String reason, String requestId, UUID sourceId, String sourceNumber, UUID sourceLineId) {
+		String normalizedLot = lot == null ? "" : lot.trim();
+		StockBalanceEntity balance = balanceRepository
+				.findByTenantOrganizationIdAndWarehouseIdAndLocationIdAndMaterialIdAndLotNumberAndQualityStatus(
+						tenantId, warehouse.getId(), location.getId(), materialId, normalizedLot, qualityStatus)
+				.orElseGet(() -> new StockBalanceEntity(tenantId, organizationId, workspaceId, warehouse, location, materialId,
+						materialCode, materialName, specification, unit, normalizedLot, qualityStatus, actorId));
+		StockBalanceEntity.Change change = balance.apply("RECEIPT", quantity, actorId);
+		balanceRepository.saveAndFlush(balance);
+		StockMovementEntity movement = new StockMovementEntity(tenantId, workspaceId, actorId, balance.getId(), nextMovementNumber(),
+				"RECEIPT", quantity, reason, requestId, change);
+		movement.attachSource("SALES_RETURN_LINE", sourceId, sourceNumber, sourceLineId);
+		movementRepository.saveAndFlush(movement);
+		return new ReturnStockReceipt(balance.getId(), movement.getId(), movement.getMovementNumber(), balance.getWarehouseCode(),
+				balance.getWarehouseName(), balance.getLocationCode(), balance.getLocationName(), balance.getLotNumber(), qualityStatus);
+	}
+
+	private ReturnStockReceipt salesReturnReceiptForMovement(UUID tenantId, StockMovementEntity movement) {
+		StockBalanceEntity balance = balanceRepository.findByIdAndTenantOrganizationId(movement.getBalanceId(), tenantId).orElseThrow();
+		return new ReturnStockReceipt(balance.getId(), movement.getId(), movement.getMovementNumber(), balance.getWarehouseCode(),
+				balance.getWarehouseName(), balance.getLocationCode(), balance.getLocationName(), balance.getLotNumber(),
+				balance.getQualityStatus());
+	}
+
+	private static UUID derivedSourceLineId(UUID sourceLineId, String evidenceType) {
+		return UUID.nameUUIDFromBytes((sourceLineId + ":" + evidenceType).getBytes(StandardCharsets.UTF_8));
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public java.util.Optional<PurchaseReturnStockService.Availability> findAvailability(UUID tenantId, UUID balanceId) {
+		return balanceRepository.findByIdAndTenantOrganizationId(balanceId, tenantId).map(balance ->
+				new PurchaseReturnStockService.Availability(balance.getId(), balance.getWarehouseCode(), balance.getWarehouseName(),
+						balance.getLocationCode(), balance.getLocationName(), balance.getLotNumber(), balance.getQualityStatus(),
+						balance.getOnHandQuantity().subtract(balance.getAllocatedQuantity()).subtract(balance.getFrozenQuantity()).max(BigDecimal.ZERO)));
+	}
+
+	@Override
+	@Transactional
+	public PurchaseReturnStockService.Movement ship(PurchaseReturnStockService.ReturnCommand command) {
+		return postPurchaseReturnMovement(command, "ISSUE", "-SHIP");
+	}
+
+	@Override
+	@Transactional
+	public PurchaseReturnStockService.Movement reverse(PurchaseReturnStockService.ReturnCommand command) {
+		return postPurchaseReturnMovement(command, "RETURN", "-REVERSE");
+	}
+
+	private PurchaseReturnStockService.Movement postPurchaseReturnMovement(PurchaseReturnStockService.ReturnCommand command,
+			String movementType, String requestSuffix) {
+		var duplicate = movementRepository.findByTenantOrganizationIdAndRequestId(command.tenantOrganizationId(), command.requestId() + requestSuffix);
+		if (duplicate.isPresent()) return purchaseReturnMovement(command.tenantOrganizationId(), duplicate.get());
+		StockBalanceEntity balance = balanceRepository.findByIdAndTenantOrganizationId(command.balanceId(), command.tenantOrganizationId())
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "采购退货库存余额不存在或不在当前租户范围"));
+		if (!command.expectedQualityStatus().equals(balance.getQualityStatus())
+				|| !("AVAILABLE".equals(balance.getQualityStatus()) || "BLOCKED".equals(balance.getQualityStatus())))
+			throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "采购退货库存质量状态与授权不一致");
+		StockBalanceEntity.Change change;
+		try { change = balance.apply(movementType, command.quantity(), command.actorUserId()); }
+		catch (IllegalStateException exception) { throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+				"采购退货库存不足或仍被分配/冻结，不能完成过账", exception); }
+		balanceRepository.saveAndFlush(balance);
+		StockMovementEntity movement = new StockMovementEntity(command.tenantOrganizationId(), command.workspaceId(),
+				command.actorUserId(), balance.getId(), nextMovementNumber(), movementType, command.quantity(), command.reason(),
+				command.requestId() + requestSuffix, change);
+		movement.attachSource("PURCHASE_RETURN_LINE", command.sourceId(), command.sourceNumber(),
+				derivedSourceLineId(command.sourceLineId(), movementType));
+		movementRepository.saveAndFlush(movement);
+		return purchaseReturnMovement(command.tenantOrganizationId(), movement);
+	}
+
+	private PurchaseReturnStockService.Movement purchaseReturnMovement(UUID tenantId, StockMovementEntity movement) {
+		StockBalanceEntity balance = balanceRepository.findByIdAndTenantOrganizationId(movement.getBalanceId(), tenantId).orElseThrow();
+		return new PurchaseReturnStockService.Movement(balance.getId(), movement.getId(), movement.getMovementNumber(),
+				balance.getWarehouseCode(), balance.getWarehouseName(), balance.getLocationCode(), balance.getLocationName(),
+				balance.getLotNumber(), balance.getQualityStatus());
 	}
 
 	private StockReceipt receivePurchaseReceipt(PurchaseReceiptStockService.Command command, String qualityStatus, String requestId) {

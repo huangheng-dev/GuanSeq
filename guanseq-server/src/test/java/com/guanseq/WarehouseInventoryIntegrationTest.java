@@ -47,14 +47,14 @@ class WarehouseInventoryIntegrationTest {
 		mockMvc.perform(get("/api/v1/warehouse/inventory-balances?page=0&size=20")
 					.with(httpBasic(USERNAME, PASSWORD)))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.totalElements").value(5))
+				.andExpect(jsonPath("$.totalElements").value(6))
 				.andExpect(jsonPath("$.items[?(@.materialCode == 'GS-800' && @.availableQuantity == 6)]").exists())
 				.andExpect(jsonPath("$.items[?(@.materialCode == 'MAT-HIDDEN')]").doesNotExist());
 
 		mockMvc.perform(get("/api/v1/warehouse/inventory-reference-data").with(httpBasic(USERNAME, PASSWORD)))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.warehouses.length()").value(3))
-				.andExpect(jsonPath("$.locations.length()").value(4));
+				.andExpect(jsonPath("$.locations.length()").value(5));
 	}
 
 	@Test

@@ -3,6 +3,8 @@ package com.guanseq.equipment.internal;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.time.Instant;
+import java.time.LocalDate;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -30,6 +32,10 @@ interface EquipmentWorkOrderRepository extends JpaRepository<EquipmentWorkOrderE
 	Optional<EquipmentWorkOrderEntity> findByIdAndTenantOrganizationIdAndWorkspaceId(UUID id, UUID tenantId,
 			UUID workspaceId);
 	Optional<EquipmentWorkOrderEntity> findByTenantOrganizationIdAndCreationRequestId(UUID tenantId, String requestId);
+	Optional<EquipmentWorkOrderEntity> findBySourcePlanIdAndSourceDueDate(UUID sourcePlanId, LocalDate sourceDueDate);
+	long countBySourcePlanIdAndStatusNotInAndDueAtBefore(UUID sourcePlanId, List<String> statuses, Instant dueAt);
+	List<EquipmentWorkOrderEntity> findBySourcePlanIdAndStatusNotInAndDueAtBeforeOrderByDueAtAsc(UUID sourcePlanId,
+			List<String> statuses, Instant dueAt, Pageable pageable);
 
 	@Query("""
 			select workOrder from EquipmentWorkOrderEntity workOrder

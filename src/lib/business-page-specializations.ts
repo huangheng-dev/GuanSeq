@@ -136,16 +136,16 @@ const nonconformanceReviews: Specialization = {
 };
 
 const equipmentTelemetry: Specialization = {
-  description: "定义设备、网关、协议、点位、数据质量和告警的前端契约，为后续 MQTT / OPC UA 与时序数据平台接入预留边界。",
-  recordNoun: "设备接入", primaryAction: "配置设备接入", icon: "sensors", planned: true, views: ["设备连接", "网关", "采集点位", "告警"],
-  columns: ["设备编号", "设备 / 网关", "协议 / 在线", "最新数据 / 质量", "告警 / 点位"],
-  rows: makeRows("IOT", [["CNC-07 · GW-EAST-01", "ASM-12 · GW-EAST-02", "TEST-04 · GW-QA-01", "AIR-01 · GW-UTILITY-01"], ["OPC UA · 在线", "Modbus TCP · 在线", "MQTT · 离线", "Modbus RTU · 在线"], ["主轴负载 68% · 良好", "节拍 52秒 · 良好", "最后数据 32分钟前 · 中断", "压力 0.68MPa · 可疑"], ["1条 · 26点", "无告警 · 12点", "通信中断 · 18点", "越限预警 · 9点"]], [["在线", "good"], ["数据延迟", "warn"], ["离线", "risk"], ["调试中", "info"]], ["赵凯", "陈磊", "平台管理员"], "当前仅验证前端模型与异步契约，未声称已建立真实设备连接。"),
-  metrics: [{ label: "已建模设备", value: "46 台", note: "正式接入需后端确认", tone: "info" }, { label: "在线模型", value: "42 台", note: "前端模拟在线率 91.3%", tone: "good" }, { label: "采集点位", value: "684", note: "关键点位 126 个", tone: "info" }, { label: "数据异常", value: "5 项", note: "中断 2 · 可疑 3", tone: "risk" }],
-  context: { kicker: "工业连接模型", title: "设备数据接入规划", summary: "产品层只定义设备、连接、点位、质量与告警语义；真实采集由边缘网关、消息平台与时序存储实现。", items: [{ label: "设备模型", value: "46", note: "编码与资产台账一致", progress: 92, tone: "good" }, { label: "连接配置", value: "4类", note: "OPC UA、Modbus、MQTT", progress: 68, tone: "info" }, { label: "点位映射", value: "684", note: "126 个关键生产点", progress: 76, tone: "warn" }, { label: "告警规则", value: "38", note: "仍需后端事件引擎", progress: 42, tone: "risk" }] },
-  formFields: fields([{ name: "device", label: "设备 / 网关", type: "text", required: true }, { name: "connection", label: "协议 / 在线策略", type: "select", required: true, options: ["OPC UA", "Modbus TCP", "Modbus RTU", "MQTT"] }, { name: "data", label: "关键数据 / 质量规则", type: "text", required: true }, { name: "points", label: "告警 / 点位概况", type: "text", required: true }]),
+  description: "通过可配置的只读协议连接采集设备点位；仿真端点与物理设备使用同一适配器，现场验收状态独立记录。",
+  recordNoun: "采集连接", primaryAction: "接入设备", icon: "sensors", planned: false, views: ["采集连接", "当前值", "数据质量"],
+  columns: ["审计项", "现场输入", "当前结论", "实施门槛", "责任"],
+  rows: makeRows("IOT-AUDIT", [["设备与业务目的", "协议与网络条件", "点位字典", "可靠性与报警"], ["待提供试点设备", "待提供接口资料", "待提供点位清单", "待确认恢复责任"], ["无真实连接证据", "未选择协议", "无采样与质量口径", "无补传与报警口径"], ["完成现场评审", "完成安全评审", "完成容量计算", "完成故障演练"]], [["待提供", "warn"], ["待确认", "warn"], ["未准入", "risk"], ["待评审", "info"]], ["试点业务负责人", "现场设备工程师", "平台架构组"], "当前记录仅用于实施准入审计，不代表设备、网关或协议已经接通。"),
+  metrics: [{ label: "首期协议", value: "Modbus TCP", note: "只读线圈与保持寄存器", tone: "good" }, { label: "端点模式", value: "仿真 / 物理", note: "共享同一生产适配器", tone: "info" }, { label: "MQTT", value: "适配器扩展", note: "连接外部 Broker，不强制内置", tone: "info" }, { label: "现场状态", value: "待验收", note: "仿真通过不等于现场通过", tone: "warn" }],
+  context: { kicker: "可替换协议链路", title: "设备采集工程闭环", summary: "没有真机时连接外部仿真端点；取得真机后只替换端点和点位配置，不重写业务链路。", items: [{ label: "连接配置", value: "真实 API", note: "工作区、权限、版本与审计", progress: 100, tone: "good" }, { label: "Modbus TCP", value: "只读", note: "同一适配器连接仿真或物理设备", progress: 100, tone: "good" }, { label: "数据质量", value: "已建模", note: "GOOD / UNCERTAIN / BAD", progress: 100, tone: "good" }, { label: "现场验收", value: "待完成", note: "厂商、网络、安全与负载证据", progress: 0, tone: "warn" }] },
+  formFields: fields([{ name: "device", label: "试点设备与业务目的", type: "text", required: true }, { name: "connection", label: "协议版本与访问条件", type: "text", required: true }, { name: "data", label: "点位、频率与质量规则", type: "textarea", required: true }, { name: "points", label: "断连补传、报警与验收", type: "textarea", required: true }]),
   cellFields: ["device", "connection", "data", "points"],
-  attentionTitle: "接入规划风险", attentionItems: [{ title: "TEST-04 的连接模型缺少断线补传策略", detail: "正式接入前需确认边缘缓存容量与数据重放顺序。", owner: "平台管理员", tone: "risk" }, { title: "18 个点位尚未定义工程单位", detail: "量纲缺失会影响趋势分析与越限告警。", owner: "赵凯", tone: "warn" }],
-  workflow: [{ label: "设备与网关建模", detail: "保持设备编码与资产台账一致" }, { label: "协议与点位配置", detail: "定义地址、单位、频率和质量规则" }, { label: "联调与数据验证", detail: "验证断线、补传、时钟与幂等" }, { label: "告警与业务联动", detail: "将事件关联设备、工单和责任人" }],
+  attentionTitle: "设备采集真实边界", attentionItems: [{ title: "仿真验证不能替代现场验收", detail: "物理设备仍需确认厂商点位、网络、安全、负载和责任人。", owner: "试点业务负责人", tone: "warn" }, { title: "新增协议保持适配器边界", detail: "MQTT、OPC UA 等共享统一点位与样本模型，不绕过业务 API。", owner: "平台架构组", tone: "info" }],
+  workflow: [{ label: "提交现场清单", detail: "确认试点设备、业务目的、协议资料与网络条件" }, { label: "评审点位与容量", detail: "定义单位、频率、质量、时间语义与保留期" }, { label: "决定最小架构", detail: "用实测规模决定是否需要网关、Broker、时序库或独立服务" }, { label: "实施一机一协议", detail: "只读接入 3–10 个点位并验证断连、补传与数据质量" }],
 };
 
 const orderProfit: Specialization = {

@@ -50,7 +50,7 @@ public record OperationTaskRecord(
 		List<Event> events) {
 
 	public record Event(UUID id, String action, String fromStatus, String toStatus, String requestId,
-			String comment, Instant occurredAt) { }
+			String comment, String source, Instant occurredAt) { }
 
 	public record ActionRequest(
 			@NotNull @Pattern(regexp = "START|COMPLETE") String action,
@@ -58,5 +58,7 @@ public record OperationTaskRecord(
 			@Size(max = 80) String shiftName,
 			@Size(max = 80) String operatorName,
 			@DecimalMin("0.000001") BigDecimal completedQuantity,
-			@Size(max = 500) String note) { }
+			@Size(max = 500) String note,
+			@Pattern(regexp = "DESKTOP_FORM|MOBILE_SCAN") String source,
+			@Size(max = 120) String operatorBadge) { }
 }

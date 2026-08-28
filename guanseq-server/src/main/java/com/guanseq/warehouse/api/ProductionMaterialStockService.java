@@ -1,12 +1,16 @@
 package com.guanseq.warehouse.api;
 
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
 public interface ProductionMaterialStockService {
 
 	IssueResult issueMaterials(IssueCommand command);
+
+	List<AvailableBalance> listAvailableBalances(UUID tenantOrganizationId, Collection<UUID> warehouseIds,
+			Collection<UUID> materialIds);
 
 	ReturnResult returnMaterials(ReturnCommand command);
 
@@ -30,7 +34,27 @@ public interface ProductionMaterialStockService {
 			String materialSpecification,
 			String unit,
 			BigDecimal quantity,
-			String reason) { }
+			String reason,
+			UUID stockBalanceId,
+			Long expectedStockVersion) {
+		public IssueLine(UUID sourceId, UUID materialId, String materialCode, String materialName,
+				String materialSpecification, String unit, BigDecimal quantity, String reason) {
+			this(sourceId, materialId, materialCode, materialName, materialSpecification, unit, quantity, reason, null, null);
+		}
+	}
+
+	record AvailableBalance(
+			UUID id,
+			UUID warehouseId,
+			String warehouseCode,
+			UUID locationId,
+			String locationCode,
+			String locationName,
+			UUID materialId,
+			String materialCode,
+			String lotNumber,
+			BigDecimal availableQuantity,
+			long version) { }
 
 	record IssueResult(List<StockMovementResult> movements) { }
 
@@ -61,7 +85,7 @@ public interface ProductionMaterialStockService {
 
 	record StockMovementResult(
 			UUID sourceId,
-		UUID sourceLineId,
+			UUID sourceLineId,
 			UUID materialId,
 			UUID balanceId,
 			UUID movementId,

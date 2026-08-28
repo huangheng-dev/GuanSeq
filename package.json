@@ -1,6 +1,6 @@
 {
   "name": "guanseq",
-  "version": "0.1.0",
+  "version": "0.1.0-alpha.1",
   "private": true,
   "type": "module",
   "description": "贯序制造业一体化运营管理平台前端",
@@ -13,8 +13,17 @@
     "dev": "next dev",
     "build": "next build --webpack",
     "start": "next start",
+    "telemetry:simulator": "node tools/modbus-simulator.mjs",
+    "telemetry:mqtt-simulator": "node tools/mqtt-broker-simulator.mjs",
     "pilot:preflight": "node scripts/pilot-preflight.mjs",
     "pilot:smoke": "node scripts/pilot-smoke.mjs",
+    "production:preflight": "node scripts/production-preflight.mjs",
+    "production:backup": "node scripts/production-backup.mjs",
+    "production:restore-drill": "node scripts/production-restore-drill.mjs",
+    "release:check": "node scripts/release-check.mjs",
+    "e2e": "node scripts/e2e-run.mjs",
+    "e2e:test": "playwright test",
+    "e2e:install": "playwright install chromium",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
@@ -36,6 +45,7 @@
     "zustand": "5.0.15"
   },
   "devDependencies": {
+    "@playwright/test": "1.62.1",
     "@types/node": "24.13.3",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.4",

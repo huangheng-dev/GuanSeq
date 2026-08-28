@@ -14,7 +14,7 @@ import com.guanseq.sales.api.SalesReceivableQueryProvider;
 @Service
 class SalesReceivableQueryService implements SalesReceivableQueryProvider {
 
-	private static final List<String> SHIPPED_STATUSES = List.of("PARTIALLY_SHIPPED", "SHIPPED");
+	private static final List<String> SHIPPED_STATUSES = List.of("PARTIALLY_SHIPPED", "SHIPPED", "PARTIALLY_RETURNED", "RETURNED");
 	private final SalesOrderRepository orderRepository;
 
 	SalesReceivableQueryService(SalesOrderRepository orderRepository) {
@@ -42,7 +42,8 @@ class SalesReceivableQueryService implements SalesReceivableQueryProvider {
 						.sorted(Comparator.comparingInt(SalesOrderLineEntity::getLineNumber))
 						.map(line -> new ReceivableLine(line.getId(), line.getLineNumber(), line.getMaterialId(),
 								line.getMaterialCode(), line.getMaterialName(), line.getMaterialSpecification(), line.getUnit(),
-								line.getQuantity(), line.getDeliveredQuantity(), line.getUnitPrice()))
+								line.getQuantity(), line.getDeliveredQuantity(), line.getReturnedQuantity(),
+								line.getNetDeliveredQuantity(), line.getUnitPrice()))
 						.toList());
 	}
 }

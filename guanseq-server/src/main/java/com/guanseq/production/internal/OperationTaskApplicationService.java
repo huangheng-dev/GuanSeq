@@ -24,9 +24,10 @@ import com.guanseq.product.api.RoutingReferenceProvider.EffectiveOperation;
 import com.guanseq.product.api.RoutingReferenceProvider.EffectiveRouting;
 import com.guanseq.production.api.OperationTaskPage;
 import com.guanseq.production.api.OperationTaskRecord;
+import com.guanseq.production.api.LabelOperationTaskReferenceProvider;
 
 @Service
-public class OperationTaskApplicationService {
+public class OperationTaskApplicationService implements LabelOperationTaskReferenceProvider {
 	private static final Set<String> TASK_ROLES = Set.of("PRODUCTION_OPERATOR", "PRODUCTION_MANAGER", "ADMIN");
 
 	private final CurrentWorkspaceProvider workspaceProvider;
@@ -56,6 +57,25 @@ public class OperationTaskApplicationService {
 				result.getTotalElements(), result.getNumber(), result.getSize(), result.getTotalPages());
 	}
 
+	@Override
+	@Transactional(readOnly = true)
+	public java.util.Optional<OperationTaskLabelReference> findLabelTask(UUID tenantOrganizationId, UUID taskId) {
+		return taskRepository.findByIdAndTenantOrganizationId(taskId, tenantOrganizationId).map(OperationTaskApplicationService::labelReference);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<OperationTaskLabelReference> listLabelTasks(UUID tenantOrganizationId, int limit) {
+		return taskRepository.findByTenantOrganizationId(tenantOrganizationId,
+				PageRequest.of(0, Math.min(100, Math.max(1, limit)), Sort.by(Sort.Direction.DESC, "updatedAt")))
+				.stream().map(OperationTaskApplicationService::labelReference).toList();
+	}
+
+	private static OperationTaskLabelReference labelReference(OperationTaskEntity item) {
+		return new OperationTaskLabelReference(item.getId(), item.getVersion(), item.getTaskNumber(), item.getOperationName(),
+				item.getOrderNumber(), item.getWorkCenterCode(), item.getStatus());
+	}
+
 	@Transactional(readOnly = true)
 	public OperationTaskRecord get(String username, UUID id) {
 		CurrentWorkspaceAccess access = workspaceProvider.resolve(username); requireRole(access);
@@ -75,26 +95,28 @@ public class OperationTaskApplicationService {
 	public OperationTaskRecord action(String username, UUID id, OperationTaskRecord.ActionRequest request) {
 		CurrentWorkspaceAccess access = workspaceProvider.resolve(username); requireRole(access);
 		String requestId = currentRequestId("operation-task-action-");
+		String source = normalizeSource(request.source());
 		OperationTaskEntity task = requireTask(access, id);
 		var completedEvent = eventRepository.findFirstByTenantOrganizationIdAndRequestIdAndActionIn(
 				access.tenantOrganizationId(), requestId, List.of("START", "COMPLETE"));
 		if (completedEvent.isPresent()) {
 			if (!completedEvent.get().getTaskId().equals(id)) throw conflict("请求编号已用于其他工序动作，请刷新后重试");
+			if (!completedEvent.get().getAction().equals(request.action())) throw conflict("请求编号已用于该工序的其他动作，请更换请求编号");
 			return toRecord(requireTask(access, id), events(id));
 		}
 		if (task.getVersion() != request.expectedVersion()) throw conflict("工序任务已被其他用户更新，请刷新后重试");
 		ProductionOrderEntity order = requireOrder(access, task.getOrderId());
 		if (!Set.of("RELEASED", "IN_PROGRESS").contains(order.getStatus())) throw conflict("只有已下达或执行中订单的工序可以操作");
+		String operator = resolveOperator(access, request, source);
 		String from = task.getStatus();
 		try {
 			switch (request.action()) {
 				case "START" -> {
 					String shift = requireText(request.shiftName(), "开工必须填写班次");
-					String operator = requireText(request.operatorName(), "开工必须填写操作人");
 					task.start(shift, operator, trimToNull(request.note()), requestId, access.userId());
 					eventRepository.save(new OperationEventEntity(access.tenantOrganizationId(), access.workspaceId(), access.userId(),
 							task.getId(), task.getOrderId(), "START", from, "IN_PROGRESS", requestId, trimToNull(request.note()),
-							Map.of("workCenterCode", task.getWorkCenterCode(), "shiftName", shift)));
+							source, Map.of("workCenterCode", task.getWorkCenterCode(), "shiftName", shift, "operatorName", operator)));
 					if ("RELEASED".equals(order.getStatus())) {
 						String orderFrom = order.getStatus();
 						order.transition("IN_PROGRESS", "工序开工自动转入执行", access.userId());
@@ -107,11 +129,12 @@ public class OperationTaskApplicationService {
 				case "COMPLETE" -> {
 					if (request.completedQuantity() == null || request.completedQuantity().signum() <= 0)
 						throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "完工数量必须大于零");
-					task.complete(request.completedQuantity(), trimToNull(request.shiftName()), trimToNull(request.operatorName()),
+					task.complete(request.completedQuantity(), trimToNull(request.shiftName()), operator,
 							trimToNull(request.note()), requestId, access.userId());
 					eventRepository.save(new OperationEventEntity(access.tenantOrganizationId(), access.workspaceId(), access.userId(),
 							task.getId(), task.getOrderId(), "COMPLETE", from, "COMPLETED", requestId, trimToNull(request.note()),
-							Map.of("completedQuantity", request.completedQuantity(), "workCenterCode", task.getWorkCenterCode())));
+							source, Map.of("completedQuantity", request.completedQuantity(), "workCenterCode", task.getWorkCenterCode(),
+									"operatorName", operator == null ? task.getOperatorName() : operator)));
 				}
 				default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "不支持的工序动作");
 			}
@@ -138,7 +161,7 @@ public class OperationTaskApplicationService {
 			taskRepository.saveAndFlush(task);
 			eventRepository.save(new OperationEventEntity(access.tenantOrganizationId(), access.workspaceId(), access.userId(),
 					task.getId(), task.getOrderId(), "CREATED", null, "PENDING", requestId, null,
-					Map.of("sequenceNumber", task.getSequenceNumber(), "operationCode", task.getOperationCode(),
+					"SYSTEM", Map.of("sequenceNumber", task.getSequenceNumber(), "operationCode", task.getOperationCode(),
 							"routingNumber", routing.routingNumber(), "routingVersion", routing.versionCode())));
 		}
 		eventRepository.flush();
@@ -156,7 +179,7 @@ public class OperationTaskApplicationService {
 				item.getStatus(), item.getStartedAt(), item.getCompletedAt(), item.getCompletedQuantity(), item.getShiftName(),
 				item.getOperatorName(), item.getNote(), item.getVersion(), item.getCreatedAt(), item.getUpdatedAt(),
 				events.stream().map(event -> new OperationTaskRecord.Event(event.getId(), event.getAction(), event.getFromStatus(),
-						event.getToStatus(), event.getRequestId(), event.getComment(), event.getOccurredAt())).toList());
+						event.getToStatus(), event.getRequestId(), event.getComment(), event.getSource(), event.getOccurredAt())).toList());
 	}
 
 	private OperationTaskEntity requireTask(CurrentWorkspaceAccess access, UUID id) {
@@ -176,6 +199,15 @@ public class OperationTaskApplicationService {
 		return value.trim();
 	}
 	private static String trimToNull(String value) { return value == null || value.isBlank() ? null : value.trim(); }
+	private static String normalizeSource(String value) { return value == null || value.isBlank() ? "DESKTOP_FORM" : value.trim(); }
+	private static String resolveOperator(CurrentWorkspaceAccess access, OperationTaskRecord.ActionRequest request, String source) {
+		if ("MOBILE_SCAN".equals(source)) {
+			String badge = requireText(request.operatorBadge(), "移动扫码必须扫描当前操作人员标签");
+			if (!badge.equalsIgnoreCase(access.username())) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "人员标签与当前登录账号不一致，不能代替他人执行工序动作");
+			return access.username();
+		}
+		return "START".equals(request.action()) ? requireText(request.operatorName(), "开工必须填写操作人") : trimToNull(request.operatorName());
+	}
 	private static void requireRole(CurrentWorkspaceAccess access) {
 		if (!TASK_ROLES.contains(access.roleCode())) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "当前角色无权执行车间工序任务");
 	}

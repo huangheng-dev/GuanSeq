@@ -49,6 +49,7 @@ class PayableInvoiceEntity {
 	@Column(name = "paid_amount") private BigDecimal paidAmount;
 	@Column(name = "credit_balance") private BigDecimal creditBalance;
 	private String status;
+	@Column(name = "purchase_return_impact_status") private String purchaseReturnImpactStatus;
 	@Column(name = "request_id") private String requestId;
 	@Version private long version;
 	@Column(name = "created_by") private UUID createdBy;
@@ -86,6 +87,7 @@ class PayableInvoiceEntity {
 		this.paidAmount = money(BigDecimal.ZERO);
 		this.creditBalance = money(BigDecimal.ZERO);
 		this.status = "OPEN";
+		this.purchaseReturnImpactStatus = "NONE";
 		this.requestId = requestId;
 		this.createdBy = actorUserId;
 		this.createdAt = Instant.now();
@@ -136,6 +138,12 @@ class PayableInvoiceEntity {
 		recalculateStatus(actorUserId);
 	}
 
+	boolean markPurchaseReturnImpact(boolean reviewRequired, UUID actorUserId) {
+		String target = reviewRequired ? "REVIEW_REQUIRED" : "NONE";
+		if (target.equals(purchaseReturnImpactStatus)) return false;
+		purchaseReturnImpactStatus = target; updatedBy = actorUserId; updatedAt = Instant.now(); return true;
+	}
+
 	private void recalculateStatus(UUID actorUserId) {
 		BigDecimal outstanding = money(grossAmount.subtract(paidAmount));
 		boolean hasPostedRefund = payments.stream()
@@ -179,6 +187,7 @@ class PayableInvoiceEntity {
 	BigDecimal getPaidAmount() { return paidAmount; }
 	BigDecimal getCreditBalance() { return creditBalance; }
 	String getStatus() { return status; }
+	String getPurchaseReturnImpactStatus() { return purchaseReturnImpactStatus; }
 	long getVersion() { return version; }
 	Instant getCreatedAt() { return createdAt; }
 	List<PayableInvoiceLineEntity> getLines() { return lines; }

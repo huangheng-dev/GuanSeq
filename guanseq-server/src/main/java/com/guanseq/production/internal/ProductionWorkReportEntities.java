@@ -37,6 +37,8 @@ class ProductionWorkReportEntity {
 	@Column(name = "receipt_movement_id") private UUID receiptMovementId;
 	@Column(name = "lot_number") private String lotNumber;
 	private String status;
+	@Column(name = "operation_task_id") private UUID operationTaskId;
+	private String source;
 	@Column(name = "request_id") private String requestId;
 	@Column(name = "settlement_request_id") private String settlementRequestId;
 	@Version private long version;
@@ -48,7 +50,7 @@ class ProductionWorkReportEntity {
 	protected ProductionWorkReportEntity() { }
 	ProductionWorkReportEntity(UUID tenantId, UUID organizationId, UUID workspaceId, String number,
 			ProductionOrderEntity order, BigDecimal quantity, String shift, String operator, String note,
-			String requestId, UUID actorId) {
+			String requestId, UUID actorId, UUID operationTaskId, String source) {
 		this.id = UUID.randomUUID(); this.tenantOrganizationId = tenantId; this.owningOrganizationId = organizationId;
 		this.workspaceId = workspaceId; this.reportNumber = number; this.orderId = order.getId();
 		this.orderNumber = order.getOrderNumber(); this.materialId = order.getMaterialId(); this.materialCode = order.getMaterialCode();
@@ -56,6 +58,7 @@ class ProductionWorkReportEntity {
 		this.unit = order.getUnit(); this.workshop = order.getWorkshop(); this.shiftName = shift.trim();
 		this.operatorName = operator.trim(); this.reportedQuantity = quantity;
 		this.note = note == null || note.isBlank() ? null : note.trim(); this.status = "PENDING_INSPECTION";
+		this.operationTaskId = operationTaskId; this.source = source;
 		this.requestId = requestId; this.createdBy = actorId; this.createdAt = Instant.now();
 	}
 	void attachInspection(UUID id) { this.inspectionId = id; }
@@ -75,5 +78,6 @@ class ProductionWorkReportEntity {
 	String getNote() { return note; } UUID getInspectionId() { return inspectionId; } BigDecimal getAcceptedQuantity() { return acceptedQuantity; }
 	BigDecimal getRejectedQuantity() { return rejectedQuantity; } UUID getReceiptBalanceId() { return receiptBalanceId; }
 	UUID getReceiptMovementId() { return receiptMovementId; } String getLotNumber() { return lotNumber; } String getStatus() { return status; }
+	UUID getOperationTaskId() { return operationTaskId; } String getSource() { return source; }
 	long getVersion() { return version; } Instant getCreatedAt() { return createdAt; } Instant getSettledAt() { return settledAt; }
 }

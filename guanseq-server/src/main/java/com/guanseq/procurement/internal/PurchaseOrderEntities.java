@@ -174,6 +174,7 @@ class PurchaseOrderLineEntity {
 	private String unit;
 	@Column(name = "ordered_quantity") private BigDecimal orderedQuantity;
 	@Column(name = "received_quantity") private BigDecimal receivedQuantity;
+	@Column(name = "returned_quantity") private BigDecimal returnedQuantity;
 	@Column(name = "unit_price") private BigDecimal unitPrice;
 	@Column(name = "net_amount") private BigDecimal netAmount;
 	@Column(name = "tax_amount") private BigDecimal taxAmount;
@@ -185,21 +186,33 @@ class PurchaseOrderLineEntity {
 			BigDecimal taxRate) {
 		this.id = UUID.randomUUID(); this.order = order; this.lineNumber = lineNumber; this.materialId = materialId;
 		this.materialCode = materialCode; this.materialName = materialName; this.materialSpecification = specification;
-		this.unit = unit; this.orderedQuantity = quantity; this.receivedQuantity = BigDecimal.ZERO;
+		this.unit = unit; this.orderedQuantity = quantity; this.receivedQuantity = BigDecimal.ZERO; this.returnedQuantity = BigDecimal.ZERO;
 		this.unitPrice = unitPrice; this.netAmount = quantity.multiply(unitPrice).setScale(2, RoundingMode.HALF_UP);
 		this.taxAmount = netAmount.multiply(taxRate).setScale(2, RoundingMode.HALF_UP);
 		this.grossAmount = netAmount.add(taxAmount).setScale(2, RoundingMode.HALF_UP);
 	}
 	void applyAcceptedReceipt(BigDecimal acceptedQuantity) {
 		BigDecimal next = receivedQuantity.add(acceptedQuantity);
-		if (next.compareTo(orderedQuantity) > 0) throw new IllegalStateException("采购订单行累计合格入库数量不能超过订单数量");
+		if (next.subtract(returnedQuantity).compareTo(orderedQuantity) > 0) throw new IllegalStateException("采购订单行净合格入库数量不能超过订单数量");
 		receivedQuantity = next;
+	}
+	void applySupplierReturn(BigDecimal quantity) {
+		BigDecimal next = returnedQuantity.add(quantity);
+		if (next.compareTo(receivedQuantity) > 0) throw new IllegalStateException("采购订单行累计合格退货不能超过毛合格收货");
+		returnedQuantity = next;
+	}
+	void reverseSupplierReturn(BigDecimal quantity) {
+		BigDecimal next = returnedQuantity.subtract(quantity);
+		if (next.signum() < 0) throw new IllegalStateException("采购订单行累计合格退货不能小于零");
+		returnedQuantity = next;
 	}
 	UUID getId() { return id; } int getLineNumber() { return lineNumber; } UUID getMaterialId() { return materialId; }
 	String getMaterialCode() { return materialCode; } String getMaterialName() { return materialName; }
 	String getMaterialSpecification() { return materialSpecification; } String getUnit() { return unit; }
 	BigDecimal getOrderedQuantity() { return orderedQuantity; } BigDecimal getReceivedQuantity() { return receivedQuantity; }
-	BigDecimal getOutstandingQuantity() { return orderedQuantity.subtract(receivedQuantity); }
+	BigDecimal getReturnedQuantity() { return returnedQuantity == null ? BigDecimal.ZERO : returnedQuantity; }
+	BigDecimal getNetReceivedQuantity() { return receivedQuantity.subtract(getReturnedQuantity()); }
+	BigDecimal getOutstandingQuantity() { return orderedQuantity.subtract(getNetReceivedQuantity()); }
 	BigDecimal getUnitPrice() { return unitPrice; } BigDecimal getNetAmount() { return netAmount; }
 	BigDecimal getTaxAmount() { return taxAmount; } BigDecimal getGrossAmount() { return grossAmount; }
 }

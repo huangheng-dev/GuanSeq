@@ -265,6 +265,7 @@ ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO warehouse.storage_locations (id, tenant_organization_id, warehouse_id, code, name, location_type, status) VALUES
     ('72000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000001', '71000000-0000-4000-8000-000000000001', 'A-01-03', '原料 A 区 01 排 03 位', 'STORAGE', 'ACTIVE'),
+    ('72000000-0000-4000-8000-000000000012', '00000000-0000-4000-8000-000000000001', '71000000-0000-4000-8000-000000000001', 'A-01-04', '原料 A 区 01 排 04 位', 'STORAGE', 'ACTIVE'),
     ('72000000-0000-4000-8000-000000000002', '00000000-0000-4000-8000-000000000001', '71000000-0000-4000-8000-000000000001', 'IQC-06', '来料待检区 06 位', 'INSPECTION', 'ACTIVE'),
     ('72000000-0000-4000-8000-000000000003', '00000000-0000-4000-8000-000000000001', '71000000-0000-4000-8000-000000000002', 'WIP-02', '精密装配在制区', 'PRODUCTION', 'ACTIVE'),
     ('72000000-0000-4000-8000-000000000004', '00000000-0000-4000-8000-000000000001', '71000000-0000-4000-8000-000000000003', 'FG-01', '成品一号库位', 'STORAGE', 'ACTIVE'),
@@ -433,6 +434,19 @@ INSERT INTO production.material_stock_transactions (
      '71000000-0000-4000-8000-000000000001', 'WH-RM', '原材料仓', '72000000-0000-4000-8000-000000000001', 'A-01-03', '原料 A 区 01 排 03 位',
      '73000000-0000-4000-8000-000000000003', '74000000-0000-4000-8000-000000000102', 'MOV-SEED-FIN-002',
      'seed-finance-material-issue-001-I1-0', '20000000-0000-4000-8000-000000000001', '2026-08-16 02:16:00+00')
+ON CONFLICT (id) DO NOTHING;
+
+-- Warehouse putaway sample: qualified stock waiting in the incoming inspection area.
+INSERT INTO warehouse.stock_balances (
+    id, tenant_organization_id, owning_organization_id, workspace_id, warehouse_id, warehouse_code, warehouse_name,
+    location_id, location_code, location_name, material_id, material_code, material_name, material_specification,
+    unit, lot_number, quality_status, on_hand_quantity, allocated_quantity, frozen_quantity, updated_by
+) VALUES
+    ('73000000-0000-4000-8000-000000000011', '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000101',
+     '10000000-0000-4000-8000-000000000101', '71000000-0000-4000-8000-000000000001', 'WH-RM', '原材料仓',
+     '72000000-0000-4000-8000-000000000002', 'IQC-06', '来料待检区 06 位',
+     '42000000-0000-4000-8000-000000000003', 'BR-6204', '深沟球轴承', '6204-2RS', '件',
+     'LOT-BR-PUT-260827', 'AVAILABLE', 12, 0, 0, '20000000-0000-4000-8000-000000000001')
 ON CONFLICT (id) DO NOTHING;
 
 SELECT setval('warehouse.movement_number_seq', GREATEST((SELECT last_value FROM warehouse.movement_number_seq), 1002), true);

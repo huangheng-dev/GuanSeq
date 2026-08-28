@@ -1,10 +1,10 @@
 import type { PurchaseReceiptRecord } from "@/lib/contracts";
 import type { CreatePurchaseReceiptPayload } from "@/services/purchase-receipt-server-service";
 
-export async function submitCreatePurchaseReceipt(payload: CreatePurchaseReceiptPayload): Promise<PurchaseReceiptRecord> {
+export async function submitCreatePurchaseReceipt(payload: CreatePurchaseReceiptPayload, stableRequestId?: string): Promise<PurchaseReceiptRecord> {
   const response = await fetch("/api/procurement/receipts/mutate", {
     method: "POST",
-    headers: { "Content-Type": "application/json", "X-Request-Id": `web-receipt-${crypto.randomUUID()}` },
+    headers: { "Content-Type": "application/json", "X-Request-Id": stableRequestId ?? `web-receipt-${crypto.randomUUID()}` },
     body: JSON.stringify(payload),
   });
   const data = await response.json().catch(() => null) as { receipt?: PurchaseReceiptRecord; message?: string } | null;

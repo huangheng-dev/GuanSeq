@@ -1,0 +1,106 @@
+name: Release security
+
+on:
+  workflow_call:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source-and-images:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.18.0
+          cache: pnpm
+
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 25
+          cache: maven
+
+      - run: chmod +x mvnw
+        working-directory: guanseq-server
+
+      - name: Resolve Maven dependency metadata for scanning
+        run: ./mvnw -B dependency:go-offline
+        working-directory: guanseq-server
+
+      - name: Scan source, dependencies, secrets and configuration
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret,misconfig
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          timeout: 15m
+          exit-code: "1"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build GuanSeq web image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          push: false
+          tags: guanseq/web:ci-${{ github.sha }}
+          build-args: GUANSEQ_BUILD_VERSION=0.1.0-ci.${{ github.run_number }}
+
+      - name: Build GuanSeq server image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./guanseq-server
+          load: true
+          push: false
+          tags: guanseq/server:ci-${{ github.sha }}
+
+      - name: Generate web image SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: guanseq/web:ci-${{ github.sha }}
+          artifact-name: guanseq-web.spdx.json
+          format: spdx-json
+
+      - name: Generate server image SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: guanseq/server:ci-${{ github.sha }}
+          artifact-name: guanseq-server.spdx.json
+          format: spdx-json
+
+      - name: Scan web image
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: guanseq/web:ci-${{ github.sha }}
+          scanners: vuln,secret,misconfig
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          timeout: 15m
+          exit-code: "1"
+
+      - name: Scan server image
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: guanseq/server:ci-${{ github.sha }}
+          scanners: vuln,secret,misconfig
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          timeout: 15m
+          exit-code: "1"

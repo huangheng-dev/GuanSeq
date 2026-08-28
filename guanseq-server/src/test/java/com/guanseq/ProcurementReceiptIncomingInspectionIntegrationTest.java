@@ -23,6 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import jakarta.persistence.EntityManager;
+
 import com.guanseq.platform.infrastructure.web.RequestIdFilter;
 
 @Testcontainers(disabledWithoutDocker = true)
@@ -40,11 +42,14 @@ class ProcurementReceiptIncomingInspectionIntegrationTest {
 	private static final String PACKAGING = "42000000-0000-4000-8000-000000000004";
 	private final MockMvc mockMvc;
 	private final JdbcTemplate jdbcTemplate;
+	private final EntityManager entityManager;
 
-	ProcurementReceiptIncomingInspectionIntegrationTest(@Autowired WebApplicationContext context, @Autowired JdbcTemplate jdbcTemplate) {
+	ProcurementReceiptIncomingInspectionIntegrationTest(@Autowired WebApplicationContext context, @Autowired JdbcTemplate jdbcTemplate,
+			@Autowired EntityManager entityManager) {
 		this.mockMvc = MockMvcBuilders.webAppContextSetup(context).addFilters(context.getBean(RequestIdFilter.class))
 				.apply(springSecurity()).build();
 		this.jdbcTemplate = jdbcTemplate;
+		this.entityManager = entityManager;
 	}
 
 	@Test
@@ -56,6 +61,7 @@ class ProcurementReceiptIncomingInspectionIntegrationTest {
 		mockMvc.perform(post("/api/v1/procurement/receipts").with(httpBasic(USERNAME, PASSWORD))
 				.header("X-Request-Id", "receipt-direct-0001").contentType(MediaType.APPLICATION_JSON).content(directReceiptBody))
 				.andExpect(status().isOk()).andExpect(jsonPath("$.status").value("RECEIVED"))
+				.andExpect(jsonPath("$.source").value("DESKTOP_FORM"))
 				.andExpect(jsonPath("$.acceptedQuantity").value(5));
 		mockMvc.perform(post("/api/v1/procurement/receipts").with(httpBasic(USERNAME, PASSWORD))
 				.header("X-Request-Id", "receipt-direct-0001").contentType(MediaType.APPLICATION_JSON).content(directReceiptBody))
@@ -113,6 +119,32 @@ class ProcurementReceiptIncomingInspectionIntegrationTest {
 
 	@Test
 	@Transactional
+	void recordsMobileScanSourceAndRetriesWithOneReceipt() throws Exception {
+		String orderId = createReleasedPackagingOrder();
+		String lineId = jdbcTemplate.queryForObject("select id from procurement.purchase_order_lines where order_id = cast(? as uuid)", String.class, orderId);
+		String body = mobileReceiptBody(orderId, lineId, 2, WAREHOUSE, STORAGE_LOCATION, "LOT-MOBILE-001");
+		MvcResult first = mockMvc.perform(post("/api/v1/procurement/receipts").with(httpBasic(USERNAME, PASSWORD))
+				.header("X-Request-Id", "receipt-mobile-0001").contentType(MediaType.APPLICATION_JSON).content(body))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.source").value("MOBILE_SCAN"))
+				.andExpect(jsonPath("$.status").value("RECEIVED")).andReturn();
+		String receiptId = field(first, "id");
+		mockMvc.perform(post("/api/v1/procurement/receipts").with(httpBasic(USERNAME, PASSWORD))
+				.header("X-Request-Id", "receipt-mobile-0001").contentType(MediaType.APPLICATION_JSON).content(body))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.id").value(receiptId));
+		entityManager.flush();
+		org.assertj.core.api.Assertions.assertThat(jdbcTemplate.queryForObject(
+				"select source from procurement.purchase_receipts where id = cast(? as uuid)", String.class, receiptId))
+				.isEqualTo("MOBILE_SCAN");
+		org.assertj.core.api.Assertions.assertThat(jdbcTemplate.queryForObject(
+				"select details ->> 'source' from procurement.purchase_receipt_events where receipt_id = cast(? as uuid) and action = 'CREATED'",
+				String.class, receiptId)).isEqualTo("MOBILE_SCAN");
+		mockMvc.perform(post("/api/v1/procurement/receipts").with(httpBasic(USERNAME, PASSWORD))
+				.header("X-Request-Id", "receipt-mobile-invalid-0001").contentType(MediaType.APPLICATION_JSON)
+				.content(body.replace("MOBILE_SCAN", "UNTRUSTED_DEVICE"))).andExpect(status().isBadRequest());
+	}
+
+	@Test
+	@Transactional
 	void rejectsReceiptWithoutPermission() throws Exception {
 		jdbcTemplate.update("update identity.workspace_memberships set role_code = 'PRODUCTION_OPERATOR' where id = '30000000-0000-4000-8000-000000000103'");
 		jdbcTemplate.update("update identity.user_workspace_preferences set current_workspace_id = '10000000-0000-4000-8000-000000000103' where user_id = '20000000-0000-4000-8000-000000000001'");
@@ -154,6 +186,12 @@ class ProcurementReceiptIncomingInspectionIntegrationTest {
 	private static String receiptBody(String orderId, String lineId, Number quantity, String warehouseId, String locationId, String lot) {
 		return """
 				{"purchaseOrderId":"%s","warehouseId":"%s","locationId":"%s","note":"自动化收货","lines":[{"orderLineId":"%s","receivedQuantity":%d,"lotNumber":"%s"}]}
+				""".formatted(orderId, warehouseId, locationId, lineId, quantity, lot);
+	}
+
+	private static String mobileReceiptBody(String orderId, String lineId, Number quantity, String warehouseId, String locationId, String lot) {
+		return """
+				{"purchaseOrderId":"%s","warehouseId":"%s","locationId":"%s","note":"移动扫码收货","source":"MOBILE_SCAN","lines":[{"orderLineId":"%s","receivedQuantity":%d,"lotNumber":"%s"}]}
 				""".formatted(orderId, warehouseId, locationId, lineId, quantity, lot);
 	}
 

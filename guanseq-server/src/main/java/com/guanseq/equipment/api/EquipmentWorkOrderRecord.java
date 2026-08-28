@@ -1,6 +1,7 @@
 package com.guanseq.equipment.api;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -17,6 +18,8 @@ public record EquipmentWorkOrderRecord(
 		String workType,
 		String sourceType,
 		UUID sourceWorkOrderId,
+		UUID sourcePlanId,
+		LocalDate sourceDueDate,
 		UUID assetId,
 		String assetCode,
 		String assetName,

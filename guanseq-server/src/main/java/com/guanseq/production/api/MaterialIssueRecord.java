@@ -52,7 +52,7 @@ public record MaterialIssueRecord(
 			String bomNote,
 			long version) { }
 
-	public record Event(UUID id, String action, String fromStatus, String toStatus, String requestId, Instant occurredAt) { }
+	public record Event(UUID id, String action, String fromStatus, String toStatus, String source, String requestId, Instant occurredAt) { }
 
 	public record StockTransaction(
 			UUID id,
@@ -67,20 +67,29 @@ public record MaterialIssueRecord(
 			UUID locationId,
 			String locationCode,
 			String locationName,
+			UUID balanceId,
+			String lotNumber,
 			UUID movementId,
 			String movementNumber,
+			String source,
 			String requestId,
 			Instant occurredAt) { }
 
 	public record CreateRequest(@NotNull UUID productionOrderId, @NotNull UUID warehouseId) { }
 
-	public record IssueLineRequest(@NotNull UUID lineId, @NotNull @DecimalMin("0.000001") BigDecimal quantity, long expectedLineVersion) { }
+	public record IssueLineRequest(
+			@NotNull UUID lineId,
+			@NotNull @DecimalMin("0.000001") BigDecimal quantity,
+			long expectedLineVersion,
+			UUID stockBalanceId,
+			Long expectedStockVersion) { }
 
 	public record ActionRequest(
 			@NotNull @Pattern(regexp = "ISSUE|CANCEL") String action,
 			long expectedVersion,
 			@Size(max = 500) String comment,
-			@Size(max = 200) List<@Valid IssueLineRequest> lines) { }
+			@Size(max = 200) List<@Valid IssueLineRequest> lines,
+			@Pattern(regexp = "DESKTOP_FORM|MOBILE_SCAN") String source) { }
 
 	public record ReturnLineRequest(
 			@NotNull UUID lineId,

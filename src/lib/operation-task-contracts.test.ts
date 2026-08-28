@@ -40,9 +40,9 @@ describe("车间工序执行契约", () => {
       createdAt: "2026-08-15T03:05:00Z",
       updatedAt: "2026-08-16T03:10:00Z",
       events: [
-        { id: "94000000-0000-4000-8000-000000000001", action: "CREATED", fromStatus: null, toStatus: "PENDING", requestId: "seed-operation-tasks", comment: null, occurredAt: "2026-08-15T03:05:00Z" },
-        { id: "94000000-0000-4000-8000-000000000002", action: "START", fromStatus: "PENDING", toStatus: "IN_PROGRESS", requestId: "seed-op-start-001", comment: "白班开工", occurredAt: "2026-08-16T01:00:00Z" },
-        { id: "94000000-0000-4000-8000-000000000003", action: "COMPLETE", fromStatus: "IN_PROGRESS", toStatus: "COMPLETED", requestId: "seed-op-complete-001", comment: "首批完工", occurredAt: "2026-08-16T03:10:00Z" },
+        { id: "94000000-0000-4000-8000-000000000001", action: "CREATED", fromStatus: null, toStatus: "PENDING", requestId: "seed-operation-tasks", comment: null, source: "SYSTEM", occurredAt: "2026-08-15T03:05:00Z" },
+        { id: "94000000-0000-4000-8000-000000000002", action: "START", fromStatus: "PENDING", toStatus: "IN_PROGRESS", requestId: "seed-op-start-001", comment: "白班开工", source: "DESKTOP_FORM", occurredAt: "2026-08-16T01:00:00Z" },
+        { id: "94000000-0000-4000-8000-000000000003", action: "COMPLETE", fromStatus: "IN_PROGRESS", toStatus: "COMPLETED", requestId: "seed-op-complete-001", comment: "首批完工", source: "DESKTOP_FORM", occurredAt: "2026-08-16T03:10:00Z" },
       ],
     });
 

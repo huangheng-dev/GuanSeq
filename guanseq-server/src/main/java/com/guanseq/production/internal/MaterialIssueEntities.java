@@ -153,6 +153,7 @@ class MaterialIssueEventEntity {
 	@Column(name = "actor_user_id") private UUID actorUserId;
 	@Column(name = "issue_id") private UUID issueId;
 	private String action;
+	private String source;
 	@Column(name = "from_status") private String fromStatus;
 	@Column(name = "to_status") private String toStatus;
 	@Column(name = "request_id") private String requestId;
@@ -163,14 +164,14 @@ class MaterialIssueEventEntity {
 
 	protected MaterialIssueEventEntity() { }
 	MaterialIssueEventEntity(UUID tenantId, UUID workspaceId, UUID actorId, UUID issueId, String action, String fromStatus,
-			String toStatus, String requestId, String comment, java.util.Map<String, Object> details) {
+			String toStatus, String source, String requestId, String comment, java.util.Map<String, Object> details) {
 		this.id = UUID.randomUUID(); this.tenantOrganizationId = tenantId; this.workspaceId = workspaceId;
-		this.actorUserId = actorId; this.issueId = issueId; this.action = action; this.fromStatus = fromStatus;
+		this.actorUserId = actorId; this.issueId = issueId; this.action = action; this.source = source; this.fromStatus = fromStatus;
 		this.toStatus = toStatus; this.requestId = requestId; this.comment = comment;
 		this.details = details == null ? java.util.Map.of() : details; this.occurredAt = Instant.now();
 	}
 	UUID getId() { return id; } UUID getIssueId() { return issueId; } String getAction() { return action; } String getFromStatus() { return fromStatus; }
-	String getToStatus() { return toStatus; } String getRequestId() { return requestId; } Instant getOccurredAt() { return occurredAt; }
+	String getToStatus() { return toStatus; } String getSource() { return source; } String getRequestId() { return requestId; } Instant getOccurredAt() { return occurredAt; }
 }
 
 @Entity
@@ -271,8 +272,10 @@ class MaterialStockTransactionEntity {
 	@Column(name = "location_code") private String locationCode;
 	@Column(name = "location_name") private String locationName;
 	@Column(name = "balance_id") private UUID balanceId;
+	@Column(name = "lot_number") private String lotNumber;
 	@Column(name = "movement_id") private UUID movementId;
 	@Column(name = "movement_number") private String movementNumber;
+	private String source;
 	@Column(name = "request_id") private String requestId;
 	@Column(name = "actor_user_id") private UUID actorUserId;
 	@Column(name = "occurred_at") private Instant occurredAt;
@@ -280,19 +283,20 @@ class MaterialStockTransactionEntity {
 	protected MaterialStockTransactionEntity() { }
 	MaterialStockTransactionEntity(UUID tenantId, UUID issueId, UUID issueLineId, UUID returnId, UUID returnLineId,
 			String movementType, UUID componentMaterialId, String componentMaterialCode, BigDecimal quantity,
-			com.guanseq.warehouse.api.ProductionMaterialStockService.StockMovementResult movement, String requestId, UUID actorId) {
+			com.guanseq.warehouse.api.ProductionMaterialStockService.StockMovementResult movement, String source, String requestId, UUID actorId) {
 		this.id = UUID.randomUUID(); this.tenantOrganizationId = tenantId; this.issueId = issueId; this.issueLineId = issueLineId;
 		this.returnId = returnId; this.returnLineId = returnLineId; this.movementType = movementType;
 		this.componentMaterialId = componentMaterialId; this.componentMaterialCode = componentMaterialCode;
 		this.quantity = quantity; this.warehouseId = movement.warehouseId(); this.warehouseCode = movement.warehouseCode();
 		this.warehouseName = movement.warehouseName(); this.locationId = movement.locationId(); this.locationCode = movement.locationCode();
-		this.locationName = movement.locationName(); this.balanceId = movement.balanceId(); this.movementId = movement.movementId();
-		this.movementNumber = movement.movementNumber(); this.requestId = requestId; this.actorUserId = actorId; this.occurredAt = Instant.now();
+		this.locationName = movement.locationName(); this.balanceId = movement.balanceId(); this.lotNumber = movement.lotNumber(); this.movementId = movement.movementId();
+		this.movementNumber = movement.movementNumber(); this.source = source; this.requestId = requestId; this.actorUserId = actorId; this.occurredAt = Instant.now();
 	}
 	UUID getId() { return id; } UUID getIssueLineId() { return issueLineId; } UUID getReturnLineId() { return returnLineId; }
 	String getMovementType() { return movementType; } String getComponentMaterialCode() { return componentMaterialCode; }
 	BigDecimal getQuantity() { return quantity; } UUID getWarehouseId() { return warehouseId; } String getWarehouseCode() { return warehouseCode; }
 	String getWarehouseName() { return warehouseName; } UUID getLocationId() { return locationId; } String getLocationCode() { return locationCode; }
-	String getLocationName() { return locationName; } UUID getMovementId() { return movementId; } String getMovementNumber() { return movementNumber; }
+	String getLocationName() { return locationName; } UUID getBalanceId() { return balanceId; } String getLotNumber() { return lotNumber; }
+	UUID getMovementId() { return movementId; } String getMovementNumber() { return movementNumber; } String getSource() { return source; }
 	String getRequestId() { return requestId; } Instant getOccurredAt() { return occurredAt; }
 }

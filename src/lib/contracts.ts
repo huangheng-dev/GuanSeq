@@ -159,8 +159,238 @@ export const equipmentAssetPageSchema = z.object({
   canMaintain: z.boolean(),
 });
 
+export const equipmentTelemetryProtocolSchema = z.enum(["MODBUS_TCP", "MQTT_3_1_1"]);
+export const equipmentTelemetryEndpointTypeSchema = z.enum(["SIMULATOR", "PHYSICAL_DEVICE", "EXTERNAL_BROKER"]);
+export const equipmentTelemetryConnectionStatusSchema = z.enum(["DRAFT", "ACTIVE", "PAUSED"]);
+export const equipmentTelemetryCommunicationStatusSchema = z.enum(["UNKNOWN", "ONLINE", "OFFLINE"]);
+export const equipmentTelemetryRegisterTypeSchema = z.enum(["COIL", "HOLDING_REGISTER", "MQTT_JSON"]);
+export const equipmentTelemetryValueTypeSchema = z.enum(["BOOLEAN", "UINT16", "INT16", "UINT32", "INT32", "DECIMAL"]);
+export const equipmentTelemetryQualitySchema = z.enum(["GOOD", "UNCERTAIN", "BAD"]);
+export const equipmentTelemetryPointSchema = z.object({
+  id: z.string().uuid(), pointCode: z.string(), name: z.string(), registerType: equipmentTelemetryRegisterTypeSchema,
+  address: z.number().int().min(0).max(65535), valueType: equipmentTelemetryValueTypeSchema,
+  mqttTopic: z.string().nullable(), mqttValuePointer: z.string().nullable(),
+  scale: z.number(), valueOffset: z.number(), engineeringUnit: z.string().nullable(),
+  validMin: z.number().nullable(), validMax: z.number().nullable(), sortOrder: z.number().int().positive(),
+});
+export const equipmentTelemetryCurrentValueSchema = z.object({
+  pointId: z.string().uuid(), pointCode: z.string(), rawValue: z.string(), numericValue: z.number().nullable(),
+  booleanValue: z.boolean().nullable(), quality: equipmentTelemetryQualitySchema, deviceTime: z.string().datetime().nullable(),
+  receivedAt: z.string().datetime(), sequenceNumber: z.number().int().positive(), messageVersion: z.number().int().positive(),
+  sourceProtocol: z.string(),
+});
+export const equipmentTelemetryVerificationCheckSchema = z.object({
+  code: z.string(), status: z.enum(["PASSED", "WARNING", "FAILED", "INFO"]), message: z.string(),
+});
+export const equipmentTelemetryVerificationSchema = z.object({
+  verificationVersion: z.number().int().positive(),
+  evidenceLevel: z.enum(["SIMULATION_TECHNICAL", "FIELD_CANDIDATE_PRECHECK"]),
+  technicalPassed: z.boolean(), fieldAccepted: z.literal(false), protocol: equipmentTelemetryProtocolSchema,
+  endpointType: equipmentTelemetryEndpointTypeSchema, pointCount: z.number().int().nonnegative(),
+  returnedPointCount: z.number().int().nonnegative(), warningCount: z.number().int().nonnegative(),
+  checks: z.array(equipmentTelemetryVerificationCheckSchema), pendingFieldChecks: z.array(z.string()),
+  errorCode: z.string().nullable(), errorMessage: z.string().nullable(),
+});
+export const equipmentTelemetryEventSchema = z.object({
+  id: z.string().uuid(), actorUserId: z.string().uuid(),
+  action: z.enum(["CREATED", "TEST_SUCCEEDED", "TEST_FAILED", "ACTIVATED", "PAUSED", "POLL_REQUESTED"]),
+  fromStatus: equipmentTelemetryConnectionStatusSchema.nullable(), toStatus: equipmentTelemetryConnectionStatusSchema,
+  reason: z.string(), requestId: z.string(), details: z.record(z.string(), z.unknown()),
+  verification: equipmentTelemetryVerificationSchema.nullable(), occurredAt: z.string().datetime(),
+});
+export const equipmentTelemetryConnectionSchema = z.object({
+  id: z.string().uuid(), connectionCode: z.string(), name: z.string(), assetId: z.string().uuid(),
+  assetCode: z.string(), assetName: z.string(), protocol: equipmentTelemetryProtocolSchema,
+  endpointType: equipmentTelemetryEndpointTypeSchema, host: z.string().nullable(), port: z.number().int(),
+  unitId: z.number().int(), connectTimeoutMs: z.number().int(), readTimeoutMs: z.number().int(),
+  mqtt: z.object({ transport: z.enum(["TCP", "TLS"]), clientId: z.string(), qos: z.number().int().min(0).max(1),
+    credentialReference: z.string().nullable(), credentialConfigured: z.boolean(), messageIdPointer: z.string(),
+    deviceTimePointer: z.string().nullable() }).nullable(),
+  pollIntervalSeconds: z.number().int(), status: equipmentTelemetryConnectionStatusSchema,
+  communicationStatus: equipmentTelemetryCommunicationStatusSchema,
+  lastTestedAt: z.string().datetime().nullable(), lastTestSucceededAt: z.string().datetime().nullable(),
+  lastAttemptAt: z.string().datetime().nullable(), lastSuccessAt: z.string().datetime().nullable(),
+  lastErrorCode: z.string().nullable(), lastErrorMessage: z.string().nullable(), version: z.number().int().nonnegative(),
+  canManage: z.boolean(), points: z.array(equipmentTelemetryPointSchema), currentValues: z.array(equipmentTelemetryCurrentValueSchema),
+  events: z.array(equipmentTelemetryEventSchema), createdAt: z.string().datetime(), updatedAt: z.string().datetime(),
+});
+export const equipmentTelemetryConnectionPageSchema = z.object({
+  items: z.array(equipmentTelemetryConnectionSchema), totalElements: z.number().int().nonnegative(),
+  page: z.number().int().nonnegative(), size: z.number().int().positive(), totalPages: z.number().int().nonnegative(),
+  canManage: z.boolean(),
+});
+export const equipmentTelemetryActionResultSchema = z.object({
+  success: z.boolean(), message: z.string(), connection: equipmentTelemetryConnectionSchema,
+});
+export const equipmentTelemetryFieldAcceptanceStatusSchema = z.enum(["DRAFT", "SUBMITTED", "APPROVED", "REJECTED"]);
+export const equipmentTelemetryFieldAcceptanceActionSchema = z.enum(["UPDATE", "SUBMIT", "APPROVE", "REJECT"]);
+export const equipmentTelemetryFieldAcceptanceEventSchema = z.object({
+  id: z.string().uuid(), actorUserId: z.string().uuid(),
+  action: z.enum(["CREATED", "UPDATED", "SUBMITTED", "APPROVED", "REJECTED"]),
+  fromStatus: equipmentTelemetryFieldAcceptanceStatusSchema.nullable(),
+  toStatus: equipmentTelemetryFieldAcceptanceStatusSchema, reason: z.string(), requestId: z.string(),
+  details: z.record(z.string(), z.unknown()), occurredAt: z.string().datetime(),
+});
+export const equipmentTelemetryFieldAcceptanceSchema = z.object({
+  id: z.string().uuid(), acceptanceNumber: z.string(), connectionId: z.string().uuid(),
+  status: equipmentTelemetryFieldAcceptanceStatusSchema,
+  networkApproved: z.boolean(), securityValidated: z.boolean(), readOnlyConfirmed: z.boolean(),
+  disconnectRecoveryVerified: z.boolean(), capacityVerified: z.boolean(), pointMappingApproved: z.boolean(),
+  responsibleOwner: z.string().nullable(), testWindowStart: z.string().datetime().nullable(),
+  testWindowEnd: z.string().datetime().nullable(), evidenceReference: z.string().nullable(), notes: z.string().nullable(),
+  rejectionReason: z.string().nullable(), version: z.number().int().nonnegative(), createdBy: z.string().uuid(),
+  createdAt: z.string().datetime(), submittedBy: z.string().uuid().nullable(), submittedAt: z.string().datetime().nullable(),
+  approvedBy: z.string().uuid().nullable(), approvedAt: z.string().datetime().nullable(),
+  rejectedBy: z.string().uuid().nullable(), rejectedAt: z.string().datetime().nullable(),
+  updatedAt: z.string().datetime(), availableActions: z.array(equipmentTelemetryFieldAcceptanceActionSchema),
+  events: z.array(equipmentTelemetryFieldAcceptanceEventSchema),
+});
+export const equipmentTelemetryFieldAcceptanceContextSchema = z.object({
+  connectionId: z.string().uuid(), connectionCode: z.string(), connectionName: z.string(),
+  protocol: equipmentTelemetryProtocolSchema, endpointType: equipmentTelemetryEndpointTypeSchema,
+  fieldEligible: z.boolean(), latestTechnicalPrecheckPassed: z.boolean(), fieldAccepted: z.boolean(),
+  canMaintain: z.boolean(), canApprove: z.boolean(), acceptance: equipmentTelemetryFieldAcceptanceSchema.nullable(),
+});
+export const equipmentAlertRuleTypeSchema = z.enum(["HIGH_LIMIT", "LOW_LIMIT", "COMMUNICATION_FAILURE"]);
+export const equipmentAlertSeveritySchema = z.enum(["WARNING", "CRITICAL"]);
+export const equipmentAlertRuleStatusSchema = z.enum(["ACTIVE", "PAUSED"]);
+export const equipmentAlertStatusSchema = z.enum(["OPEN", "ACKNOWLEDGED", "IN_PROGRESS", "RESOLVED", "CLOSED"]);
+export const equipmentAlertRuleEventSchema = z.object({
+  id: z.string().uuid(), actorUserId: z.string().uuid(), action: z.enum(["CREATED", "ACTIVATED", "PAUSED"]),
+  fromStatus: equipmentAlertRuleStatusSchema.nullable(), toStatus: equipmentAlertRuleStatusSchema,
+  reason: z.string(), requestId: z.string(), details: z.record(z.string(), z.unknown()), occurredAt: z.string().datetime(),
+});
+export const equipmentAlertRuleSchema = z.object({
+  id: z.string().uuid(), ruleCode: z.string(), name: z.string(), connectionId: z.string().uuid(),
+  connectionCode: z.string(), connectionName: z.string(), assetId: z.string().uuid(), assetCode: z.string(), assetName: z.string(),
+  pointId: z.string().uuid().nullable(), pointCode: z.string().nullable(), pointName: z.string().nullable(),
+  ruleType: equipmentAlertRuleTypeSchema, thresholdValue: z.number().nullable(), severity: equipmentAlertSeveritySchema,
+  defaultAssignee: z.string(), status: equipmentAlertRuleStatusSchema, version: z.number().int().nonnegative(),
+  createdAt: z.string().datetime(), updatedAt: z.string().datetime(),
+  availableActions: z.array(z.enum(["ACTIVATE", "PAUSE"])), events: z.array(equipmentAlertRuleEventSchema),
+});
+export const equipmentAlertRulePageSchema = z.object({
+  items: z.array(equipmentAlertRuleSchema), totalElements: z.number().int().nonnegative(), page: z.number().int().nonnegative(),
+  size: z.number().int().positive(), totalPages: z.number().int().nonnegative(), canManage: z.boolean(),
+});
+export const equipmentAlertEventSchema = z.object({
+  id: z.string().uuid(), actorUserId: z.string().uuid().nullable(),
+  action: z.enum(["OCCURRED", "REOPENED", "CONDITION_CLEARED", "ACKNOWLEDGED", "PROCESSING_STARTED", "RESOLVED", "CLOSED", "REPAIR_LINKED"]),
+  fromStatus: equipmentAlertStatusSchema.nullable(), toStatus: equipmentAlertStatusSchema, reason: z.string(),
+  requestId: z.string(), details: z.record(z.string(), z.unknown()), occurredAt: z.string().datetime(),
+});
+export const equipmentAlertSchema = z.object({
+  id: z.string().uuid(), alertNumber: z.string(), ruleId: z.string().uuid(), ruleCode: z.string(), ruleName: z.string(),
+  assetId: z.string().uuid(), assetCode: z.string(), assetName: z.string(), connectionId: z.string().uuid(), connectionCode: z.string(),
+  pointId: z.string().uuid().nullable(), pointCode: z.string().nullable(), pointName: z.string().nullable(),
+  ruleType: equipmentAlertRuleTypeSchema, severity: equipmentAlertSeveritySchema, status: equipmentAlertStatusSchema,
+  conditionActive: z.boolean(), observedValue: z.number().nullable(), observedQuality: equipmentTelemetryQualitySchema.nullable(),
+  failureCode: z.string().nullable(), assignee: z.string(), resolutionNotes: z.string().nullable(),
+  linkedWorkOrderId: z.string().uuid().nullable(), linkedWorkOrderNumber: z.string().nullable(), version: z.number().int().nonnegative(),
+  firstOccurredAt: z.string().datetime(), lastOccurredAt: z.string().datetime(), recoveredAt: z.string().datetime().nullable(),
+  acknowledgedAt: z.string().datetime().nullable(), processingStartedAt: z.string().datetime().nullable(),
+  resolvedAt: z.string().datetime().nullable(), closedAt: z.string().datetime().nullable(), updatedAt: z.string().datetime(),
+  availableActions: z.array(z.enum(["ACKNOWLEDGE", "START_PROCESSING", "RESOLVE", "CLOSE", "LINK_REPAIR"])),
+  events: z.array(equipmentAlertEventSchema),
+});
+export const equipmentAlertPageSchema = z.object({
+  items: z.array(equipmentAlertSchema), totalElements: z.number().int().nonnegative(), page: z.number().int().nonnegative(),
+  size: z.number().int().positive(), totalPages: z.number().int().nonnegative(),
+  activeConditionCount: z.number().int().nonnegative(), unclosedCount: z.number().int().nonnegative(), canManage: z.boolean(),
+});
+export const equipmentOeeStatusSchema = z.enum(["DRAFT", "SUBMITTED", "APPROVED", "REJECTED"]);
+export const equipmentOeeDowntimeCategorySchema = z.enum(["EQUIPMENT_FAILURE", "SETUP_CHANGEOVER", "MATERIAL_WAIT",
+  "QUALITY_HOLD", "PERSONNEL_WAIT", "PLANNED_MAINTENANCE", "OTHER"]);
+export const equipmentOeeActionSchema = z.enum(["UPDATE", "ADD_DOWNTIME", "UPDATE_DOWNTIME", "REMOVE_DOWNTIME",
+  "SUBMIT", "APPROVE", "REJECT"]);
+export const equipmentOeeDowntimeSchema = z.object({
+  id: z.string().uuid(), startedAt: z.string().datetime(), endedAt: z.string().datetime(),
+  durationMinutes: z.number().positive(), reasonCategory: equipmentOeeDowntimeCategorySchema,
+  responsibleParty: z.string(), description: z.string(), createdBy: z.string().uuid(), createdAt: z.string().datetime(),
+  updatedBy: z.string().uuid(), updatedAt: z.string().datetime(),
+});
+export const equipmentOeeEventSchema = z.object({
+  id: z.string().uuid(), actorUserId: z.string().uuid(),
+  action: z.enum(["CREATED", "UPDATED", "DOWNTIME_ADDED", "DOWNTIME_UPDATED", "DOWNTIME_REMOVED",
+    "SUBMITTED", "APPROVED", "REJECTED"]),
+  fromStatus: equipmentOeeStatusSchema.nullable(), toStatus: equipmentOeeStatusSchema, reason: z.string(),
+  requestId: z.string(), details: z.record(z.string(), z.unknown()), occurredAt: z.string().datetime(),
+});
+export const equipmentOeeRecordSchema = z.object({
+  id: z.string().uuid(), recordNumber: z.string(), assetId: z.string().uuid(), assetCode: z.string(), assetName: z.string(),
+  workCenterCode: z.string().nullable(), workCenterName: z.string().nullable(), location: z.string(),
+  windowStart: z.string().datetime(), windowEnd: z.string().datetime(), plannedProductionMinutes: z.number().positive(),
+  downtimeMinutes: z.number().nonnegative(), runMinutes: z.number().nonnegative(), idealCycleSeconds: z.number().positive(),
+  totalCount: z.number().int().nonnegative(), goodCount: z.number().int().nonnegative(),
+  availabilityRate: z.number().nonnegative(), performanceRate: z.number().nonnegative(), qualityRate: z.number().nonnegative(),
+  oeeRate: z.number().nonnegative(), shiftName: z.string(), productionReference: z.string().nullable(),
+  sourceType: z.literal("MANUAL_VERIFIED"), sourceReference: z.string().nullable(), status: equipmentOeeStatusSchema,
+  rejectionReason: z.string().nullable(), version: z.number().int().nonnegative(), createdBy: z.string().uuid(),
+  createdAt: z.string().datetime(), submittedBy: z.string().uuid().nullable(), submittedAt: z.string().datetime().nullable(),
+  approvedBy: z.string().uuid().nullable(), approvedAt: z.string().datetime().nullable(),
+  rejectedBy: z.string().uuid().nullable(), rejectedAt: z.string().datetime().nullable(), updatedAt: z.string().datetime(),
+  availableActions: z.array(equipmentOeeActionSchema), downtimes: z.array(equipmentOeeDowntimeSchema),
+  events: z.array(equipmentOeeEventSchema),
+});
+export const equipmentOeePageSchema = z.object({
+  items: z.array(equipmentOeeRecordSchema), totalElements: z.number().int().nonnegative(), page: z.number().int().nonnegative(),
+  size: z.number().int().positive(), totalPages: z.number().int().nonnegative(), approvedRecordCount: z.number().int().nonnegative(),
+  averageAvailabilityRate: z.number().nonnegative(), averagePerformanceRate: z.number().nonnegative(),
+  averageQualityRate: z.number().nonnegative(), averageOeeRate: z.number().nonnegative(),
+  canMaintain: z.boolean(), canApprove: z.boolean(),
+});
+export const equipmentTelemetrySampleSchema = z.object({
+  id: z.string().uuid(), pointId: z.string().uuid(), pointCode: z.string(), rawValue: z.string(),
+  numericValue: z.number().nullable(), booleanValue: z.boolean().nullable(), quality: equipmentTelemetryQualitySchema,
+  deviceTime: z.string().datetime().nullable(), receivedAt: z.string().datetime(),
+  sequenceNumber: z.number().int().positive(), messageVersion: z.number().int().positive(), sourceProtocol: z.string(),
+});
+export const equipmentTelemetrySamplePageSchema = z.object({
+  items: z.array(equipmentTelemetrySampleSchema), totalElements: z.number().int().nonnegative(),
+  page: z.number().int().nonnegative(), size: z.number().int().positive(), totalPages: z.number().int().nonnegative(),
+  connectionId: z.string().uuid(), windowFrom: z.string().datetime(), windowTo: z.string().datetime(),
+});
+export const equipmentTelemetryRetentionEventSchema = z.object({
+  id: z.string().uuid(), actorUserId: z.string().uuid(), action: z.enum(["POLICY_UPDATED", "CLEANUP_COMPLETED"]),
+  fromRetentionDays: z.number().int().min(7).max(3650), toRetentionDays: z.number().int().min(7).max(3650),
+  fromAutomaticCleanupEnabled: z.boolean().nullable(), toAutomaticCleanupEnabled: z.boolean().nullable(),
+  fromCleanupIntervalHours: z.number().int().min(1).max(720).nullable(),
+  toCleanupIntervalHours: z.number().int().min(1).max(720).nullable(),
+  cutoffAt: z.string().datetime().nullable(), deletedSampleCount: z.number().int().nonnegative(),
+  reason: z.string(), requestId: z.string(), occurredAt: z.string().datetime(),
+});
+export const equipmentTelemetryAutomationRunSchema = z.object({
+  id: z.string().uuid(), triggerType: z.enum(["SCHEDULED", "USER_RETRY"]),
+  status: z.enum(["SUCCEEDED", "PARTIAL", "FAILED"]), initiatedBy: z.string().uuid().nullable(),
+  instanceId: z.string(), requestId: z.string(), reason: z.string(), cutoffAt: z.string().datetime(),
+  deletedSampleCount: z.number().int().nonnegative(), remainingExpiredCount: z.number().int().nonnegative(),
+  failureCode: z.string().nullable(), failureSummary: z.string().nullable(),
+  attentionStatus: z.enum(["NONE", "OPEN", "ACKNOWLEDGED"]),
+  responsibleRoles: z.array(z.enum(["ADMIN", "MAINTENANCE_MANAGER"])),
+  acknowledgedBy: z.string().uuid().nullable(), acknowledgedAt: z.string().datetime().nullable(),
+  acknowledgementNote: z.string().nullable(), startedAt: z.string().datetime(), completedAt: z.string().datetime(),
+});
+export const equipmentTelemetryRetentionPolicySchema = z.object({
+  id: z.string().uuid().nullable(), retentionDays: z.number().int().min(7).max(3650),
+  expiredSampleCount: z.number().int().nonnegative(), cutoffAt: z.string().datetime(),
+  version: z.number().int().nonnegative(), defaultPolicy: z.boolean(), canManage: z.boolean(),
+  schedulerAvailable: z.boolean(), automaticCleanupEnabled: z.boolean(),
+  cleanupIntervalHours: z.number().int().min(1).max(720), nextCleanupAt: z.string().datetime().nullable(),
+  lastAutomationStatus: z.enum(["SUCCEEDED", "PARTIAL", "FAILED"]).nullable(),
+  lastAutomationCompletedAt: z.string().datetime().nullable(), consecutiveFailures: z.number().int().nonnegative(),
+  updatedBy: z.string().uuid().nullable(), updatedAt: z.string().datetime().nullable(),
+  events: z.array(equipmentTelemetryRetentionEventSchema), automationRuns: z.array(equipmentTelemetryAutomationRunSchema),
+});
+export const equipmentTelemetryCleanupResultSchema = z.object({
+  policy: equipmentTelemetryRetentionPolicySchema, deletedSampleCount: z.number().int().nonnegative(),
+  cutoffAt: z.string().datetime(), requestId: z.string(), occurredAt: z.string().datetime(), replayed: z.boolean(),
+});
+export const equipmentTelemetryAutomationActionResultSchema = z.object({
+  policy: equipmentTelemetryRetentionPolicySchema, run: equipmentTelemetryAutomationRunSchema, replayed: z.boolean(),
+});
+
 export const equipmentWorkTypeSchema = z.enum(["INSPECTION", "PREVENTIVE_MAINTENANCE", "REPAIR"]);
-export const equipmentWorkOrderSourceSchema = z.enum(["MANUAL", "BREAKDOWN", "INSPECTION_FAILURE", "MAINTENANCE_FAILURE"]);
+export const equipmentWorkOrderSourceSchema = z.enum(["MANUAL", "BREAKDOWN", "INSPECTION_FAILURE", "MAINTENANCE_FAILURE", "MAINTENANCE_PLAN"]);
 export const equipmentWorkOrderPrioritySchema = z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]);
 export const equipmentWorkOrderStatusSchema = z.enum(["PLANNED", "IN_PROGRESS", "WAITING_ACCEPTANCE", "COMPLETED", "CANCELLED"]);
 export const equipmentWorkOrderOutcomeSchema = z.enum(["PASS", "FAIL"]);
@@ -194,6 +424,7 @@ export const equipmentWorkOrderEventSchema = z.object({
 export const equipmentWorkOrderSchema = z.object({
   id: z.string().uuid(), workOrderNumber: z.string(), workType: equipmentWorkTypeSchema,
   sourceType: equipmentWorkOrderSourceSchema, sourceWorkOrderId: z.string().uuid().nullable(),
+  sourcePlanId: z.string().uuid().nullable(), sourceDueDate: z.string().date().nullable(),
   assetId: z.string().uuid(), assetCode: z.string(), assetName: z.string(), assetLocation: z.string(),
   assetOperatingStatus: equipmentOperatingStatusSchema, assetVersion: z.number().int().nonnegative(),
   title: z.string(), description: z.string(), priority: equipmentWorkOrderPrioritySchema,
@@ -209,6 +440,45 @@ export const equipmentWorkOrderPageSchema = z.object({
   items: z.array(equipmentWorkOrderSchema), totalElements: z.number().int().nonnegative(),
   page: z.number().int().nonnegative(), size: z.number().int().positive(), totalPages: z.number().int().nonnegative(),
   canMaintain: z.boolean(),
+});
+
+export const equipmentMaintenancePlanStatusSchema = z.enum(["ACTIVE", "INACTIVE"]);
+export const equipmentMaintenancePlanActionSchema = z.enum(["ACTIVATE", "INACTIVATE"]);
+export const equipmentMaintenancePlanEventSchema = z.object({
+  id: z.string().uuid(), actorUserId: z.string().uuid(), action: z.enum(["CREATED", "ACTIVATED", "INACTIVATED"]),
+  fromStatus: equipmentMaintenancePlanStatusSchema.nullable(), toStatus: equipmentMaintenancePlanStatusSchema,
+  reason: z.string(), requestId: z.string(), details: z.record(z.string(), z.unknown()), occurredAt: z.string().datetime(),
+});
+export const equipmentMaintenanceGenerationItemSchema = z.object({
+  id: z.string().uuid(), planId: z.string().uuid(), dueDate: z.string().date(),
+  outcome: z.enum(["GENERATED", "ALREADY_EXISTS", "SKIPPED_INACTIVE_ASSET"]),
+  workOrderId: z.string().uuid().nullable(), message: z.string(),
+});
+export const equipmentMaintenanceGenerationSchema = z.object({
+  id: z.string().uuid(), requestId: z.string(), asOfDate: z.string().date(), reason: z.string(),
+  status: z.enum(["RUNNING", "COMPLETED"]), generatedCount: z.number().int().nonnegative(),
+  existingCount: z.number().int().nonnegative(), skippedCount: z.number().int().nonnegative(),
+  actorUserId: z.string().uuid(), startedAt: z.string().datetime(), completedAt: z.string().datetime().nullable(),
+  items: z.array(equipmentMaintenanceGenerationItemSchema),
+});
+export const equipmentMaintenancePlanSchema = z.object({
+  id: z.string().uuid(), planCode: z.string(), name: z.string(),
+  workType: z.enum(["INSPECTION", "PREVENTIVE_MAINTENANCE"]), assetId: z.string().uuid(),
+  assetCode: z.string(), assetName: z.string(), assetLocation: z.string(), description: z.string(),
+  priority: equipmentWorkOrderPrioritySchema, intervalDays: z.number().int().min(1).max(3650),
+  leadDays: z.number().int().min(0).max(365), firstDueDate: z.string().date(), nextDueDate: z.string().date(),
+  nextGenerationDate: z.string().date(), plannedStartTime: z.string(), dueTime: z.string(), assignee: z.string(),
+  status: equipmentMaintenancePlanStatusSchema, generationStatus: z.enum(["DUE", "UPCOMING", "INACTIVE"]),
+  overdueWorkOrderCount: z.number().int().nonnegative(), overdueWorkOrderNumbers: z.array(z.string()),
+  version: z.number().int().nonnegative(), createdAt: z.string().datetime(), updatedAt: z.string().datetime(),
+  availableActions: z.array(equipmentMaintenancePlanActionSchema), events: z.array(equipmentMaintenancePlanEventSchema),
+});
+export const equipmentMaintenancePlanPageSchema = z.object({
+  items: z.array(equipmentMaintenancePlanSchema), totalElements: z.number().int().nonnegative(),
+  page: z.number().int().nonnegative(), size: z.number().int().positive(), totalPages: z.number().int().nonnegative(),
+  activeCount: z.number().int().nonnegative(), generationDueCount: z.number().int().nonnegative(),
+  overdueWorkOrderCount: z.number().int().nonnegative(), canMaintain: z.boolean(),
+  recentRuns: z.array(equipmentMaintenanceGenerationSchema),
 });
 
 export const equipmentSparePartSchema = z.object({
@@ -296,6 +566,8 @@ export const salesOrderLineSchema = z.object({
   taxAmount: z.number().nonnegative(),
   grossAmount: z.number().nonnegative(),
   deliveredQuantity: z.number().nonnegative(),
+  returnedQuantity: z.number().nonnegative(),
+  netDeliveredQuantity: z.number().nonnegative(),
 });
 
 export const salesOrderRecordSchema = z.object({
@@ -309,7 +581,7 @@ export const salesOrderRecordSchema = z.object({
   requestedDeliveryDate: z.string(),
   promisedDeliveryDate: z.string().nullable(),
   owner: z.string(),
-  status: z.enum(["DRAFT", "PENDING_APPROVAL", "APPROVED", "REJECTED", "RELEASED", "PARTIALLY_SHIPPED", "SHIPPED"]),
+  status: z.enum(["DRAFT", "PENDING_APPROVAL", "APPROVED", "REJECTED", "RELEASED", "PARTIALLY_SHIPPED", "SHIPPED", "PARTIALLY_RETURNED", "RETURNED"]),
   totalNetAmount: z.number().nonnegative(),
   totalTaxAmount: z.number().nonnegative(),
   totalGrossAmount: z.number().nonnegative(),
@@ -385,6 +657,92 @@ export const salesShipmentReferenceDataSchema = z.object({
     })).min(1),
   })),
   warehouses: z.array(z.object({ id: z.string().uuid(), code: z.string(), name: z.string() })),
+});
+
+export const salesReturnLineSchema = z.object({
+  id: z.string().uuid(),
+  orderLineId: z.string().uuid(),
+  lineNumber: z.number().int().positive(),
+  materialId: z.string().uuid(),
+  materialCode: z.string(),
+  materialName: z.string(),
+  materialSpecification: z.string().nullable(),
+  unit: z.string(),
+  authorizedQuantity: z.number().positive(),
+  receivedQuantity: z.number().nonnegative(),
+  acceptedQuantity: z.number().nonnegative(),
+  rejectedQuantity: z.number().nonnegative(),
+  lotNumber: z.string().nullable(),
+  inspectionBalanceId: z.string().uuid().nullable(),
+  receiptMovementId: z.string().uuid().nullable(),
+  stockSummary: z.string().nullable(),
+});
+
+export const salesReturnRecordSchema = z.object({
+  id: z.string().uuid(), returnNumber: z.string(), salesOrderId: z.string().uuid(), orderNumber: z.string(),
+  customerId: z.string().uuid(), customerCode: z.string(), customerName: z.string(), returnDate: z.string(),
+  status: z.enum(["PENDING_RECEIPT", "RECEIVED", "COMPLETED", "CANCELLED", "REVERSED"]),
+  reason: z.string(), note: z.string().nullable(), warehouseId: z.string().uuid().nullable(), warehouseCode: z.string().nullable(),
+  warehouseName: z.string().nullable(), locationId: z.string().uuid().nullable(), locationCode: z.string().nullable(),
+  locationName: z.string().nullable(), totalReturnQuantity: z.number().positive(), receivedAt: z.string().datetime().nullable(),
+  inspectedAt: z.string().datetime().nullable(), version: z.number().int().nonnegative(), createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(), availableActions: z.array(z.enum(["CANCEL", "RECEIVE", "INSPECT", "REVERSE_RECEIPT"])),
+  lines: z.array(salesReturnLineSchema).min(1),
+  events: z.array(z.object({ id: z.string().uuid(), action: z.string(), fromStatus: z.string().nullable(), toStatus: z.string(),
+    reason: z.string(), requestId: z.string(), occurredAt: z.string().datetime() })),
+});
+
+export const salesReturnPageSchema = pageEnvelope(salesReturnRecordSchema).extend({ canCreate: z.boolean() });
+
+export const salesReturnReferenceDataSchema = z.object({
+  orders: z.array(z.object({
+    id: z.string().uuid(), orderNumber: z.string(), customerId: z.string().uuid(), customerCode: z.string(),
+    customerName: z.string(), status: z.string(), version: z.number().int().nonnegative(),
+    lines: z.array(z.object({ id: z.string().uuid(), lineNumber: z.number().int().positive(), materialId: z.string().uuid(),
+      materialCode: z.string(), materialName: z.string(), materialSpecification: z.string().nullable(), unit: z.string(),
+      grossDeliveredQuantity: z.number().nonnegative(), returnedQuantity: z.number().nonnegative(),
+      pendingReturnQuantity: z.number().nonnegative(), netDeliveredQuantity: z.number().nonnegative(),
+      returnableQuantity: z.number().positive() })).min(1),
+  })),
+  warehouses: z.array(z.object({ id: z.string().uuid(), code: z.string(), name: z.string() })),
+  locations: z.array(z.object({ id: z.string().uuid(), warehouseId: z.string().uuid(), code: z.string(), name: z.string(), locationType: z.string() })),
+  canCreate: z.boolean(),
+});
+
+export const purchaseReturnLineSchema = z.object({
+  id: z.string().uuid(), purchaseReceiptLineId: z.string().uuid(), purchaseOrderLineId: z.string().uuid(),
+  lineNumber: z.number().int().positive(), materialId: z.string().uuid(), materialCode: z.string(), materialName: z.string(),
+  materialSpecification: z.string().nullable(), unit: z.string(), qualityStatus: z.enum(["AVAILABLE", "BLOCKED"]),
+  authorizedQuantity: z.number().positive(), shippedQuantity: z.number().nonnegative(), stockBalanceId: z.string().uuid(),
+  stockMovementId: z.string().uuid().nullable(), warehouseCode: z.string().nullable(), locationCode: z.string().nullable(),
+  lotNumber: z.string().nullable(),
+});
+
+export const purchaseReturnRecordSchema = z.object({
+  id: z.string().uuid(), returnNumber: z.string(), purchaseOrderId: z.string().uuid(), orderNumber: z.string(),
+  supplierId: z.string().uuid(), supplierCode: z.string(), supplierName: z.string(), returnDate: z.string(),
+  status: z.enum(["PENDING_SHIPMENT", "SHIPPED", "CANCELLED", "REVERSED"]), reason: z.string(), note: z.string().nullable(),
+  totalReturnQuantity: z.number().positive(), acceptedReturnQuantity: z.number().nonnegative(), blockedReturnQuantity: z.number().nonnegative(),
+  version: z.number().int().nonnegative(), createdAt: z.string().datetime(), updatedAt: z.string().datetime(),
+  availableActions: z.array(z.enum(["CANCEL", "SHIP", "REVERSE"])), lines: z.array(purchaseReturnLineSchema).min(1),
+  events: z.array(z.object({ id: z.string().uuid(), action: z.string(), fromStatus: z.string().nullable(), toStatus: z.string(),
+    reason: z.string(), requestId: z.string(), occurredAt: z.string().datetime() })),
+});
+
+export const purchaseReturnPageSchema = pageEnvelope(purchaseReturnRecordSchema).extend({ canCreate: z.boolean() });
+
+export const purchaseReturnReferenceDataSchema = z.object({
+  orders: z.array(z.object({
+    id: z.string().uuid(), orderNumber: z.string(), supplierId: z.string().uuid(), supplierCode: z.string(), supplierName: z.string(),
+    version: z.number().int().nonnegative(), lines: z.array(z.object({
+      purchaseReceiptLineId: z.string().uuid(), receiptNumber: z.string(), purchaseOrderLineId: z.string().uuid(),
+      materialId: z.string().uuid(), materialCode: z.string(), materialName: z.string(), materialSpecification: z.string().nullable(),
+      unit: z.string(), qualityStatus: z.enum(["AVAILABLE", "BLOCKED"]), stockBalanceId: z.string().uuid(),
+      warehouseCode: z.string(), locationCode: z.string(), lotNumber: z.string().nullable(), sourceQuantity: z.number().positive(),
+      pendingQuantity: z.number().nonnegative(), stockAvailableQuantity: z.number().nonnegative(), returnableQuantity: z.number().positive(),
+    })).min(1),
+  })),
+  canCreate: z.boolean(),
 });
 
 
@@ -498,7 +856,7 @@ export const receivableInvoicePageSchema = pageEnvelope(receivableInvoiceRecordS
 export const receivableReferenceDataSchema = z.object({
   orders: z.array(z.object({
     salesOrderId: z.string().uuid(), orderNumber: z.string(), customerId: z.string().uuid(), customerCode: z.string(),
-    customerName: z.string(), currency: z.string(), taxRate: z.number().min(0).max(1), orderStatus: z.enum(["PARTIALLY_SHIPPED", "SHIPPED"]),
+    customerName: z.string(), currency: z.string(), taxRate: z.number().min(0).max(1), orderStatus: z.enum(["PARTIALLY_SHIPPED", "SHIPPED", "PARTIALLY_RETURNED", "RETURNED"]),
     deliveredAmount: z.number().nonnegative(), invoicedAmount: z.number().nonnegative(), remainingAmount: z.number().nonnegative(),
     lines: z.array(z.object({
       salesOrderLineId: z.string().uuid(), lineNumber: z.number().int().positive(), materialId: z.string().uuid(),
@@ -554,6 +912,7 @@ export const payableInvoiceRecordSchema = z.object({
   taxAmount: z.number().nonnegative(), grossAmount: z.number().positive(), paidAmount: z.number().nonnegative(),
   outstandingAmount: z.number().nonnegative(), creditBalance: z.number().nonnegative(),
   status: z.enum(["OPEN", "PARTIALLY_PAID", "PAID", "CREDIT_PENDING", "SETTLED"]),
+  purchaseReturnImpactStatus: z.enum(["NONE", "REVIEW_REQUIRED"]),
   version: z.number().int().nonnegative(), createdAt: z.string().datetime(), lines: z.array(payableInvoiceLineSchema).min(1),
   payments: z.array(payablePaymentSchema),
 });
@@ -632,12 +991,14 @@ export const purchaseReceiptRecordSchema = z.object({
   supplierId: z.string().uuid(), supplierCode: z.string(), supplierName: z.string(),
   warehouseId: z.string().uuid(), warehouseCode: z.string(), warehouseName: z.string(),
   locationId: z.string().uuid(), locationCode: z.string(), locationName: z.string(), note: z.string().nullable(),
+  source: z.enum(["DESKTOP_FORM", "MOBILE_SCAN"]),
   status: z.enum(["PENDING_INSPECTION", "PARTIALLY_RECEIVED", "RECEIVED", "REJECTED_CLOSED"]),
   totalReceivedQuantity: z.number().positive(), acceptedQuantity: z.number().nonnegative(), rejectedQuantity: z.number().nonnegative(),
   version: z.number().int().nonnegative(), createdAt: z.string().datetime(), lines: z.array(purchaseReceiptLineSchema).min(1),
 });
 export const purchaseReceiptPageSchema = pageEnvelope(purchaseReceiptRecordSchema);
 export const purchaseReceiptReferenceDataSchema = z.object({
+  canCreate: z.boolean(),
   releasedOrders: z.array(z.object({
     id: z.string().uuid(), orderNumber: z.string(), supplierId: z.string().uuid(), supplierCode: z.string(), supplierName: z.string(),
     promisedReceiptDate: z.string().nullable(),
@@ -654,6 +1015,7 @@ export const purchaseReceiptReferenceDataSchema = z.object({
 export const createPurchaseReceiptSchema = z.object({
   purchaseOrderId: z.string().uuid(), warehouseId: z.string().uuid(), locationId: z.string().uuid(),
   note: z.string().max(500).nullable().optional(),
+  source: z.enum(["DESKTOP_FORM", "MOBILE_SCAN"]).optional(),
   lines: z.array(z.object({ orderLineId: z.string().uuid(), receivedQuantity: z.number().positive(), lotNumber: z.string().min(1).max(80) })).min(1).max(100),
 });
 
@@ -681,6 +1043,8 @@ export const productionWorkReportRecordSchema = z.object({
   rejectedQuantity: z.number().nonnegative().nullable(), receiptBalanceId: z.string().uuid().nullable(), receiptMovementId: z.string().uuid().nullable(),
   receiptWarehouse: z.string().nullable(), receiptLocation: z.string().nullable(), lotNumber: z.string().nullable(),
   status: z.enum(["PENDING_INSPECTION", "READY_FOR_RECEIPT", "READY_TO_CLOSE", "RECEIVED", "REJECTED_CLOSED"]),
+  operationTaskId: z.string().uuid().nullable(), operationTaskNumber: z.string().nullable(),
+  source: z.enum(["DESKTOP_FORM", "MOBILE_SCAN"]),
   version: z.number().int().nonnegative(), createdAt: z.string().datetime(), settledAt: z.string().datetime().nullable(),
 });
 export const productionWorkReportPageSchema = pageEnvelope(productionWorkReportRecordSchema);
@@ -1037,6 +1401,7 @@ export const materialIssueEventSchema = z.object({
   action: z.string(),
   fromStatus: materialIssueStatusSchema.nullable(),
   toStatus: materialIssueStatusSchema,
+  source: z.enum(["DESKTOP_FORM", "MOBILE_SCAN"]),
   requestId: z.string().nullable(),
   occurredAt: z.string().datetime(),
 });
@@ -1054,8 +1419,11 @@ export const materialIssueStockTransactionSchema = z.object({
   locationId: z.string().uuid(),
   locationCode: z.string(),
   locationName: z.string(),
+  balanceId: z.string().uuid(),
+  lotNumber: z.string(),
   movementId: z.string().uuid(),
   movementNumber: z.string(),
+  source: z.enum(["DESKTOP_FORM", "MOBILE_SCAN"]),
   requestId: z.string(),
   occurredAt: z.string().datetime(),
 });
@@ -1087,6 +1455,7 @@ export const materialIssueRecordSchema = z.object({
 
 export const materialIssuePageSchema = pageEnvelope(materialIssueRecordSchema);
 export const materialIssueReferenceDataSchema = z.object({
+  canControl: z.boolean(),
   productionOrders: z.array(z.object({
     id: z.string().uuid(),
     orderNumber: z.string(),
@@ -1102,6 +1471,19 @@ export const materialIssueReferenceDataSchema = z.object({
   })),
   warehouses: z.array(z.object({ id: z.string().uuid(), code: z.string(), name: z.string() })),
   locations: z.array(z.object({ id: z.string().uuid(), warehouseId: z.string().uuid(), code: z.string(), name: z.string(), locationType: z.string() })),
+  availableStocks: z.array(z.object({
+    id: z.string().uuid(),
+    warehouseId: z.string().uuid(),
+    warehouseCode: z.string(),
+    locationId: z.string().uuid(),
+    locationCode: z.string(),
+    locationName: z.string(),
+    materialId: z.string().uuid(),
+    materialCode: z.string(),
+    lotNumber: z.string(),
+    availableQuantity: z.number().positive(),
+    version: z.number().int().nonnegative(),
+  })),
 });
 
 export const accountingPeriodSchema = z.object({
@@ -1229,6 +1611,36 @@ export type EquipmentAssetAction = z.infer<typeof equipmentAssetActionSchema>;
 export type EquipmentAssetEvent = z.infer<typeof equipmentAssetEventSchema>;
 export type EquipmentAsset = z.infer<typeof equipmentAssetSchema>;
 export type EquipmentAssetPage = z.infer<typeof equipmentAssetPageSchema>;
+export type EquipmentTelemetryEndpointType = z.infer<typeof equipmentTelemetryEndpointTypeSchema>;
+export type EquipmentTelemetryProtocol = z.infer<typeof equipmentTelemetryProtocolSchema>;
+export type EquipmentTelemetryRegisterType = z.infer<typeof equipmentTelemetryRegisterTypeSchema>;
+export type EquipmentTelemetryValueType = z.infer<typeof equipmentTelemetryValueTypeSchema>;
+export type EquipmentTelemetryPoint = z.infer<typeof equipmentTelemetryPointSchema>;
+export type EquipmentTelemetryConnection = z.infer<typeof equipmentTelemetryConnectionSchema>;
+export type EquipmentTelemetryConnectionPage = z.infer<typeof equipmentTelemetryConnectionPageSchema>;
+export type EquipmentTelemetryActionResult = z.infer<typeof equipmentTelemetryActionResultSchema>;
+export type EquipmentTelemetryFieldAcceptanceStatus = z.infer<typeof equipmentTelemetryFieldAcceptanceStatusSchema>;
+export type EquipmentTelemetryFieldAcceptanceAction = z.infer<typeof equipmentTelemetryFieldAcceptanceActionSchema>;
+export type EquipmentTelemetryFieldAcceptance = z.infer<typeof equipmentTelemetryFieldAcceptanceSchema>;
+export type EquipmentTelemetryFieldAcceptanceContext = z.infer<typeof equipmentTelemetryFieldAcceptanceContextSchema>;
+export type EquipmentTelemetryQuality = z.infer<typeof equipmentTelemetryQualitySchema>;
+export type EquipmentTelemetrySamplePage = z.infer<typeof equipmentTelemetrySamplePageSchema>;
+export type EquipmentTelemetryRetentionPolicy = z.infer<typeof equipmentTelemetryRetentionPolicySchema>;
+export type EquipmentTelemetryCleanupResult = z.infer<typeof equipmentTelemetryCleanupResultSchema>;
+export type EquipmentTelemetryAutomationRun = z.infer<typeof equipmentTelemetryAutomationRunSchema>;
+export type EquipmentTelemetryAutomationActionResult = z.infer<typeof equipmentTelemetryAutomationActionResultSchema>;
+export type EquipmentAlertRuleType = z.infer<typeof equipmentAlertRuleTypeSchema>;
+export type EquipmentAlertSeverity = z.infer<typeof equipmentAlertSeveritySchema>;
+export type EquipmentAlertRule = z.infer<typeof equipmentAlertRuleSchema>;
+export type EquipmentAlertRulePage = z.infer<typeof equipmentAlertRulePageSchema>;
+export type EquipmentAlert = z.infer<typeof equipmentAlertSchema>;
+export type EquipmentAlertPage = z.infer<typeof equipmentAlertPageSchema>;
+export type EquipmentOeeStatus = z.infer<typeof equipmentOeeStatusSchema>;
+export type EquipmentOeeDowntimeCategory = z.infer<typeof equipmentOeeDowntimeCategorySchema>;
+export type EquipmentOeeAction = z.infer<typeof equipmentOeeActionSchema>;
+export type EquipmentOeeDowntime = z.infer<typeof equipmentOeeDowntimeSchema>;
+export type EquipmentOeeRecord = z.infer<typeof equipmentOeeRecordSchema>;
+export type EquipmentOeePage = z.infer<typeof equipmentOeePageSchema>;
 export type EquipmentWorkType = z.infer<typeof equipmentWorkTypeSchema>;
 export type EquipmentWorkOrderSource = z.infer<typeof equipmentWorkOrderSourceSchema>;
 export type EquipmentWorkOrderPriority = z.infer<typeof equipmentWorkOrderPrioritySchema>;
@@ -1238,6 +1650,10 @@ export type EquipmentWorkOrderAction = z.infer<typeof equipmentWorkOrderActionSc
 export type EquipmentWorkOrderEvent = z.infer<typeof equipmentWorkOrderEventSchema>;
 export type EquipmentWorkOrder = z.infer<typeof equipmentWorkOrderSchema>;
 export type EquipmentWorkOrderPage = z.infer<typeof equipmentWorkOrderPageSchema>;
+export type EquipmentMaintenancePlan = z.infer<typeof equipmentMaintenancePlanSchema>;
+export type EquipmentMaintenancePlanPage = z.infer<typeof equipmentMaintenancePlanPageSchema>;
+export type EquipmentMaintenancePlanAction = z.infer<typeof equipmentMaintenancePlanActionSchema>;
+export type EquipmentMaintenanceGeneration = z.infer<typeof equipmentMaintenanceGenerationSchema>;
 export type EquipmentSpareTransaction = z.infer<typeof equipmentSpareTransactionSchema>;
 export type EquipmentLaborTransaction = z.infer<typeof equipmentLaborTransactionSchema>;
 export type EquipmentMaintenanceCostEvidence = z.infer<typeof equipmentMaintenanceCostEvidenceSchema>;
@@ -1252,6 +1668,10 @@ export type SalesOrderLine = z.infer<typeof salesOrderLineSchema>;
 export type SalesOrderRecord = z.infer<typeof salesOrderRecordSchema>;
 export type SalesOrderReferenceData = z.infer<typeof salesOrderReferenceDataSchema>;
 export type SalesShipmentRecord = z.infer<typeof salesShipmentRecordSchema>;
+export type SalesReturnRecord = z.infer<typeof salesReturnRecordSchema>;
+export type SalesReturnReferenceData = z.infer<typeof salesReturnReferenceDataSchema>;
+export type PurchaseReturnRecord = z.infer<typeof purchaseReturnRecordSchema>;
+export type PurchaseReturnReferenceData = z.infer<typeof purchaseReturnReferenceDataSchema>;
 export type OrderProfitRecord = z.infer<typeof orderProfitRecordSchema>;
 export type OrderProfitReferenceData = z.infer<typeof orderProfitReferenceDataSchema>;
 export type ReceivableInvoiceRecord = z.infer<typeof receivableInvoiceRecordSchema>;
@@ -1264,6 +1684,7 @@ export type SalesShipmentReferenceData = z.infer<typeof salesShipmentReferenceDa
 export type PurchaseOrderLine = z.infer<typeof purchaseOrderLineSchema>;
 export type PurchaseOrderRecord = z.infer<typeof purchaseOrderRecordSchema>;
 export type PurchaseReceiptRecord = z.infer<typeof purchaseReceiptRecordSchema>;
+export type PurchaseReceiptReferenceData = z.infer<typeof purchaseReceiptReferenceDataSchema>;
 export type PurchaseOrderReferenceData = z.infer<typeof purchaseOrderReferenceDataSchema>;
 export type ProductionOrderRecord = z.infer<typeof productionOrderRecordSchema>;
 export type ProductionOrderReferenceData = z.infer<typeof productionOrderReferenceDataSchema>;
@@ -1312,6 +1733,7 @@ export const operationTaskEventSchema = z.object({
   toStatus: operationTaskStatusSchema,
   requestId: z.string().nullable(),
   comment: z.string().nullable(),
+  source: z.enum(["SYSTEM", "DESKTOP_FORM", "MOBILE_SCAN"]),
   occurredAt: z.string().datetime(),
 });
 

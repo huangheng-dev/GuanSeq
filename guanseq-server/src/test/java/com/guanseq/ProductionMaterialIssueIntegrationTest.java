@@ -142,6 +142,72 @@ class ProductionMaterialIssueIntegrationTest {
 
 	@Test
 	@Transactional
+	void mobileScanIssuesAnExactStockBalanceWithEvidenceAndRejectsStaleStock() throws Exception {
+		insertRawComponentStock();
+		MvcResult created = mockMvc.perform(post("/api/v1/production/material-issues").with(httpBasic(USERNAME, PASSWORD))
+				.header("X-Request-Id", "mobile-material-issue-create-0001").contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{"productionOrderId":"%s","warehouseId":"%s"}
+						""".formatted(ORDER_ID, RAW_WAREHOUSE)))
+				.andExpect(status().isOk()).andReturn();
+		JsonNode issue = MAPPER.readTree(created.getResponse().getContentAsString());
+		JsonNode line = findLine(issue, "PM-45");
+		JsonNode reference = MAPPER.readTree(mockMvc.perform(get("/api/v1/production/material-issue-reference-data")
+				.with(httpBasic(USERNAME, PASSWORD))).andExpect(status().isOk())
+				.andExpect(jsonPath("$.canControl").value(true)).andReturn().getResponse().getContentAsString());
+		JsonNode stock = null;
+		for (JsonNode candidate : reference.path("availableStocks"))
+			if ("PM-45".equals(candidate.path("materialCode").asText()) && "LOT-PM-TEST".equals(candidate.path("lotNumber").asText())) stock = candidate;
+		assertThat(stock).isNotNull();
+
+		String requestId = "mobile-material-issue-action-0001";
+		MvcResult issued = mockMvc.perform(post("/api/v1/production/material-issues/{id}/actions", issue.path("id").asText())
+				.with(httpBasic(USERNAME, PASSWORD)).header("X-Request-Id", requestId).contentType(MediaType.APPLICATION_JSON)
+				.content(mobileActionBody(issue.path("version").asLong(), line.path("id").asText(), 1,
+						line.path("version").asLong(), stock.path("id").asText(), stock.path("version").asLong())))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.status").value("PARTIAL"))
+				.andExpect(jsonPath("$.events[0].source").value("MOBILE_SCAN"))
+				.andExpect(jsonPath("$.stockTransactions[0].source").value("MOBILE_SCAN"))
+				.andExpect(jsonPath("$.stockTransactions[0].balanceId").value(stock.path("id").asText()))
+				.andExpect(jsonPath("$.stockTransactions[0].lotNumber").value("LOT-PM-TEST")).andReturn();
+		JsonNode current = MAPPER.readTree(issued.getResponse().getContentAsString());
+		mockMvc.perform(post("/api/v1/production/material-issues/{id}/actions", issue.path("id").asText())
+				.with(httpBasic(USERNAME, PASSWORD)).header("X-Request-Id", requestId).contentType(MediaType.APPLICATION_JSON)
+				.content(mobileActionBody(issue.path("version").asLong(), line.path("id").asText(), 1,
+						line.path("version").asLong(), stock.path("id").asText(), stock.path("version").asLong())))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.stockTransactions.length()").value(1));
+
+		JsonNode currentLine = findLine(current, "PM-45");
+		mockMvc.perform(post("/api/v1/production/material-issues/{id}/actions", issue.path("id").asText())
+				.with(httpBasic(USERNAME, PASSWORD)).header("X-Request-Id", "mobile-material-issue-action-stale")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(mobileActionBody(current.path("version").asLong(), currentLine.path("id").asText(), 1,
+						currentLine.path("version").asLong(), stock.path("id").asText(), stock.path("version").asLong())))
+				.andExpect(status().isConflict());
+	}
+
+	@Test
+	@Transactional
+	void mobileScanReferenceAndMutationRespectControlPermission() throws Exception {
+		MvcResult created = mockMvc.perform(post("/api/v1/production/material-issues").with(httpBasic(USERNAME, PASSWORD))
+				.header("X-Request-Id", "mobile-material-permission-create").contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{"productionOrderId":"%s","warehouseId":"%s"}
+						""".formatted(ORDER_ID, RAW_WAREHOUSE))).andExpect(status().isOk()).andReturn();
+		JsonNode issue = MAPPER.readTree(created.getResponse().getContentAsString());
+		JsonNode line = findLine(issue, "PM-45");
+		jdbcTemplate.update("update identity.workspace_memberships set role_code = 'PRODUCTION_OPERATOR' where id = cast(? as uuid)",
+				"30000000-0000-4000-8000-000000000101");
+		mockMvc.perform(get("/api/v1/production/material-issue-reference-data").with(httpBasic(USERNAME, PASSWORD)))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.canControl").value(false));
+		mockMvc.perform(post("/api/v1/production/material-issues/{id}/actions", issue.path("id").asText())
+				.with(httpBasic(USERNAME, PASSWORD)).contentType(MediaType.APPLICATION_JSON)
+				.content(actionBody(issue.path("version").asLong(), line.path("id").asText(), 1, line.path("version").asLong())))
+				.andExpect(status().isForbidden());
+	}
+
+	@Test
+	@Transactional
 	void rejectsIssueWhenComponentStockIsUnavailable() throws Exception {
 		MvcResult created = mockMvc.perform(post("/api/v1/production/material-issues").with(httpBasic(USERNAME, PASSWORD))
 				.header("X-Request-Id", "material-issue-shortage-0001").contentType(MediaType.APPLICATION_JSON)
@@ -193,6 +259,14 @@ class ProductionMaterialIssueIntegrationTest {
 				{"action":"ISSUE","expectedVersion":%d,"comment":"库存不足发料","lines":[
 				  {"lineId":"%s","quantity":%s,"expectedLineVersion":%d}]}
 				""".formatted(issueVersion, lineId, quantity, version);
+	}
+
+	private static String mobileActionBody(long issueVersion, String lineId, Number quantity, long lineVersion,
+			String balanceId, long stockVersion) {
+		return """
+				{"action":"ISSUE","expectedVersion":%d,"comment":"移动扫码领料","source":"MOBILE_SCAN","lines":[
+				  {"lineId":"%s","quantity":%s,"expectedLineVersion":%d,"stockBalanceId":"%s","expectedStockVersion":%d}]}
+				""".formatted(issueVersion, lineId, quantity, lineVersion, balanceId, stockVersion);
 	}
 
 	private static String returnBody(String lineId, Number quantity, long version) {

@@ -15,6 +15,7 @@ import {
   type EquipmentWorkType,
 } from "@/lib/contracts";
 import { loadEquipmentAssetPage } from "@/services/equipment-asset-server-service";
+import { loadEquipmentMaintenancePlanPage, type EquipmentMaintenancePlanPageData } from "@/services/equipment-maintenance-plan-server-service";
 import { GuanSeqApiError, readApiError, requestGuanSeqApi } from "@/services/guanseq-api-server";
 
 export type EquipmentWorkOrderMutation =
@@ -31,8 +32,8 @@ export type EquipmentMaintenanceCostMutation =
   | { operation: "reverseLabor"; id: string; entryId: string; reason: string; expectedVersion: number };
 
 export type EquipmentWorkOrderPageData =
-  | { source: "backend"; page: EquipmentWorkOrderPage; assets: EquipmentAsset[]; requestId: string }
-  | { source: "unavailable"; page: null; assets: EquipmentAsset[]; status: number; message: string; requestId: string };
+  | { source: "backend"; page: EquipmentWorkOrderPage; assets: EquipmentAsset[]; requestId: string; maintenancePlans: EquipmentMaintenancePlanPageData | null }
+  | { source: "unavailable"; page: null; assets: EquipmentAsset[]; status: number; message: string; requestId: string; maintenancePlans: EquipmentMaintenancePlanPageData | null };
 
 async function responseMessage(response: Response, fallback: string) {
   try { return ((await response.json()) as { message?: string }).message ?? fallback; }
@@ -44,14 +45,14 @@ export async function loadEquipmentWorkOrderPage(requestId: string): Promise<Equ
     requestGuanSeqApi("/api/v1/equipment/work-orders?page=0&size=200&type=ALL&status=ALL", requestId),
     loadEquipmentAssetPage(`${requestId}-assets`),
   ]);
-  if (!response) return { source: "unavailable", page: null, assets: [], status: 503, message: "设备运维服务暂时不可用", requestId };
+  if (!response) return { source: "unavailable", page: null, assets: [], status: 503, message: "设备运维服务暂时不可用", requestId, maintenancePlans: null };
   const responseRequestId = response.headers.get("X-Request-Id") ?? requestId;
   if (!response.ok) return { source: "unavailable", page: null, assets: [], status: response.status,
-    message: await responseMessage(response, response.status === 403 ? "当前角色无权读取设备运维工单" : "设备运维工单加载失败"), requestId: responseRequestId };
+    message: await responseMessage(response, response.status === 403 ? "当前角色无权读取设备运维工单" : "设备运维工单加载失败"), requestId: responseRequestId, maintenancePlans: null };
   if (assetResult.source === "unavailable") return { source: "unavailable", page: null, assets: [], status: assetResult.status,
-    message: "设备台账不可用，无法安全装配运维工单", requestId: assetResult.requestId };
+    message: "设备台账不可用，无法安全装配运维工单", requestId: assetResult.requestId, maintenancePlans: null };
   return { source: "backend", page: equipmentWorkOrderPageSchema.parse(await response.json()), assets: assetResult.page.items,
-    requestId: responseRequestId };
+    requestId: responseRequestId, maintenancePlans: null };
 }
 
 export async function loadEquipmentWorkOrder(id: string, requestId: string): Promise<{ workOrder: EquipmentWorkOrder; requestId: string }> {
@@ -63,7 +64,12 @@ export async function loadEquipmentWorkOrder(id: string, requestId: string): Pro
 
 export async function getEquipmentWorkOrderPageData(pathname: string): Promise<EquipmentWorkOrderPageData | null> {
   if (!new Set(["/equipment/inspections", "/equipment/maintenance", "/equipment/work-orders"]).has(pathname)) return null;
-  return loadEquipmentWorkOrderPage(`web-equipment-work-orders-${randomUUID()}`);
+  const requestId = `web-equipment-work-orders-${randomUUID()}`;
+  if (pathname !== "/equipment/maintenance") return loadEquipmentWorkOrderPage(requestId);
+  const [workOrders, maintenancePlans] = await Promise.all([
+    loadEquipmentWorkOrderPage(requestId), loadEquipmentMaintenancePlanPage(`${requestId}-plans`),
+  ]);
+  return { ...workOrders, maintenancePlans };
 }
 
 export async function mutateEquipmentWorkOrder(input: EquipmentWorkOrderMutation, requestId: string) {

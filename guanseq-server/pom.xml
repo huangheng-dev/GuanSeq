@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>com.guanseq</groupId>
 	<artifactId>guanseq-server</artifactId>
-	<version>0.1.0-SNAPSHOT</version>
+	<version>0.1.0-alpha.1</version>
 	<name>GuanSeq Server</name>
 	<description>GuanSeq manufacturing business core</description>
 	<url/>
@@ -28,6 +28,8 @@
 	</scm>
 	<properties>
 		<java.version>25</java.version>
+		<netty.version>4.2.16.Final</netty.version>
+		<postgresql.version>42.7.13</postgresql.version>
 		<spring-modulith.version>2.1.0</spring-modulith.version>
 	</properties>
 	<dependencies>
@@ -56,6 +58,11 @@
 			<artifactId>spring-boot-starter-webmvc</artifactId>
 		</dependency>
 		<dependency>
+			<groupId>com.hivemq</groupId>
+			<artifactId>hivemq-mqtt-client</artifactId>
+			<version>1.3.17</version>
+		</dependency>
+		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-databind</artifactId>
 			<scope>test</scope>
@@ -71,6 +78,7 @@
 		<dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
+			<version>${postgresql.version}</version>
 			<scope>runtime</scope>
 		</dependency>
 		<dependency>

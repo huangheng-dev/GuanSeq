@@ -51,13 +51,14 @@ public class PayableApplicationService {
 	private final PayableEventRepository eventRepository;
 	private final AccountingPeriodGuard periodGuard;
 	private final AdvanceApplicationService advanceService;
+	private final PurchaseReturnPayableImpactService purchaseReturnImpactService;
 	private final JdbcTemplate jdbcTemplate;
 
 	PayableApplicationService(CurrentWorkspaceProvider workspaceProvider, ProcurementPayableQueryProvider procurementProvider,
 			PayableInvoiceRepository invoiceRepository, PayablePaymentRepository paymentRepository,
 			PayableCreditNoteRepository creditNoteRepository, PayableReversalRepository reversalRepository,
 			PayableEventRepository eventRepository, AccountingPeriodGuard periodGuard,
-			AdvanceApplicationService advanceService, JdbcTemplate jdbcTemplate) {
+			AdvanceApplicationService advanceService, PurchaseReturnPayableImpactService purchaseReturnImpactService, JdbcTemplate jdbcTemplate) {
 		this.workspaceProvider = workspaceProvider;
 		this.procurementProvider = procurementProvider;
 		this.invoiceRepository = invoiceRepository;
@@ -67,6 +68,7 @@ public class PayableApplicationService {
 		this.eventRepository = eventRepository;
 		this.periodGuard = periodGuard;
 		this.advanceService = advanceService;
+		this.purchaseReturnImpactService = purchaseReturnImpactService;
 		this.jdbcTemplate = jdbcTemplate;
 	}
 
@@ -277,6 +279,7 @@ public class PayableApplicationService {
 		} catch (DataIntegrityViolationException exception) {
 			throw new ResponseStatusException(HttpStatus.CONFLICT, "红字发票请求与已有业务事实冲突，请刷新后确认", exception);
 		}
+		purchaseReturnImpactService.refresh(username, original.getPurchaseOrderId(), "PAYABLE_CREDIT_NOTE", creditNote.getCreditNoteNumber());
 		return toCreditNoteRecord(creditNote);
 	}
 
@@ -404,7 +407,7 @@ public class PayableApplicationService {
 				invoice.getPurchaseOrderId(), invoice.getOrderNumber(), invoice.getSupplierId(), invoice.getSupplierCode(),
 				invoice.getSupplierName(), invoice.getCurrency(), invoice.getInvoiceDate(), invoice.getDueDate(), invoice.getTaxRate(),
 				invoice.getNetAmount(), invoice.getTaxAmount(), invoice.getGrossAmount(), invoice.getPaidAmount(),
-				invoice.outstandingAmount(), invoice.getCreditBalance(), invoice.getStatus(), invoice.getVersion(),
+				invoice.outstandingAmount(), invoice.getCreditBalance(), invoice.getStatus(), invoice.getPurchaseReturnImpactStatus(), invoice.getVersion(),
 				invoice.getCreatedAt(),
 				invoice.getLines().stream().sorted(Comparator.comparingInt(PayableInvoiceLineEntity::getLineNumber))
 						.map(this::toLineRecord).toList(),

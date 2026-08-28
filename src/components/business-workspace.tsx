@@ -429,6 +429,7 @@ function CapabilityFeedbackDialog({ model, onClose, onSaved }: {
     onSaved: (id: string) => void;
 }) {
     const dialogRef = useRef<HTMLElement>(null);
+    const isEquipmentTelemetry = model.pathname === "/equipment/telemetry";
     const [pending, setPending] = useState(false);
     const [error, setError] = useState("");
     async function submit(event: FormEvent<HTMLFormElement>) {
@@ -448,13 +449,13 @@ function CapabilityFeedbackDialog({ model, onClose, onSaved }: {
     return (<GsModalHost onClose={() => { if (!pending)
         onClose(); }}>
       <section ref={dialogRef} className="capabilityFeedbackDialog" role="dialog" aria-modal="true" aria-labelledby="capability-feedback-title" onMouseDown={(event) => event.stopPropagation()}>
-        <header><span><MaterialIcon name="rate_review" size={23}/></span><div><h2 id="capability-feedback-title">反馈{model.title}使用需求</h2><p>反馈将保存在当前浏览器工作区，用于后续业务规则和接口设计。</p></div><GsButton className="iconButton" onClick={onClose} disabled={pending} aria-label="关闭规划反馈" htmlType="submit"><MaterialIcon name="close"/></GsButton></header>
+        <header><span><MaterialIcon name="rate_review" size={23}/></span><div><h2 id="capability-feedback-title">{isEquipmentTelemetry ? "提交设备采集现场需求" : `反馈${model.title}使用需求`}</h2><p>反馈将保存在当前浏览器工作区，用于后续业务规则和接口设计。</p></div><GsButton className="iconButton" onClick={onClose} disabled={pending} aria-label="关闭规划反馈" htmlType="submit"><MaterialIcon name="close"/></GsButton></header>
         <form onSubmit={submit} noValidate>
           <div className="capabilityFeedbackFields">
-            <label><span>反馈类型</span><RoundedSelect ariaLabel="反馈类型" name="type" options={["产品建议", "业务规则", "接口需求", "权限与审计"]} defaultValue="产品建议" size="field"/></label>
+            <label><span>反馈类型</span><RoundedSelect ariaLabel="反馈类型" name="type" options={isEquipmentTelemetry ? ["现场设备清单", "协议与网络", "点位与频率", "可靠性与报警"] : ["产品建议", "业务规则", "接口需求", "权限与审计"]} defaultValue={isEquipmentTelemetry ? "现场设备清单" : "产品建议"} size="field"/></label>
             <label><span>优先级</span><RoundedSelect ariaLabel="反馈优先级" name="priority" options={["普通", "重要", "阻断实施"]} defaultValue="普通" size="field"/></label>
-            <label className="capabilityFeedbackFull"><span>使用场景<em>必填</em></span><GsTextArea name="scenario" rows={4} placeholder="说明谁在什么业务场景下使用，以及当前遇到的问题"/></label>
-            <label className="capabilityFeedbackFull"><span>期望能力<em>必填</em></span><GsTextArea name="expectation" rows={4} placeholder="描述期望的输入、操作、结果和验收标准"/></label>
+            <label className="capabilityFeedbackFull"><span>{isEquipmentTelemetry ? "现场范围与业务目的" : "使用场景"}<em>必填</em></span><GsTextArea name="scenario" rows={4} placeholder={isEquipmentTelemetry ? "填写工厂、设备编码、厂商型号、使用岗位和要解决的具体问题" : "说明谁在什么业务场景下使用，以及当前遇到的问题"}/></label>
+            <label className="capabilityFeedbackFull"><span>{isEquipmentTelemetry ? "协议、点位与验收约束" : "期望能力"}<em>必填</em></span><GsTextArea name="expectation" rows={4} placeholder={isEquipmentTelemetry ? "填写协议版本、网络条件、点位/频率/单位、断连补传、报警和验收要求；不要填写密码或密钥" : "描述期望的输入、操作、结果和验收标准"}/></label>
           </div>
           {error ? <div className="formError" role="alert"><MaterialIcon name="error" size={18}/>{error}</div> : null}
           <footer><span><MaterialIcon name="info" size={16}/>提交反馈不代表该能力已经启用</span><div><GsButton className="secondaryButton" htmlType="button" onClick={onClose} disabled={pending}>取消</GsButton><GsButton className="primaryButton" htmlType="submit" disabled={pending}>{pending ? "正在提交" : "提交反馈"}</GsButton></div></footer>

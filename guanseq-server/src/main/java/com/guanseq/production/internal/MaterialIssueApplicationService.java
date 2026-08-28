@@ -90,6 +90,7 @@ public class MaterialIssueApplicationService {
 	@Transactional(readOnly = true)
 	public MaterialIssueReferenceData referenceData(String username) {
 		CurrentWorkspaceAccess access = workspaceProvider.resolve(username);
+		boolean canControl = CONTROL_ROLES.contains(access.roleCode());
 		List<ProductionOrderEntity> released = orderRepository.search(access.tenantOrganizationId(), "", "RELEASED",
 				PageRequest.of(0, 100, Sort.by(Sort.Direction.DESC, "updatedAt"))).getContent();
 		List<ProductionOrderEntity> inProgress = orderRepository.search(access.tenantOrganizationId(), "", "IN_PROGRESS",
@@ -97,9 +98,26 @@ public class MaterialIssueApplicationService {
 		List<MaterialIssueReferenceData.ProductionOrderOption> orders = new ArrayList<>();
 		for (ProductionOrderEntity order : released) addCandidate(access, order, orders);
 		for (ProductionOrderEntity order : inProgress) addCandidate(access, order, orders);
-		return new MaterialIssueReferenceData(orders, warehouseReferenceProvider.listActiveWarehouses(access.tenantOrganizationId()),
+		List<MaterialIssueEntity> activeIssues = new ArrayList<>();
+		activeIssues.addAll(issueRepository.search(access.tenantOrganizationId(), "", "DRAFT",
+				PageRequest.of(0, 100, Sort.by(Sort.Direction.DESC, "updatedAt"))).getContent());
+		activeIssues.addAll(issueRepository.search(access.tenantOrganizationId(), "", "PARTIAL",
+				PageRequest.of(0, 100, Sort.by(Sort.Direction.DESC, "updatedAt"))).getContent());
+		Set<UUID> warehouseIds = activeIssues.stream().map(MaterialIssueEntity::getWarehouseId).collect(Collectors.toSet());
+		Set<UUID> materialIds = activeIssues.stream()
+				.flatMap(issue -> lineRepository.findByTenantOrganizationIdAndIssueIdOrderByLineNumberAsc(
+						access.tenantOrganizationId(), issue.getId()).stream())
+				.map(MaterialIssueLineEntity::getComponentMaterialId).collect(Collectors.toSet());
+		List<MaterialIssueReferenceData.AvailableStockOption> availableStocks = (canControl ? stockService
+				.listAvailableBalances(access.tenantOrganizationId(), warehouseIds, materialIds).stream()
+				.map(item -> new MaterialIssueReferenceData.AvailableStockOption(item.id(), item.warehouseId(), item.warehouseCode(),
+						item.locationId(), item.locationCode(), item.locationName(), item.materialId(), item.materialCode(),
+						item.lotNumber(), item.availableQuantity(), item.version())).toList() : List.of());
+		return new MaterialIssueReferenceData(canControl, orders,
+				warehouseReferenceProvider.listActiveWarehouses(access.tenantOrganizationId()),
 				warehouseReferenceProvider.listActiveLocations(access.tenantOrganizationId()).stream()
-						.map(item -> new MaterialIssueReferenceData.LocationOption(item.id(), item.warehouseId(), item.code(), item.name(), item.locationType())).toList());
+						.map(item -> new MaterialIssueReferenceData.LocationOption(item.id(), item.warehouseId(), item.code(), item.name(), item.locationType())).toList(),
+				availableStocks);
 	}
 
 	@Transactional
@@ -132,7 +150,7 @@ public class MaterialIssueApplicationService {
 				lineNumber += 10;
 			}
 			eventRepository.save(new MaterialIssueEventEntity(access.tenantOrganizationId(), access.workspaceId(), access.userId(),
-					issue.getId(), "CREATED", null, "DRAFT", requestId, null,
+					issue.getId(), "CREATED", null, "DRAFT", "DESKTOP_FORM", requestId, null,
 					Map.of("issueNumber", issue.getIssueNumber(), "orderNumber", order.getOrderNumber())));
 		} catch (DataIntegrityViolationException exception) {
 			throw conflict("该生产订单已有未取消领料单或请求编号冲突，请刷新确认");
@@ -198,16 +216,17 @@ public class MaterialIssueApplicationService {
 		var result = stockService.returnMaterials(new ReturnCommand(access.tenantOrganizationId(), access.operatingOrganizationId(),
 				access.workspaceId(), access.userId(), requestId, issue.getWarehouseId(), request.locationId(),
 				"PRODUCTION_RETURN", materialReturn.getReturnNumber(), stockLines, request.reason()));
-		saveTransactions(access, issue.getId(), null, materialReturn.getId(), returnLines, "RETURN", result.movements(), requestId);
+		saveTransactions(access, issue.getId(), null, materialReturn.getId(), returnLines, "RETURN", result.movements(), "DESKTOP_FORM", requestId);
 		lineRepository.saveAll(lineMap.values());
 		eventRepository.save(new MaterialIssueEventEntity(access.tenantOrganizationId(), access.workspaceId(), access.userId(),
-				issue.getId(), "RETURN", issue.getStatus(), issue.getStatus(), requestId, request.reason(),
+				issue.getId(), "RETURN", issue.getStatus(), issue.getStatus(), "DESKTOP_FORM", requestId, request.reason(),
 				Map.of("returnNumber", materialReturn.getReturnNumber(), "lineCount", request.lines().size())));
 		return toRecord(access, issue);
 	}
 
 	private MaterialIssueRecord issueMaterials(CurrentWorkspaceAccess access, MaterialIssueEntity issue, List<MaterialIssueLineEntity> lines,
 			MaterialIssueRecord.ActionRequest request, String actionRequestId) {
+		String source = normalizeSource(request.source());
 		if (!Set.of("DRAFT", "PARTIAL").contains(issue.getStatus())) throw conflict("当前领料单状态不允许发料");
 		if (request.lines() == null || request.lines().isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "请选择至少一行发料");
 		Map<UUID, MaterialIssueLineEntity> lineMap = lines.stream().collect(Collectors.toMap(MaterialIssueLineEntity::getId, Function.identity()));
@@ -220,18 +239,18 @@ public class MaterialIssueApplicationService {
 			catch (IllegalArgumentException | IllegalStateException exception) { throw unprocessable(exception.getMessage()); }
 			stockLines.add(new IssueLine(line.getId(), line.getComponentMaterialId(), line.getComponentMaterialCode(),
 					line.getComponentMaterialName(), line.getComponentMaterialSpecification(), line.getUnit(),
-					requestLine.quantity(), request.comment()));
+					requestLine.quantity(), request.comment(), requestLine.stockBalanceId(), requestLine.expectedStockVersion()));
 		}
 		var result = stockService.issueMaterials(new IssueCommand(access.tenantOrganizationId(), access.operatingOrganizationId(),
 				access.workspaceId(), access.userId(), actionRequestId, issue.getWarehouseId(),
 				"PRODUCTION_ISSUE", issue.getIssueNumber(), stockLines, request.comment() == null ? "生产领料" : request.comment()));
-		saveTransactions(access, issue.getId(), lineMap, null, null, "ISSUE", result.movements(), actionRequestId);
+		saveTransactions(access, issue.getId(), lineMap, null, null, "ISSUE", result.movements(), source, actionRequestId);
 		lineRepository.saveAll(lineMap.values());
 		String from = issue.getStatus();
 		issue.markIssuedIfComplete(lines, access.userId());
 		issueRepository.saveAndFlush(issue);
 		eventRepository.save(new MaterialIssueEventEntity(access.tenantOrganizationId(), access.workspaceId(), access.userId(),
-				issue.getId(), "ISSUE", from, issue.getStatus(), actionRequestId, request.comment(),
+				issue.getId(), "ISSUE", from, issue.getStatus(), source, actionRequestId, request.comment(),
 				Map.of("lineCount", request.lines().size(), "complete", "ISSUED".equals(issue.getStatus()))));
 		return toRecord(access, issue);
 	}
@@ -242,12 +261,13 @@ public class MaterialIssueApplicationService {
 		catch (IllegalStateException exception) { throw conflict(exception.getMessage()); }
 		issueRepository.saveAndFlush(issue);
 		eventRepository.save(new MaterialIssueEventEntity(access.tenantOrganizationId(), access.workspaceId(), access.userId(),
-				issue.getId(), "CANCEL", from, "CANCELLED", actionRequestId, request.comment(), Map.of()));
+				issue.getId(), "CANCEL", from, "CANCELLED", "DESKTOP_FORM", actionRequestId, request.comment(), Map.of()));
 		return toRecord(access, issue);
 	}
 
 	private void saveTransactions(CurrentWorkspaceAccess access, UUID issueId, Map<UUID, MaterialIssueLineEntity> issueLines,
-			UUID returnId, List<MaterialReturnLineEntity> returnLines, String movementType, List<StockMovementResult> movements, String requestId) {
+			UUID returnId, List<MaterialReturnLineEntity> returnLines, String movementType, List<StockMovementResult> movements,
+			String source, String requestId) {
 		for (StockMovementResult movement : movements) {
 			UUID issueLineId = "ISSUE".equals(movementType) ? movement.sourceId() : null;
 			UUID returnLineId = "RETURN".equals(movementType) ? movement.sourceId() : null;
@@ -262,7 +282,7 @@ public class MaterialIssueApplicationService {
 			}
 			transactionRepository.save(new MaterialStockTransactionEntity(access.tenantOrganizationId(), issueId, issueLineId,
 					returnId, returnLineId, movementType, movement.materialId(), materialCode, movement.quantity(),
-					movement, requestId, access.userId()));
+					movement, source, requestId, access.userId()));
 		}
 	}
 
@@ -300,12 +320,12 @@ public class MaterialIssueApplicationService {
 						line.issuableQuantity(), line.getBomNote(), line.getVersion())).toList(),
 				returns,
 				events.stream().map(event -> new MaterialIssueRecord.Event(event.getId(), event.getAction(), event.getFromStatus(),
-						event.getToStatus(), event.getRequestId(), event.getOccurredAt())).toList(),
+						event.getToStatus(), event.getSource(), event.getRequestId(), event.getOccurredAt())).toList(),
 				stockTransactions.stream().map(txn -> new MaterialIssueRecord.StockTransaction(txn.getId(), txn.getIssueLineId(),
 						txn.getReturnLineId(), txn.getMovementType(), txn.getComponentMaterialCode(), txn.getQuantity(),
 						txn.getWarehouseId(), txn.getWarehouseCode(), txn.getWarehouseName(), txn.getLocationId(),
-						txn.getLocationCode(), txn.getLocationName(), txn.getMovementId(), txn.getMovementNumber(),
-						txn.getRequestId(), txn.getOccurredAt())).toList());
+						txn.getLocationCode(), txn.getLocationName(), txn.getBalanceId(), txn.getLotNumber(), txn.getMovementId(), txn.getMovementNumber(),
+						txn.getSource(), txn.getRequestId(), txn.getOccurredAt())).toList());
 	}
 
 	private MaterialIssueEntity requireIssue(CurrentWorkspaceAccess access, UUID id) {
@@ -332,4 +352,5 @@ public class MaterialIssueApplicationService {
 	private static ResponseStatusException unprocessable(String message) { return new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, message); }
 	private static String normalize(String value) { return value == null || value.isBlank() ? "" : value.trim(); }
 	private static String normalizeStatus(String value) { return value == null || value.isBlank() || "ALL".equalsIgnoreCase(value) ? "" : value.trim().toUpperCase(); }
+	private static String normalizeSource(String value) { return value == null || value.isBlank() ? "DESKTOP_FORM" : value.trim().toUpperCase(); }
 }

@@ -15,11 +15,12 @@ import org.springframework.web.server.ResponseStatusException;
 import com.guanseq.identity.api.ActiveIdentityProvider;
 import com.guanseq.identity.api.CurrentWorkspaceAccess;
 import com.guanseq.identity.api.CurrentWorkspaceProvider;
+import com.guanseq.identity.api.LabelEmployeeReferenceProvider;
 import com.guanseq.identity.api.WorkspaceSession;
 import com.guanseq.identity.api.WorkspaceSession.WorkspaceSummary;
 
 @Service
-public class WorkspaceApplicationService implements CurrentWorkspaceProvider, ActiveIdentityProvider {
+public class WorkspaceApplicationService implements CurrentWorkspaceProvider, ActiveIdentityProvider, LabelEmployeeReferenceProvider {
 
 	private static final String ACTIVE = "ACTIVE";
 
@@ -74,6 +75,17 @@ public class WorkspaceApplicationService implements CurrentWorkspaceProvider, Ac
 			return Optional.empty();
 		}
 		return userRepository.findByUsernameAndStatus(username, ACTIVE).map(IdentityUserEntity::getUsername);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public EmployeeLabelReference resolveCurrentEmployee(CurrentWorkspaceAccess access) {
+		IdentityUserEntity user = userRepository.findById(access.userId())
+				.filter(item -> access.tenantOrganizationId().equals(item.getTenantOrganizationId()) && ACTIVE.equals(item.getStatus()))
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "当前认证人员不存在或已停用"));
+		membershipRepository.findByUserIdAndWorkspaceIdAndStatus(user.getId(), access.workspaceId(), ACTIVE)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "当前认证人员不再属于该工作区"));
+		return new EmployeeLabelReference(user.getId(), user.getVersion(), user.getUsername(), user.getDisplayName());
 	}
 
 	@Transactional

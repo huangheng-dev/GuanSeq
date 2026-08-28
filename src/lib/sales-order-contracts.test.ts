@@ -32,7 +32,10 @@ const order = {
     unitPrice: 30000,
     netAmount: 720000,
     taxAmount: 93600,
-    grossAmount: 813600, deliveredQuantity: 0,
+    grossAmount: 813600,
+    deliveredQuantity: 0,
+    returnedQuantity: 0,
+    netDeliveredQuantity: 0,
   }],
 };
 
@@ -44,6 +47,16 @@ describe("sales order API contracts", () => {
   it("rejects empty order lines and invalid workflow status", () => {
     expect(salesOrderRecordSchema.safeParse({ ...order, lines: [] }).success).toBe(false);
     expect(salesOrderRecordSchema.safeParse({ ...order, status: "EXECUTING" }).success).toBe(false);
+  });
+
+  it.each(["PARTIALLY_RETURNED", "RETURNED"] as const)("accepts the %s return workflow status", (status) => {
+    const parsed = salesOrderRecordSchema.parse({
+      ...order,
+      status,
+      lines: [{ ...order.lines[0], deliveredQuantity: 24, returnedQuantity: 4, netDeliveredQuantity: 20 }],
+    });
+    expect(parsed.status).toBe(status);
+    expect(parsed.lines[0].netDeliveredQuantity).toBe(20);
   });
 
   it("requires UUID-scoped active reference options", () => {
