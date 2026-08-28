@@ -4,7 +4,7 @@ import { backendPageDataKeyByPath, getBackendPageDataKey, isBackendPageUnavailab
 
 describe("backend page registry", () => {
   it("keeps every formal backend route unique and explicitly registered", () => {
-    expect(Object.keys(backendPageDataKeyByPath)).toHaveLength(51);
+    expect(Object.keys(backendPageDataKeyByPath)).toHaveLength(52);
     expect(getBackendPageDataKey("/sales/orders/list")).toBe("salesOrder");
     expect(getBackendPageDataKey("/sales/returns")).toBe("salesReturn");
     expect(getBackendPageDataKey("/procurement/returns")).toBe("purchaseReturn");
@@ -18,6 +18,7 @@ describe("backend page registry", () => {
     expect(getBackendPageDataKey("/warehouse/counts")).toBe("inventoryControl");
     expect(getBackendPageDataKey("/finance/advances")).toBe("advance");
     expect(getBackendPageDataKey("/settings/organization/users")).toBe("workspaceUser");
+    expect(getBackendPageDataKey("/settings/roles")).toBe("rolePermission");
     expect(getBackendPageDataKey("/equipment/assets")).toBe("equipmentAsset");
     expect(getBackendPageDataKey("/equipment/status")).toBe("equipmentAsset");
     expect(getBackendPageDataKey("/equipment/inspections")).toBe("equipmentWorkOrder");
@@ -43,5 +44,8 @@ describe("backend page registry", () => {
     expect(isBackendPageUnavailable("/settings/organization/users", {})).toBe(true);
     expect(isBackendPageUnavailable("/settings/organization/users", { workspaceUser: { source: "backend" } })).toBe(false);
     expect(isBackendPageUnavailable("/settings/organization/users", { workspaceUser: { source: "unavailable" } })).toBe(true);
+    expect(isBackendPageUnavailable("/settings/roles", {})).toBe(true);
+    expect(isBackendPageUnavailable("/settings/roles", { rolePermission: { source: "backend" } })).toBe(false);
+    expect(isBackendPageUnavailable("/settings/roles", { rolePermission: { source: "unavailable" } })).toBe(true);
   });
 });

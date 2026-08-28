@@ -32,6 +32,7 @@ import { getAccountingPeriodPageData } from "@/services/accounting-period-page-s
 import { getGrirAccrualPageData } from "@/services/grir-accrual-page-server-service";
 import { getAdvancePageData } from "@/services/advance-page-server-service";
 import { getWorkspaceUserPageData } from "@/services/workspace-user-server-service";
+import { getRolePermissionPageData } from "@/services/role-permission-server-service";
 import { getEquipmentAssetPageData } from "@/services/equipment-asset-server-service";
 import { getEquipmentWorkOrderPageData } from "@/services/equipment-work-order-server-service";
 import { getEquipmentSparePartPageData } from "@/services/equipment-spare-part-server-service";
@@ -51,7 +52,7 @@ export default async function RoutePage({ params }: RoutePageProps) {
   const { segments } = await params;
   const pathname = `/${segments.join("/")}`;
   await requireFrontendSession(pathname);
-  const [snapshot, pageModel, searchIndex, salesOrderPage, planningDemandPage, mrpRunPage, mrpSuggestionPage, bomPage, routingPage, inventoryPage, procurementPage, planningParameterPage, productionOrderPage, productionExecutionPage, finalInspectionPage, materialIssuePage, operationTaskPage, mobileProductionReportingPage, labelingPage, putawayPage, inventoryControlPage, purchaseReceiptPage, purchaseReturnPage, incomingInspectionPage, salesShipmentPage, salesReturnPage, orderProfitPage, receivablePage, payablePage, accountingPeriodPage, grirAccrualPage, advancePage, workspaceUserPage, equipmentAssetPage, equipmentWorkOrderPage, equipmentSparePartPage, equipmentTelemetryPage, equipmentAlertPage, equipmentOeePage] = await Promise.all([
+  const [snapshot, pageModel, searchIndex, salesOrderPage, planningDemandPage, mrpRunPage, mrpSuggestionPage, bomPage, routingPage, inventoryPage, procurementPage, planningParameterPage, productionOrderPage, productionExecutionPage, finalInspectionPage, materialIssuePage, operationTaskPage, mobileProductionReportingPage, labelingPage, putawayPage, inventoryControlPage, purchaseReceiptPage, purchaseReturnPage, incomingInspectionPage, salesShipmentPage, salesReturnPage, orderProfitPage, receivablePage, payablePage, accountingPeriodPage, grirAccrualPage, advancePage, workspaceUserPage, rolePermissionPage, equipmentAssetPage, equipmentWorkOrderPage, equipmentSparePartPage, equipmentTelemetryPage, equipmentAlertPage, equipmentOeePage] = await Promise.all([
     getManufacturingSnapshot(),
     getBusinessPageWithData(pathname),
     getGlobalSearchIndex(),
@@ -85,6 +86,7 @@ export default async function RoutePage({ params }: RoutePageProps) {
     getGrirAccrualPageData(pathname),
     getAdvancePageData(pathname),
     getWorkspaceUserPageData(pathname),
+    getRolePermissionPageData(pathname),
     getEquipmentAssetPageData(pathname),
     getEquipmentWorkOrderPageData(pathname),
     getEquipmentSparePartPageData(pathname),
@@ -125,6 +127,7 @@ export default async function RoutePage({ params }: RoutePageProps) {
     grirAccrual: grirAccrualPage,
     advance: advancePage,
     workspaceUser: workspaceUserPage,
+    rolePermission: rolePermissionPage,
     equipmentAsset: equipmentAssetPage,
     equipmentWorkOrder: equipmentWorkOrderPage,
     equipmentSparePart: equipmentSparePartPage,
@@ -132,6 +135,6 @@ export default async function RoutePage({ params }: RoutePageProps) {
     equipmentAlert: equipmentAlertPage,
     equipmentOee: equipmentOeePage,
   });
-  return <ManufacturingWorkspace backendPageUnavailable={backendPageUnavailable} initialSnapshot={snapshot} initialPageModel={pageModel} initialSearchIndex={searchIndex} initialSalesOrderPage={salesOrderPage} initialPlanningDemandPage={planningDemandPage} initialMrpRunPage={mrpRunPage} initialMrpSuggestionPage={mrpSuggestionPage} initialBomPage={bomPage} initialRoutingPage={routingPage} initialInventoryPage={inventoryPage} initialProcurementPage={procurementPage} initialPlanningParameterPage={planningParameterPage} initialProductionOrderPage={productionOrderPage} initialProductionExecutionPage={productionExecutionPage} initialFinalInspectionPage={finalInspectionPage} initialMaterialIssuePage={materialIssuePage} initialOperationTaskPage={operationTaskPage} initialMobileProductionReportingPage={mobileProductionReportingPage} initialLabelingPage={labelingPage} initialPutawayPage={putawayPage} initialInventoryControlPage={inventoryControlPage} initialPurchaseReceiptPage={purchaseReceiptPage} initialPurchaseReturnPage={purchaseReturnPage} initialIncomingInspectionPage={incomingInspectionPage} initialSalesShipmentPage={salesShipmentPage} initialSalesReturnPage={salesReturnPage} initialOrderProfitPage={orderProfitPage} initialReceivablePage={receivablePage} initialPayablePage={payablePage} initialAccountingPeriodPage={accountingPeriodPage} initialGrirAccrualPage={grirAccrualPage} initialAdvancePage={advancePage} initialWorkspaceUserPage={workspaceUserPage} initialEquipmentAssetPage={equipmentAssetPage} initialEquipmentWorkOrderPage={equipmentWorkOrderPage} initialEquipmentSparePartPage={equipmentSparePartPage} initialEquipmentTelemetryPage={equipmentTelemetryPage} initialEquipmentAlertPage={equipmentAlertPage} initialEquipmentOeePage={equipmentOeePage} />;
+  return <ManufacturingWorkspace backendPageUnavailable={backendPageUnavailable} initialSnapshot={snapshot} initialPageModel={pageModel} initialSearchIndex={searchIndex} initialSalesOrderPage={salesOrderPage} initialPlanningDemandPage={planningDemandPage} initialMrpRunPage={mrpRunPage} initialMrpSuggestionPage={mrpSuggestionPage} initialBomPage={bomPage} initialRoutingPage={routingPage} initialInventoryPage={inventoryPage} initialProcurementPage={procurementPage} initialPlanningParameterPage={planningParameterPage} initialProductionOrderPage={productionOrderPage} initialProductionExecutionPage={productionExecutionPage} initialFinalInspectionPage={finalInspectionPage} initialMaterialIssuePage={materialIssuePage} initialOperationTaskPage={operationTaskPage} initialMobileProductionReportingPage={mobileProductionReportingPage} initialLabelingPage={labelingPage} initialPutawayPage={putawayPage} initialInventoryControlPage={inventoryControlPage} initialPurchaseReceiptPage={purchaseReceiptPage} initialPurchaseReturnPage={purchaseReturnPage} initialIncomingInspectionPage={incomingInspectionPage} initialSalesShipmentPage={salesShipmentPage} initialSalesReturnPage={salesReturnPage} initialOrderProfitPage={orderProfitPage} initialReceivablePage={receivablePage} initialPayablePage={payablePage} initialAccountingPeriodPage={accountingPeriodPage} initialGrirAccrualPage={grirAccrualPage} initialAdvancePage={advancePage} initialWorkspaceUserPage={workspaceUserPage} initialRolePermissionPage={rolePermissionPage} initialEquipmentAssetPage={equipmentAssetPage} initialEquipmentWorkOrderPage={equipmentWorkOrderPage} initialEquipmentSparePartPage={equipmentSparePartPage} initialEquipmentTelemetryPage={equipmentTelemetryPage} initialEquipmentAlertPage={equipmentAlertPage} initialEquipmentOeePage={equipmentOeePage} />;
 }
 

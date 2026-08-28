@@ -72,6 +72,21 @@ class WorkspaceUserManagementIntegrationTest {
 				.andExpect(jsonPath("$.availableRoles[?(@.code == 'ADMIN')].name").value("系统管理员"))
 				.andExpect(jsonPath("$.items[?(@.username == 'lin.hao')].roleCode").value("ADMIN"));
 
+		mockMvc.perform(get("/api/v1/identity/role-permissions"))
+				.andExpect(status().isUnauthorized());
+
+		mockMvc.perform(get("/api/v1/identity/role-permissions")
+					.with(httpBasic(ADMIN_USERNAME, ADMIN_PASSWORD))
+					.header("X-Request-Id", "role-permissions-list-0001"))
+				.andExpect(status().isOk())
+				.andExpect(header().string("X-Request-Id", "role-permissions-list-0001"))
+				.andExpect(jsonPath("$.workspaceId").value(EAST_WORKSPACE_ID))
+				.andExpect(jsonPath("$.catalogVersion").value("2026-08-28.1"))
+				.andExpect(jsonPath("$.roles.length()").value(13))
+				.andExpect(jsonPath("$.groups[?(@.moduleCode == 'IDENTITY')].moduleName").value("身份与工作区"))
+				.andExpect(jsonPath("$.groups[*].permissions[*].code", org.hamcrest.Matchers.hasItem("FINANCE_ACCOUNTING_PERIOD_REOPEN")))
+				.andExpect(jsonPath("$.groups[*].permissions[?(@.code == 'FINANCE_ACCOUNTING_PERIOD_REOPEN')].roleCodes[0]").value("ADMIN"));
+
 		mockMvc.perform(post("/api/v1/identity/workspace-users")
 					.with(httpBasic(ADMIN_USERNAME, ADMIN_PASSWORD))
 					.contentType(MediaType.APPLICATION_JSON)
@@ -105,6 +120,9 @@ class WorkspaceUserManagementIntegrationTest {
 				.andExpect(status().isConflict());
 
 		mockMvc.perform(get("/api/v1/identity/workspace-users").with(user("pilot.operator")))
+				.andExpect(status().isForbidden());
+
+		mockMvc.perform(get("/api/v1/identity/role-permissions").with(user("pilot.operator")))
 				.andExpect(status().isForbidden());
 
 		mockMvc.perform(put("/api/v1/identity/workspace-users/{userId}", userId)

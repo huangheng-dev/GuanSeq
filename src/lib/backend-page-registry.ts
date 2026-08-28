@@ -41,6 +41,7 @@ export const backendPageDataKeyByPath = {
   "/finance/purchase-settlement/grir-accruals": "grirAccrual",
   "/finance/advances": "advance",
   "/settings/organization/users": "workspaceUser",
+  "/settings/roles": "rolePermission",
   "/equipment/assets": "equipmentAsset",
   "/equipment/status": "equipmentAsset",
   "/equipment/inspections": "equipmentWorkOrder",

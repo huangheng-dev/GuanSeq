@@ -41,6 +41,15 @@ test("发行冒烟：初始化、IAM、主闭环、退货与失败恢复", async
     await expect(members).toContainText("系统管理员");
   });
 
+  await test.step("角色权限矩阵只读呈现后端实际门禁", async () => {
+    await openFormalPage(page, "/settings/roles", "角色权限");
+    const matrix = page.getByRole("region", { name: "后端角色权限矩阵" });
+    await expect(matrix).toContainText("查看角色权限矩阵");
+    await expect(matrix).toContainText("重开会计期间");
+    await expect(page.getByText("受控内置角色")).toBeVisible();
+    await expect(page.getByRole("button", { name: "新建角色" })).toHaveCount(0);
+  });
+
   await test.step("采购到货、来料检验与供应商退货形成真实库存闭环", async () => {
     await openFormalPage(page, "/procurement/receipts", "采购到货协同");
     await page.getByRole("button", { name: "登记到货", exact: true }).click();

@@ -151,7 +151,6 @@ function BusinessFormDialog({ model, mode, row, onClose, onSaved, }: {
 }) {
     const [pending, setPending] = useState(false);
     const [error, setError] = useState("");
-    const [roleMemberCount, setRoleMemberCount] = useState(2);
     async function handleSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
         setPending(true);
@@ -206,13 +205,6 @@ function BusinessFormDialog({ model, mode, row, onClose, onSaved, }: {
               </label>);
         })}
           </div>
-          {model.pathname === "/settings/roles" ? (<section className="roleGovernanceForm" aria-labelledby="role-governance-title">
-              <header><div><h3 id="role-governance-title">功能权限与成员范围</h3></div><span><MaterialIcon name="security" size={18}/>敏感操作需要复核</span></header>
-              <div className="rolePermissionGrid">
-                {["查看业务数据", "创建与编辑", "审核与下达", "导入与导出", "成本与价格", "平台配置"].map((permission, index) => <label key={permission}><GsCheckbox name={`permission-${index}`} defaultChecked={index < 2}/><span><MaterialIcon name={index < 2 ? "check_circle" : "radio_button_unchecked"} size={18}/><strong>{permission}</strong><small>{index < 2 ? "默认授予" : index >= 4 ? "敏感权限" : "按职责选择"}</small></span></label>)}
-              </div>
-              <div className="roleMemberScope"><div><strong>当前成员</strong><p>{["林浩", "宋可", "周洁"].slice(0, roleMemberCount).map((member) => <span key={member}>{member}</span>)}<GsButton htmlType="button" disabled={roleMemberCount === 3} onClick={() => setRoleMemberCount(3)}><MaterialIcon name="person_add" size={16}/>{roleMemberCount === 3 ? "已添加周洁" : "添加周洁"}</GsButton></p></div><aside><MaterialIcon name="warning" size={19}/><p><strong>职责分离检查</strong><small>平台配置、成本价格与审核下达不建议集中在同一普通业务角色。</small></p></aside></div>
-            </section>) : null}
           {error ? <div className="formError" role="alert"><MaterialIcon name="error" size={18}/>{error}</div> : null}
           <footer className="gsModalActions">
             <span><MaterialIcon name="shield" size={16}/>提交后保留操作人和时间证据</span>

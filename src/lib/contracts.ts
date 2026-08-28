@@ -88,6 +88,33 @@ export const workspaceRoleSchema = z.object({
   description: z.string(),
 });
 
+export const workspacePermissionRiskSchema = z.enum(["STANDARD", "SENSITIVE", "CRITICAL"]);
+
+export const workspacePermissionSchema = z.object({
+  code: z.string().min(1),
+  name: z.string().min(1),
+  description: z.string().min(1),
+  risk: workspacePermissionRiskSchema,
+  roleCodes: z.array(workspaceRoleCodeSchema).min(1),
+});
+
+export const workspacePermissionGroupSchema = z.object({
+  moduleCode: z.string().min(1),
+  moduleName: z.string().min(1),
+  permissions: z.array(workspacePermissionSchema).min(1),
+});
+
+export const workspaceRolePermissionPageSchema = z.object({
+  workspaceId: z.string().uuid(),
+  workspaceCode: z.string().min(1),
+  workspaceName: z.string().min(1),
+  companyName: z.string().min(1),
+  catalogVersion: z.string().min(1),
+  scopeDescription: z.string().min(1),
+  roles: z.array(workspaceRoleSchema).min(1),
+  groups: z.array(workspacePermissionGroupSchema).min(1),
+});
+
 export const workspaceUserSchema = z.object({
   userId: z.string().uuid(),
   username: z.string(),
@@ -1603,6 +1630,10 @@ export type WorkspaceSession = z.infer<typeof workspaceSessionSchema>;
 export type WorkspaceSessionEnvelope = z.infer<typeof workspaceSessionEnvelopeSchema>;
 export type WorkspaceRoleCode = z.infer<typeof workspaceRoleCodeSchema>;
 export type WorkspaceRole = z.infer<typeof workspaceRoleSchema>;
+export type WorkspacePermissionRisk = z.infer<typeof workspacePermissionRiskSchema>;
+export type WorkspacePermission = z.infer<typeof workspacePermissionSchema>;
+export type WorkspacePermissionGroup = z.infer<typeof workspacePermissionGroupSchema>;
+export type WorkspaceRolePermissionPage = z.infer<typeof workspaceRolePermissionPageSchema>;
 export type WorkspaceUser = z.infer<typeof workspaceUserSchema>;
 export type WorkspaceUserPage = z.infer<typeof workspaceUserPageSchema>;
 export type EquipmentAssetCategory = z.infer<typeof equipmentAssetCategorySchema>;

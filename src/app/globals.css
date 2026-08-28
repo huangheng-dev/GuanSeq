@@ -795,7 +795,7 @@ button:disabled { cursor: not-allowed; opacity: .56; }
 .businessPagination button, .businessPagination strong,
 .businessFilters select, .businessSearch, .plannedNotice button,
 .dangerButton,
-.roleMemberScope button, .toastMessage > button {
+.toastMessage > button {
   border-radius: var(--gs-radius-sm);
 }
 
@@ -945,32 +945,6 @@ button:disabled { cursor: not-allowed; opacity: .56; }
 .formField input:hover, .formField textarea:hover { border-color: #c5d0d8; }
 .formField input:focus, .formField textarea:focus { background: white; border-color: #789bb6; box-shadow: var(--gs-focus); }
 .formField small { color: var(--gs-ink-muted); font-size: 11px; }
-.roleGovernanceForm { border-top: 1px solid var(--gs-line); margin: 0 22px 20px; }
-.roleGovernanceForm > header { align-items: center; display: flex; justify-content: space-between; padding: 17px 0 13px; }
-.roleGovernanceForm > header h3 { font-size: 13px; margin: 0; }
-.roleGovernanceForm > header > span { align-items: center; color: var(--gs-warning); display: flex; font-size: 11px; gap: 6px; }
-.rolePermissionGrid { border: 1px solid var(--gs-line); border-radius: var(--gs-radius-md); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); overflow: hidden; }
-.rolePermissionGrid label { border-bottom: 1px solid var(--gs-line); border-right: 1px solid var(--gs-line); cursor: pointer; }
-.rolePermissionGrid label:nth-child(3n) { border-right: 0; }
-.rolePermissionGrid label:nth-last-child(-n + 3) { border-bottom: 0; }
-.rolePermissionGrid input { height: 1px; opacity: 0; position: absolute; width: 1px; }
-.rolePermissionGrid label > span { align-items: center; display: grid; gap: 3px 8px; grid-template-columns: 22px minmax(0, 1fr); min-height: 64px; padding: 10px 12px; }
-.rolePermissionGrid label > span > .material-symbols-rounded { color: #a7b1ba; grid-row: 1 / 3; }
-.rolePermissionGrid input:checked + span { background: #edf3f7; }
-.rolePermissionGrid input:checked + span > .material-symbols-rounded { color: var(--gs-info); }
-.rolePermissionGrid input:focus-visible + span { box-shadow: inset 0 0 0 2px #3573a3; }
-.rolePermissionGrid strong { font-size: 11px; }
-.rolePermissionGrid small { color: var(--gs-ink-muted); font-size: 11px; }
-.roleMemberScope { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; padding-top: 13px; }
-.roleMemberScope > div > strong { font-size: 11px; }
-.roleMemberScope > div p { align-items: center; display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; }
-.roleMemberScope > div p > span { background: #eaf0f5; border-radius: 999px; color: var(--gs-navy); font-size: 11px; padding: 6px 9px; }
-.roleMemberScope button { align-items: center; background: white; border: 1px solid var(--gs-line); cursor: pointer; display: flex; font-size: 11px; gap: 5px; min-height: 30px; padding: 5px 9px; }
-.roleMemberScope aside { align-items: start; background: #fff8ed; border: 1px solid #efd9b8; border-radius: var(--gs-radius-sm); display: grid; gap: 8px; grid-template-columns: 22px minmax(0, 1fr); padding: 10px 12px; }
-.roleMemberScope aside > .material-symbols-rounded { color: var(--gs-warning); }
-.roleMemberScope aside p { display: grid; gap: 3px; margin: 0; }
-.roleMemberScope aside strong { font-size: 11px; }
-.roleMemberScope aside small { color: #80613d; font-size: 11px; line-height: 1.5; }
 
 /* 统一自定义下拉 */
 .roundedSelect { min-width: 0; position: relative; }
@@ -1881,14 +1855,6 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, a:focus-visib
   .businessDialog { border-radius: var(--gs-radius-lg) var(--gs-radius-lg) 0 0; max-height: 92vh; }
   .dialogHeader { padding: 17px; }
   .formGrid { grid-template-columns: 1fr; padding: 18px 17px; }
-  .roleGovernanceForm { margin-left: 17px; margin-right: 17px; }
-  .roleGovernanceForm > header { align-items: start; gap: 8px; }
-  .rolePermissionGrid { grid-template-columns: 1fr 1fr; }
-  .rolePermissionGrid label:nth-child(3n) { border-right: 1px solid var(--gs-line); }
-  .rolePermissionGrid label:nth-child(2n) { border-right: 0; }
-  .rolePermissionGrid label:nth-last-child(-n + 3) { border-bottom: 1px solid var(--gs-line); }
-  .rolePermissionGrid label:nth-last-child(-n + 2) { border-bottom: 0; }
-  .roleMemberScope { grid-template-columns: 1fr; }
   .formFieldFull { grid-column: 1; }
   .dialogFooter { align-items: stretch; display: grid; gap: 12px; padding: 13px 17px 17px; }
   .dialogFooter > div { display: grid; grid-template-columns: 1fr 1.4fr; }
@@ -2646,6 +2612,89 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, a:focus-visib
   .workspaceUserTableRow > .businessRowActions { grid-column: 2; grid-row: 1; }
   .workspaceUserTableRow .businessRowActions button { height: 44px; width: 44px; }
   .workspaceRoleBoundary { order: 4; }
+}
+
+/* 只读后端角色—权限矩阵 */
+.rolePermissionPage { display: grid; gap: 16px; }
+.rolePermissionPage .businessPageHeading { margin-bottom: 0; }
+.rolePermissionMetrics { margin-bottom: 0; }
+.rolePermissionBoundary { border-left-color: #2b8276; margin: 0; }
+.rolePermissionBoundary > .material-symbols-rounded { color: #2b8276; }
+.roleCatalog {
+  background: #fff;
+  border: 1px solid var(--gs-line);
+  border-radius: var(--gs-radius-lg);
+  overflow: hidden;
+}
+.roleCatalog > header { align-items: start; border-bottom: 1px solid var(--gs-line); display: flex; justify-content: space-between; padding: 16px 18px; }
+.roleCatalog > header h3 { color: var(--gs-navy); font-size: 13px; margin: 0; }
+.roleCatalog > header p { color: var(--gs-ink-muted); font-size: 11px; margin: 4px 0 0; }
+.roleCatalogGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.roleCatalogCard { align-items: start; border-bottom: 1px solid var(--gs-line); border-right: 1px solid var(--gs-line); display: grid; gap: 10px; grid-template-columns: 32px minmax(0, 1fr); min-height: 112px; padding: 14px; }
+.roleCatalogCard:nth-child(3n) { border-right: 0; }
+.roleCatalogCard:nth-last-child(-n + 3) { border-bottom: 0; }
+.roleCatalogCard > span { align-items: center; background: #edf3f7; border-radius: 9px; color: var(--gs-info); display: flex; height: 32px; justify-content: center; width: 32px; }
+.roleCatalogCard > div { display: grid; gap: 4px; min-width: 0; }
+.roleCatalogCard strong { color: var(--gs-navy); font-size: 12px; }
+.roleCatalogCard code { color: var(--gs-info); font-family: var(--font-mono, monospace); font-size: 11px; overflow-wrap: anywhere; }
+.roleCatalogCard p { color: var(--gs-ink-muted); font-size: 11px; line-height: 1.45; margin: 2px 0 0; }
+.roleCatalogCardActive { background: #f2f8f6; box-shadow: inset 3px 0 #2b8276; }
+.rolePermissionLedger { overflow: hidden; }
+.rolePermissionToolbar { grid-template-columns: minmax(240px, 1fr) minmax(150px, .35fr) minmax(150px, .35fr); }
+.rolePermissionResults { overflow-x: auto; }
+.rolePermissionResults > header,
+.rolePermissionGroup > article { align-items: center; display: grid; gap: 14px; grid-template-columns: minmax(270px, 1.25fr) 80px minmax(320px, 1.2fr); min-width: 820px; padding: 0 18px; }
+.rolePermissionResults > header { background: var(--gs-surface-subtle); border-bottom: 1px solid var(--gs-line); color: var(--gs-ink-muted); font-size: 11px; min-height: 38px; }
+.rolePermissionGroup > h3 { align-items: center; background: #f8fafb; border-bottom: 1px solid var(--gs-line); border-top: 1px solid var(--gs-line); color: var(--gs-navy); display: flex; gap: 8px; justify-content: space-between; margin: -1px 0 0; padding: 10px 18px; }
+.rolePermissionGroup > h3 span { font-size: 12px; }
+.rolePermissionGroup > h3 small { color: var(--gs-ink-muted); font-size: 11px; font-weight: 500; }
+.rolePermissionGroup > article { border-bottom: 1px solid #edf1f4; min-height: 76px; }
+.rolePermissionGroup > article:last-child { border-bottom: 0; }
+.rolePermissionGroup > article:hover { background: #fbfcfd; box-shadow: inset 3px 0 #2b8276; }
+.rolePermissionGroup > article > span:first-child { display: grid; gap: 4px; min-width: 0; }
+.rolePermissionGroup strong { color: #27435c; font-size: 12px; }
+.rolePermissionGroup small { color: var(--gs-ink-muted); font-size: 11px; line-height: 1.45; }
+.rolePermissionGroup code { color: #718391; font-family: var(--font-mono, monospace); font-size: 11px; overflow-wrap: anywhere; }
+.roleRisk { border-radius: 999px; display: inline-flex; font-size: 11px; font-style: normal; justify-content: center; padding: 5px 8px; }
+.roleRiskstandard { background: #edf3f7; color: var(--gs-info); }
+.roleRisksensitive { background: #fff6e8; color: #9b661e; }
+.roleRiskcritical { background: #fff0ee; color: #b54d40; }
+.rolePermissionChips { display: flex; flex-wrap: wrap; gap: 5px; }
+.rolePermissionChips > span { background: #edf3f7; border: 1px solid #dbe6ed; border-radius: 999px; color: #355a75; font-size: 11px; padding: 5px 8px; }
+.rolePermissionLimit { align-items: start; background: #fff8ed; border: 1px solid #efd9b8; border-radius: var(--gs-radius-md); display: flex; gap: 10px; padding: 12px 15px; }
+.rolePermissionLimit > .material-symbols-rounded { color: var(--gs-warning); margin-top: 1px; }
+.rolePermissionLimit strong { color: #71542e; font-size: 12px; }
+.rolePermissionLimit p { color: #80613d; font-size: 11px; line-height: 1.55; margin: 4px 0 0; }
+
+@media (max-width: 900px) {
+  .roleCatalogGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .roleCatalogCard:nth-child(3n) { border-right: 1px solid var(--gs-line); }
+  .roleCatalogCard:nth-child(2n) { border-right: 0; }
+  .roleCatalogCard:nth-last-child(-n + 3) { border-bottom: 1px solid var(--gs-line); }
+  .roleCatalogCard:nth-last-child(-n + 2) { border-bottom: 0; }
+  .rolePermissionToolbar { grid-template-columns: 1fr 1fr; }
+  .rolePermissionToolbar .businessSearch { grid-column: 1 / -1; }
+}
+
+@media (max-width: 600px) {
+  .rolePermissionPage .pageHeadingActions { width: 100%; }
+  .rolePermissionPage .pageHeadingActions button { justify-content: center; width: 100%; }
+  .roleCatalogGrid { grid-template-columns: 1fr; }
+  .roleCatalogCard,
+  .roleCatalogCard:nth-child(2n),
+  .roleCatalogCard:nth-child(3n),
+  .roleCatalogCard:nth-last-child(-n + 2) { border-bottom: 1px solid var(--gs-line); border-right: 0; }
+  .roleCatalogCard:last-child { border-bottom: 0; }
+  .rolePermissionToolbar { grid-template-columns: 1fr; }
+  .rolePermissionToolbar .businessSearch { grid-column: auto; }
+  .rolePermissionToolbar > * { min-width: 0; width: 100%; }
+  .rolePermissionResults { overflow: visible; }
+  .rolePermissionResults > header { display: none; }
+  .rolePermissionGroup > article { align-items: start; gap: 10px; grid-template-columns: minmax(0, 1fr) auto; min-width: 0; padding: 14px; }
+  .rolePermissionGroup > article > span:first-child { grid-column: 1; }
+  .rolePermissionGroup > article > span:nth-child(2) { grid-column: 2; grid-row: 1; }
+  .rolePermissionChips { border-top: 1px solid #edf1f4; grid-column: 1 / -1; padding-top: 9px; }
+  .rolePermissionLedger .businessLedgerFooter { align-items: start; flex-direction: column; }
 }
 
 /* Equipment alert responsibility workflow */

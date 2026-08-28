@@ -102,6 +102,8 @@ import type { OperationTaskPageData } from "@/services/operation-task-server-ser
 import { OperationTaskWorkspace } from "./operation-task-workspace";
 import type { WorkspaceUserPageData } from "@/services/workspace-user-server-service";
 import { WorkspaceUserWorkspace } from "./workspace-user-workspace";
+import type { RolePermissionPageData } from "@/services/role-permission-server-service";
+import { RolePermissionWorkspace } from "./role-permission-workspace";
 import type { EquipmentAssetPageData } from "@/services/equipment-asset-server-service";
 import { EquipmentAssetWorkspace } from "./equipment-asset-workspace";
 import type { EquipmentWorkOrderPageData } from "@/services/equipment-work-order-server-service";
@@ -149,6 +151,7 @@ type ManufacturingWorkspaceProps = {
   initialPutawayPage?: PutawayPageData | null;
   initialInventoryControlPage?: InventoryControlPageData | null;
   initialWorkspaceUserPage?: WorkspaceUserPageData | null;
+  initialRolePermissionPage?: RolePermissionPageData | null;
   initialEquipmentAssetPage?: EquipmentAssetPageData | null;
   initialEquipmentWorkOrderPage?: EquipmentWorkOrderPageData | null;
   initialEquipmentSparePartPage?: EquipmentSparePartPageData | null;
@@ -493,6 +496,7 @@ export function ManufacturingWorkspace({
   initialGrirAccrualPage,
   initialAdvancePage,
   initialWorkspaceUserPage,
+  initialRolePermissionPage,
   initialEquipmentAssetPage,
   initialEquipmentWorkOrderPage,
   initialEquipmentSparePartPage,
@@ -538,6 +542,7 @@ export function ManufacturingWorkspace({
       initialGrirAccrualPage={initialGrirAccrualPage}
       initialAdvancePage={initialAdvancePage}
       initialWorkspaceUserPage={initialWorkspaceUserPage}
+      initialRolePermissionPage={initialRolePermissionPage}
       initialEquipmentAssetPage={initialEquipmentAssetPage}
       initialEquipmentWorkOrderPage={initialEquipmentWorkOrderPage}
       initialEquipmentSparePartPage={initialEquipmentSparePartPage}
@@ -583,6 +588,7 @@ function ManufacturingWorkspaceContent({
   initialGrirAccrualPage,
   initialAdvancePage,
   initialWorkspaceUserPage,
+  initialRolePermissionPage,
   initialEquipmentAssetPage,
   initialEquipmentWorkOrderPage,
   initialEquipmentSparePartPage,
@@ -1617,6 +1623,8 @@ function ManufacturingWorkspaceContent({
         ) : pathname === "/settings/organization/users" &&
           initialWorkspaceUserPage ? (
           <WorkspaceUserWorkspace initialData={initialWorkspaceUserPage} />
+        ) : pathname === "/settings/roles" && initialRolePermissionPage ? (
+          <RolePermissionWorkspace initialData={initialRolePermissionPage} />
         ) : pathname === "/sales/deliveries/pending" &&
           initialSalesShipmentPage ? (
           <SalesShipmentWorkspace initialData={initialSalesShipmentPage} />
